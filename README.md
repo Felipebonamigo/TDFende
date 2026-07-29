@@ -35,10 +35,28 @@ completo — o jogo bloqueia a torre que fecharia a última passagem.
 - Câmera RTS (pan/zoom) e HUD provisório via OnGUI
 - **Camada de input abstrata** (`IGameInput`): o jogo consome intenções, não cliques —
   é o que torna o porte mobile um adaptador novo, não um retrofit
+- **Fronteira + atrito** — a mecânica-teste do projeto: cada torre projeta território
+  (overlay azul com linha de fronteira); inimigos dentro dele sofrem dano contínuo,
+  sem ninguém atirar. Vencer controlando território, não só matando.
+
+## Testes headless
+
+A lógica pura (grid, flow field, território) compila e roda **fora do Unity** — os mesmos
+`.cs` do projeto, com stubs mínimos:
+
+```bash
+cd Tools/FlowSim
+dotnet run
+```
+
+22 verificações: conversões de grid, alcançabilidade, anti-muro (`PlacementBlocksPath`),
+proibição de corte de quina, simulação de caminhada spawn→base e geometria do território.
+É o embrião da ferramenta de balanceamento da fase 3 (simular milhares de ondas sem abrir o editor).
 
 ## Próximo passo
 
-**Fronteira + atrito** — o teste que decide o design do jogo (e a alma do RTS futuro).
+Playtest do Felipe → tuning de `BorderRadius`/`AttritionDps` em `GameConfig.cs` →
+**decisão da semana 4**: fronteira + atrito diverte, ou o jogo vira TD clássico?
 
 ## Arquitetura em uma linha
 

@@ -23,6 +23,10 @@ namespace FrontierTD
         public const float TowerDamage = 12f;
         public const float ProjectileSpeed = 14f;
 
+        // Fronteira + atrito (a mecânica-teste do projeto)
+        public const float BorderRadius = 2.75f; // raio de território por torre, em células
+        public const float AttritionDps = 4f;    // dano/s a inimigos dentro do território
+
         // Inimigos
         public const int KillReward = 5;
         public const float EnemyBaseHp = 30f;

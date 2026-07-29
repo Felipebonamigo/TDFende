@@ -8,6 +8,9 @@
 [Uu]serSettings/
 MemoryCaptures/
 
+# .NET (Tools/)
+[Bb]in/
+
 # IDE
 .vs/
 .vscode/

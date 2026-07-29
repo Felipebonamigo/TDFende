@@ -20,14 +20,17 @@ namespace FrontierTD
 
         float _speed;
         FlowField _flow;
+        TerritoryField _territory;
         Vector3 _goal;
         System.Action<Enemy, bool> _onDespawn; // (inimigo, morreuEmCombate)
         Renderer _renderer;
         MaterialPropertyBlock _mpb;
 
-        public void Init(FlowField flow, Vector3 goal, float hp, float speed, System.Action<Enemy, bool> onDespawn)
+        public void Init(FlowField flow, TerritoryField territory, Vector3 goal, float hp, float speed,
+            System.Action<Enemy, bool> onDespawn)
         {
             _flow = flow;
+            _territory = territory;
             _goal = goal;
             MaxHp = Hp = hp;
             _speed = speed;
@@ -49,6 +52,13 @@ namespace FrontierTD
             transform.position += dir * (_speed * Time.deltaTime);
             if (dir.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 8f * Time.deltaTime);
+
+            // atrito: dentro do território do jogador, perde vida sem ninguém atirar
+            if (_territory.Contains(transform.position))
+            {
+                TakeDamage(GameConfig.AttritionDps * Time.deltaTime);
+                if (Hp <= 0f) return; // morreu de atrito neste frame
+            }
 
             var flat = transform.position;
             flat.y = 0f;

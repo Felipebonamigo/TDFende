@@ -38,8 +38,9 @@ namespace FrontierTD
                 GUILayout.Label("Onda em andamento!", _label);
             GUILayout.EndArea();
 
-            GUI.Box(new Rect(12, Screen.height - 96, 440, 84),
+            GUI.Box(new Rect(12, Screen.height - 112, 470, 100),
                 $"Clique esquerdo: construir torre ({GameConfig.TowerCost} de ouro)\n" +
+                $"Torres projetam FRONTEIRA: inimigos dentro dela sofrem {GameConfig.AttritionDps:0} de dano/s\n" +
                 "WASD/setas: mover câmera  |  Scroll: zoom  |  Botão do meio: arrastar\n" +
                 "ESPAÇO: chamar próxima onda  |  R: reiniciar", _box);
 

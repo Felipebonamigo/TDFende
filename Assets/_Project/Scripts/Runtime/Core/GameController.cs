@@ -19,6 +19,7 @@ namespace FrontierTD
     {
         public GridMap Map { get; private set; }
         public FlowField Flow { get; private set; }
+        public TerritoryField Territory { get; private set; }
         public PlayerState State { get; private set; }
 
         public int Wave { get; private set; }
@@ -30,10 +31,12 @@ namespace FrontierTD
         Vector3 _goalWorld;
         readonly List<Vector2Int> _spawnCells = new List<Vector2Int>();
         readonly List<GameObject> _towers = new List<GameObject>();
+        readonly List<Vector2Int> _towerCells = new List<Vector2Int>();
 
         IGameInput _input;
         CameraRigDriver _cameraRig;
         TowerPlacer _placer;
+        TerritoryRenderer _territoryRenderer;
 
         SimplePool<Enemy> _enemyPool;
         SimplePool<Projectile> _projectilePool;
@@ -47,6 +50,7 @@ namespace FrontierTD
         {
             Map = new GridMap(GameConfig.GridWidth, GameConfig.GridHeight, GameConfig.CellSize);
             Flow = new FlowField(Map);
+            Territory = new TerritoryField(Map);
             State = new PlayerState(GameConfig.StartLives, GameConfig.StartGold);
 
             _goalCell = new Vector2Int(Map.Width - 3, Map.Height / 2);
@@ -64,6 +68,7 @@ namespace FrontierTD
             _input = new DesktopInput();
             _cameraRig = new CameraRigDriver(FindOrCreateCamera(), Vector3.zero, Map.WorldSize);
             _placer = new TowerPlacer(this);
+            _territoryRenderer = new TerritoryRenderer();
             gameObject.AddComponent<DebugHud>().Init(this);
 
             Phase = WavePhase.Building;
@@ -139,7 +144,7 @@ namespace FrontierTD
             float hp = GameConfig.EnemyBaseHp * Mathf.Pow(GameConfig.EnemyHpGrowth, Wave - 1);
             float speed = Mathf.Min(GameConfig.EnemyBaseSpeed + GameConfig.EnemySpeedPerWave * Wave, GameConfig.EnemyMaxSpeed)
                           * Random.Range(0.92f, 1.08f); // variação leve pra não andarem em fila indiana
-            e.Init(Flow, _goalWorld, hp, speed, _onEnemyDespawn);
+            e.Init(Flow, Territory, _goalWorld, hp, speed, _onEnemyDespawn);
         }
 
         void OnEnemyDespawn(Enemy e, bool killed)
@@ -186,6 +191,11 @@ namespace FrontierTD
             Map.SetBlocked(cell, true);
             Flow.Rebuild(_goalCell); // todos os inimigos redirecionam na hora
             _towers.Add(CreateTowerVisual(cell));
+
+            // a fronteira empurra: cada torre nova expande o território
+            _towerCells.Add(cell);
+            Territory.Rebuild(_towerCells, GameConfig.BorderRadius);
+            _territoryRenderer.Rebuild(Territory, Map);
         }
 
         public void ResetGame()
@@ -198,6 +208,9 @@ namespace FrontierTD
 
             Map.ClearAllBlocked();
             Flow.Rebuild(_goalCell);
+            _towerCells.Clear();
+            Territory.Rebuild(_towerCells, GameConfig.BorderRadius);
+            _territoryRenderer.Rebuild(Territory, Map);
             State = new PlayerState(GameConfig.StartLives, GameConfig.StartGold);
             Wave = 0;
             Phase = WavePhase.Building;
