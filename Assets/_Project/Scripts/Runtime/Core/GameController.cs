@@ -37,11 +37,14 @@ namespace FrontierTD
         CameraRigDriver _cameraRig;
         TowerPlacer _placer;
         TerritoryRenderer _territoryRenderer;
+        FloatingText _floatingText;
+        Transform _baseTransform;
+        Vector3 _baseScale;
 
         SimplePool<Enemy> _enemyPool;
         SimplePool<Projectile> _projectilePool;
         System.Action<Projectile> _releaseProjectile;
-        System.Action<Enemy, bool> _onEnemyDespawn;
+        System.Action<Enemy, DespawnReason> _onEnemyDespawn;
 
         int _toSpawn;
         float _spawnTimer;
@@ -63,13 +66,18 @@ namespace FrontierTD
             _releaseProjectile = _projectilePool.Release; // delegates cacheados: nada de alocar por tiro
             _onEnemyDespawn = OnEnemyDespawn;
 
+            var cam = FindOrCreateCamera();
+            SceneAmbience.Apply(cam);
             BuildWorld();
+            new Vfx();
 
             _input = new DesktopInput();
-            _cameraRig = new CameraRigDriver(FindOrCreateCamera(), Vector3.zero, Map.WorldSize);
+            _cameraRig = new CameraRigDriver(cam, Vector3.zero, Map.WorldSize);
             _placer = new TowerPlacer(this);
             _territoryRenderer = new TerritoryRenderer();
             gameObject.AddComponent<DebugHud>().Init(this);
+            _floatingText = gameObject.AddComponent<FloatingText>();
+            _floatingText.Init(cam);
 
             Phase = WavePhase.Building;
             PhaseTimer = GameConfig.FirstWaveDelay;
@@ -79,7 +87,9 @@ namespace FrontierTD
         {
             _input.Tick();
             float dt = Time.deltaTime;
+            Juice.Tick(dt);
             _cameraRig.Tick(_input, dt);
+            PulseBase();
 
             if (_input.RestartPressed)
             {
@@ -117,6 +127,8 @@ namespace FrontierTD
                     if (Enemy.Alive.Count == 0)
                     {
                         State.AddGold(GameConfig.WaveClearBonus);
+                        _floatingText.Show(_goalWorld + Vector3.up * 1.5f,
+                            $"Onda {Wave} limpa!  +{GameConfig.WaveClearBonus}", Palette.TextGold);
                         Phase = WavePhase.Building;
                         PhaseTimer = GameConfig.TimeBetweenWaves;
                     }
@@ -147,19 +159,27 @@ namespace FrontierTD
             e.Init(Flow, Territory, _goalWorld, hp, speed, _onEnemyDespawn);
         }
 
-        void OnEnemyDespawn(Enemy e, bool killed)
+        void OnEnemyDespawn(Enemy e, DespawnReason reason)
         {
+            var pos = e.transform.position;
             _enemyPool.Release(e);
-            if (killed)
-            {
-                State.AddGold(GameConfig.KillReward);
-            }
-            else
+
+            if (reason == DespawnReason.Leaked)
             {
                 State.LoseLife();
-                if (State.GameOver)
-                    Phase = WavePhase.GameOver;
+                Vfx.Instance?.Leak(pos);
+                Juice.Shake(0.55f); // só aqui: o evento que dói merece tremer a tela
+                _floatingText.Show(pos + Vector3.up * 0.8f, "-1 vida", Palette.TextDanger);
+                if (State.GameOver) Phase = WavePhase.GameOver;
+                return;
             }
+
+            bool byAttrition = reason == DespawnReason.KilledByAttrition;
+            State.AddGold(GameConfig.KillReward);
+            Vfx.Instance?.KillBurst(pos, byAttrition);
+            // cor do número diz o que matou: fronteira (ciano) ou torre (dourado)
+            _floatingText.Show(pos + Vector3.up * 0.6f, $"+{GameConfig.KillReward}",
+                byAttrition ? Palette.TerritoryEdge : Palette.TextGold);
         }
 
         public bool CanPlaceTower(Vector2Int cell)
@@ -196,6 +216,9 @@ namespace FrontierTD
             _towerCells.Add(cell);
             Territory.Rebuild(_towerCells, GameConfig.BorderRadius);
             _territoryRenderer.Rebuild(Territory, Map);
+
+            Vfx.Instance?.Build(Map.CellToWorld(cell));
+            Juice.Shake(0.12f);
         }
 
         public void ResetGame()
@@ -212,9 +235,19 @@ namespace FrontierTD
             Territory.Rebuild(_towerCells, GameConfig.BorderRadius);
             _territoryRenderer.Rebuild(Territory, Map);
             State = new PlayerState(GameConfig.StartLives, GameConfig.StartGold);
+            Juice.Reset();
+            _floatingText.Clear();
             Wave = 0;
             Phase = WavePhase.Building;
             PhaseTimer = GameConfig.FirstWaveDelay;
+        }
+
+        // base "respira": mostra que está viva sem custar nada
+        void PulseBase()
+        {
+            if (_baseTransform == null) return;
+            float p = 1f + 0.045f * Mathf.Sin(Time.time * 2.1f);
+            _baseTransform.localScale = new Vector3(_baseScale.x, _baseScale.y * p, _baseScale.z);
         }
 
         // ---------- construção do mundo (tudo primitivas, tudo em código) ----------
@@ -227,15 +260,17 @@ namespace FrontierTD
             var size = Map.WorldSize;
             ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
             ground.transform.position = new Vector3(0f, -0.05f, 0f); // topo do cubo em Y=0
-            ground.GetComponent<Renderer>().sharedMaterial = MaterialFactory.GetGround(
-                new Color(0.22f, 0.30f, 0.22f), new Color(0.19f, 0.26f, 0.19f), Map.Width, Map.Height);
+            ground.GetComponent<Renderer>().sharedMaterial =
+                MaterialFactory.GetGround(Palette.GroundDark, Palette.GroundLight, Map.Width, Map.Height);
 
             var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             baseGo.name = "Base";
             Destroy(baseGo.GetComponent<Collider>());
             baseGo.transform.position = _goalWorld + Vector3.up * 0.6f;
             baseGo.transform.localScale = new Vector3(1.1f, 1.2f, 1.1f);
-            baseGo.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(new Color(0.95f, 0.75f, 0.15f));
+            baseGo.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.BaseGold);
+            _baseTransform = baseGo.transform;
+            _baseScale = _baseTransform.localScale;
 
             foreach (var s in _spawnCells)
             {
@@ -244,28 +279,30 @@ namespace FrontierTD
                 Destroy(m.GetComponent<Collider>());
                 m.transform.position = Map.CellToWorld(s) + Vector3.up * 0.05f;
                 m.transform.localScale = new Vector3(0.9f, 0.1f, 0.9f);
-                m.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(new Color(0.6f, 0.15f, 0.5f));
-            }
-
-            bool hasDirLight = false;
-            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
-                if (l.type == LightType.Directional) { hasDirLight = true; break; }
-            if (!hasDirLight)
-            {
-                var lightGo = new GameObject("Sol");
-                lightGo.AddComponent<Light>().type = LightType.Directional;
-                lightGo.transform.rotation = Quaternion.Euler(55f, -35f, 0f);
+                m.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.SpawnMagenta);
             }
         }
 
         Enemy CreateEnemy()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            go.name = "Inimigo";
-            Destroy(go.GetComponent<Collider>());
-            go.transform.localScale = new Vector3(0.55f, 0.5f, 0.55f); // altura 1, centro em y=0.5
-            go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(new Color(0.85f, 0.2f, 0.2f));
-            return go.AddComponent<Enemy>();
+            // raiz vazia: a animação de escala mexe na raiz sem deformar os filhos
+            var root = new GameObject("Inimigo");
+
+            var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            Destroy(body.GetComponent<Collider>());
+            body.transform.SetParent(root.transform, false);
+            body.transform.localScale = new Vector3(0.55f, 0.5f, 0.55f); // altura 1, centro em y=0
+            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.EnemyFull);
+
+            // "olho" na frente: dá silhueta e mostra pra onde está virado
+            var eye = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Destroy(eye.GetComponent<Collider>());
+            eye.transform.SetParent(root.transform, false);
+            eye.transform.localPosition = new Vector3(0f, 0.16f, 0.24f);
+            eye.transform.localScale = new Vector3(0.24f, 0.13f, 0.14f);
+            eye.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.Background);
+
+            return root.AddComponent<Enemy>();
         }
 
         Projectile CreateProjectile()
@@ -274,7 +311,7 @@ namespace FrontierTD
             go.name = "Projetil";
             Destroy(go.GetComponent<Collider>());
             go.transform.localScale = Vector3.one * 0.22f;
-            go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(new Color(1f, 0.9f, 0.3f));
+            go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.Projectile);
             return go.AddComponent<Projectile>();
         }
 
@@ -283,19 +320,27 @@ namespace FrontierTD
             var root = new GameObject("Torre");
             root.transform.position = Map.CellToWorld(cell);
 
+            // plataforma: assenta a torre no chão em vez de flutuar
+            var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Destroy(plate.GetComponent<Collider>());
+            plate.transform.SetParent(root.transform, false);
+            plate.transform.localPosition = new Vector3(0f, 0.06f, 0f);
+            plate.transform.localScale = new Vector3(0.95f, 0.12f, 0.95f);
+            plate.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.GroundLight);
+
             var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Destroy(body.GetComponent<Collider>());
             body.transform.SetParent(root.transform, false);
-            body.transform.localPosition = new Vector3(0f, 0.4f, 0f);
-            body.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
-            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(new Color(0.25f, 0.45f, 0.85f));
+            body.transform.localPosition = new Vector3(0f, 0.45f, 0f);
+            body.transform.localScale = new Vector3(0.72f, 0.72f, 0.72f);
+            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.TowerBody);
 
             var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Destroy(head.GetComponent<Collider>());
             head.transform.SetParent(root.transform, false);
             head.transform.localPosition = new Vector3(0f, 0.95f, 0f);
             head.transform.localScale = new Vector3(0.35f, 0.25f, 0.6f);
-            head.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(new Color(0.5f, 0.7f, 1f));
+            head.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.TowerHead);
 
             root.AddComponent<Tower>().Init(head.transform, _projectilePool, _releaseProjectile);
             return root;

@@ -39,6 +39,21 @@ completo — o jogo bloqueia a torre que fecharia a última passagem.
   (overlay azul com linha de fronteira); inimigos dentro dele sofrem dano contínuo,
   sem ninguém atirar. Vencer controlando território, não só matando.
 
+## Direção de arte: minimalista deliberado (plano barato, R$ 0)
+
+O visual não vem de asset comprado — vem de paleta coerente + luz + juice, tudo em código.
+É estilo, não protótipo (mesma linha de Thomas Was Alone / Mini Metro).
+
+- **[`Palette.cs`](Assets/_Project/Scripts/Runtime/Core/Palette.cs)** — fonte da verdade de TODA cor
+- **`SceneAmbience`** — sol quente + luz de preenchimento fria + névoa linear; roda igual em URP e Built-in
+- **`Vfx`** — partículas em código: tiro, impacto, construção, vazamento e duas mortes com
+  cores distintas (dourado = tiro, ciano = atrito). Dá para *ver* qual mecânica está matando
+- **`Juice`** — screen shake baseado em trauma, só em eventos que importam (inimigo vazando)
+- **`FloatingText`** — números de ouro e vida, com cor indicando a causa da morte
+- **`Urp/PostFx`** — bloom, vinheta, ACES e color grading. Assembly *opcional*: só compila
+  se o URP existir (`defineConstraints`), então o jogo nunca quebra por causa dela
+- Feedback nos inimigos: "pop" ao nascer, flash branco no impacto, **tingimento azul sob atrito**
+
 ## Testes headless
 
 A lógica pura (grid, flow field, território) compila e roda **fora do Unity** — os mesmos

@@ -9,12 +9,15 @@ namespace FrontierTD
         SimplePool<Projectile> _projectiles;
         System.Action<Projectile> _release;
         float _cooldown;
+        float _recoil;
+        Vector3 _headRest;
 
         public void Init(Transform head, SimplePool<Projectile> projectiles, System.Action<Projectile> release)
         {
             _head = head;
             _projectiles = projectiles;
             _release = release;
+            _headRest = head.localPosition;
         }
 
         void Update()
@@ -47,10 +50,17 @@ namespace FrontierTD
             if (_cooldown <= 0f)
             {
                 _cooldown = GameConfig.TowerCooldown;
+                var muzzle = _head.position + _head.forward * 0.35f;
                 var p = _projectiles.Get();
-                p.transform.position = _head.position;
+                p.transform.position = muzzle;
                 p.Init(target, GameConfig.TowerDamage, _release);
+                Vfx.Instance?.Muzzle(muzzle);
+                _recoil = 1f;
             }
+
+            // coice: a cabeça recua e volta — o tiro ganha peso
+            _recoil = Mathf.Max(0f, _recoil - 6f * Time.deltaTime);
+            _head.localPosition = _headRest - _head.localRotation * Vector3.forward * (_recoil * 0.12f);
         }
     }
 }

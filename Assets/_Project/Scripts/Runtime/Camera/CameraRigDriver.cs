@@ -55,7 +55,7 @@ namespace FrontierTD
         {
             var rot = Quaternion.Euler(Pitch, 0f, 0f);
             _cam.transform.localRotation = rot;
-            _cam.transform.localPosition = rot * new Vector3(0f, 0f, -_dist);
+            _cam.transform.localPosition = rot * new Vector3(0f, 0f, -_dist) + Juice.ShakeOffset;
         }
     }
 }

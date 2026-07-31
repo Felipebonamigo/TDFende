@@ -10,8 +10,8 @@ namespace FrontierTD
     /// </summary>
     public class TerritoryRenderer
     {
-        static readonly Color Fill = new Color(0.25f, 0.60f, 1f, 0.16f);
-        static readonly Color EdgeLine = new Color(0.35f, 0.85f, 1f, 0.65f);
+        static readonly Color Fill = Palette.TerritoryFill;
+        static readonly Color EdgeLine = Palette.TerritoryEdge;
         const float Y = 0.02f;         // um tiquinho acima do chão, sem z-fighting
         const float EdgeWidth = 0.13f; // largura da linha de fronteira
 
@@ -39,7 +39,7 @@ namespace FrontierTD
             else
             {
                 Debug.LogWarning("[FrontierTD] Shader da fronteira não encontrado; usando material opaco.");
-                mr.sharedMaterial = MaterialFactory.Get(new Color(0.25f, 0.5f, 0.9f));
+                mr.sharedMaterial = MaterialFactory.Get(Palette.TerritoryEdge);
             }
         }
 

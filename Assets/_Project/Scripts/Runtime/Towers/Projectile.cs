@@ -18,7 +18,7 @@ namespace FrontierTD
 
         void Update()
         {
-            // alvo morreu no caminho: some (sem vfx por enquanto)
+            // alvo morreu no caminho: some sem impacto
             if (_target == null || !_target.gameObject.activeSelf)
             {
                 _release(this);
@@ -29,7 +29,8 @@ namespace FrontierTD
             float step = GameConfig.ProjectileSpeed * Time.deltaTime;
             if (to.magnitude <= step + 0.25f)
             {
-                _target.TakeDamage(_damage);
+                Vfx.Instance?.Impact(_target.transform.position);
+                _target.TakeDamage(_damage, DespawnReason.KilledByTower);
                 _release(this);
                 return;
             }

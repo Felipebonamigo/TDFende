@@ -8,8 +8,8 @@ namespace FrontierTD
     /// </summary>
     public class TowerPlacer
     {
-        static readonly Color ValidColor = new Color(0.2f, 0.9f, 0.3f);
-        static readonly Color InvalidColor = new Color(0.95f, 0.25f, 0.2f);
+        static readonly Color ValidColor = Palette.GhostValid;
+        static readonly Color InvalidColor = Palette.GhostInvalid;
         static readonly Plane GroundPlane = new Plane(Vector3.up, Vector3.zero);
 
         readonly GameController _gc;
@@ -49,7 +49,10 @@ namespace FrontierTD
             bool valid = _gc.CanPlaceTower(cell);
             _ghost.gameObject.SetActive(true);
             _ghost.position = _gc.Map.CellToWorld(cell) + Vector3.up * 0.05f;
-            _mpb.SetColor(MaterialFactory.ColorProperty, valid ? ValidColor : InvalidColor);
+            // pulsa devagar: o fantasma não se confunde com o chão
+            var c = valid ? ValidColor : InvalidColor;
+            _mpb.SetColor(MaterialFactory.ColorProperty,
+                c * (0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f)));
             _ghostRenderer.SetPropertyBlock(_mpb);
 
             if (valid && input.PlacePressed)
