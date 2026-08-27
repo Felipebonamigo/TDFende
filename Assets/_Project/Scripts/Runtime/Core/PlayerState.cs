@@ -1,4 +1,4 @@
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>Vidas e ouro do jogador.</summary>
     public class PlayerState

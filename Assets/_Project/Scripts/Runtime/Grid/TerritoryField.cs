@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Território do jogador: células dentro do raio de fronteira de qualquer torre.

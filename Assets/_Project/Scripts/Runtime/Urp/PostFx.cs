@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-namespace FrontierTD.Urp
+namespace TDFende.Urp
 {
     /// <summary>
     /// Bloom, vinheta e color grading — o acabamento que faz primitivas

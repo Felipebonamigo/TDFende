@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Luz e atmosfera. Usa só RenderSettings e Light, que funcionam igual em

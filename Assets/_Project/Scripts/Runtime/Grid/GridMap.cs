@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Grid lógico do mapa: células bloqueadas e conversão mundo &lt;-&gt; célula.

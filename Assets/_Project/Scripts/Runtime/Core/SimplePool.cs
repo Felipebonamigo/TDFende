@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Pool simples de componentes: zero alocação em regime.

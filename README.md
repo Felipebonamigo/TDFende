@@ -1,4 +1,4 @@
-# FrontierTD *(título provisório)*
+# TDFende
 
 Tower defense com uma mecânica de **fronteira territorial + atrito** (inspirada em Rise of Nations):
 torres projetam uma fronteira no terreno e inimigos dentro do seu território perdem vida com o tempo.
@@ -9,7 +9,7 @@ Projeto-treino antes do RTS — alvo: Steam, com arquitetura mobile-ready desde 
 1. Abra o **Unity Hub** → **Add** → **Add project from disk** → escolha esta pasta.
 2. Abra o projeto com o **Unity 6000.3.11f1** (se o Hub reclamar da versão, escolha essa na lista).
 3. A primeira abertura demora alguns minutos: o projeto instala e ativa o **URP sozinho**
-   (acompanhe as mensagens `[FrontierTD]` no Console).
+   (acompanhe as mensagens `[TDFende]` no Console).
 4. Aperte **Play**. Não precisa abrir cena nenhuma — o jogo se monta sozinho em qualquer cena vazia.
 
 ## Controles

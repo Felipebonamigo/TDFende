@@ -1,7 +1,7 @@
 // Overlay transparente do território, com cor por vértice.
 // Sem tag LightMode: o Built-in renderiza como pass normal e o URP como
 // SRPDefaultUnlit — ou seja, funciona nos dois pipelines sem variante nenhuma.
-Shader "FrontierTD/TerritoryOverlay"
+Shader "TDFende/TerritoryOverlay"
 {
     Properties
     {

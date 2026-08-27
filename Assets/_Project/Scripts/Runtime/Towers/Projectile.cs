@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>Projétil teleguiado simples. Vive no pool; nunca é destruído.</summary>
     public class Projectile : MonoBehaviour

@@ -1,7 +1,7 @@
-// Testes headless da lógica pura do FrontierTD (mesmos .cs do projeto Unity).
+// Testes headless da lógica pura do TDFende (mesmos .cs do projeto Unity).
 using System;
 using System.Collections.Generic;
-using FrontierTD;
+using TDFende;
 using UnityEngine;
 
 class Program

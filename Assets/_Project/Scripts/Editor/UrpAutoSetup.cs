@@ -1,12 +1,12 @@
 // Só compila quando o URP já está instalado (define vem do asmdef).
 // Cria e ativa o pipeline asset automaticamente — zero cliques no editor.
-#if FRONTIERTD_URP
+#if TDFENDE_URP
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-namespace FrontierTD.EditorTools
+namespace TDFende.EditorTools
 {
     [InitializeOnLoad]
     static class UrpAutoSetup
@@ -30,11 +30,11 @@ namespace FrontierTD.EditorTools
                 GraphicsSettings.defaultRenderPipeline = pipeline;
                 QualitySettings.renderPipeline = pipeline;
                 AssetDatabase.SaveAssets();
-                Debug.Log("[FrontierTD] URP ativado automaticamente.");
+                Debug.Log("[TDFende] URP ativado automaticamente.");
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning($"[FrontierTD] Não consegui ativar o URP sozinho ({e.Message}). " +
+                Debug.LogWarning($"[TDFende] Não consegui ativar o URP sozinho ({e.Message}). " +
                                  "O jogo roda no Built-in mesmo assim.");
             }
         }

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Desenha o território como um mesh único gerado em código:
@@ -31,14 +31,14 @@ namespace FrontierTD
 
             // TODO(build): Shader.Find sofre stripping em builds — quando formos buildar,
             // referenciar via material asset ou Always Included Shaders.
-            var shader = Shader.Find("FrontierTD/TerritoryOverlay");
+            var shader = Shader.Find("TDFende/TerritoryOverlay");
             if (shader != null)
             {
                 mr.sharedMaterial = new Material(shader);
             }
             else
             {
-                Debug.LogWarning("[FrontierTD] Shader da fronteira não encontrado; usando material opaco.");
+                Debug.LogWarning("[TDFende] Shader da fronteira não encontrado; usando material opaco.");
                 mr.sharedMaterial = MaterialFactory.Get(Palette.TerritoryEdge);
             }
         }

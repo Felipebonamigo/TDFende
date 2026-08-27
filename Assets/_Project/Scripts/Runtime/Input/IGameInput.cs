@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Abstração de input: o jogo consome intenções, nunca cliques ou teclas diretamente.

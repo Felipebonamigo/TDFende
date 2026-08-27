@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Materiais placeholder por cor, criados em runtime.

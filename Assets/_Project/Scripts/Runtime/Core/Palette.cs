@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Paleta única do jogo — fonte da verdade para TODA cor.

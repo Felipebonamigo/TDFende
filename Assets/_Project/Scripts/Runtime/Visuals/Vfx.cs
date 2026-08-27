@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Efeitos de partícula construídos em código, um ParticleSystem por tipo.
@@ -92,7 +92,7 @@ namespace FrontierTD
             pr.renderMode = ParticleSystemRenderMode.Billboard;
             pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             pr.receiveShadows = false;
-            var shader = Shader.Find("FrontierTD/TerritoryOverlay");
+            var shader = Shader.Find("TDFende/TerritoryOverlay");
             pr.sharedMaterial = shader != null
                 ? new Material(shader)
                 : MaterialFactory.Get(color);

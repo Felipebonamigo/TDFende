@@ -1,6 +1,6 @@
 {
-    "name": "FrontierTD.Runtime",
-    "rootNamespace": "FrontierTD",
+    "name": "TDFende.Runtime",
+    "rootNamespace": "TDFende",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

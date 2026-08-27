@@ -1,13 +1,13 @@
 // Só compila enquanto o URP ainda NÃO está no projeto (o define vem do asmdef).
 // Na primeira abertura, instala o pacote na versão que o editor recomenda —
 // depois disso este arquivo inteiro deixa de existir para o compilador.
-#if !FRONTIERTD_URP
+#if !TDFENDE_URP
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
-namespace FrontierTD.EditorTools
+namespace TDFende.EditorTools
 {
     [InitializeOnLoad]
     static class PackageBootstrap
@@ -16,7 +16,7 @@ namespace FrontierTD.EditorTools
 
         static PackageBootstrap()
         {
-            Debug.Log("[FrontierTD] Instalando o URP automaticamente (primeira abertura)...");
+            Debug.Log("[TDFende] Instalando o URP automaticamente (primeira abertura)...");
             _request = Client.Add("com.unity.render-pipelines.universal");
             EditorApplication.update += Poll;
         }
@@ -27,9 +27,9 @@ namespace FrontierTD.EditorTools
             EditorApplication.update -= Poll;
 
             if (_request.Status == StatusCode.Success)
-                Debug.Log($"[FrontierTD] URP {_request.Result.version} instalado. O projeto vai recompilar.");
+                Debug.Log($"[TDFende] URP {_request.Result.version} instalado. O projeto vai recompilar.");
             else
-                Debug.LogWarning($"[FrontierTD] Falha ao instalar o URP: {_request.Error?.message}. " +
+                Debug.LogWarning($"[TDFende] Falha ao instalar o URP: {_request.Error?.message}. " +
                                  "Sem problema — o jogo roda no pipeline Built-in mesmo assim.");
         }
     }

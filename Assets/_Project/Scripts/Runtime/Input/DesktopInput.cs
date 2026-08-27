@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>Implementação desktop: mouse + teclado (WASD/setas, scroll, botão do meio).</summary>
     public class DesktopInput : IGameInput

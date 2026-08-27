@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Campo de fluxo: custo integrado (Dijkstra a partir da base) + direção por célula.

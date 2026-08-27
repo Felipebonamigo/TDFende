@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// HUD provisório via OnGUI — zero setup de cena, zero canvas.

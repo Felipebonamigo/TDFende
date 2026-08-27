@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Cria o jogo em QUALQUER cena ao dar Play — sem prefabs, sem cena montada à mão.
@@ -12,7 +12,7 @@ namespace FrontierTD
         static void Boot()
         {
             if (Object.FindFirstObjectByType<GameController>() != null) return;
-            new GameObject("== FrontierTD ==").AddComponent<GameController>();
+            new GameObject("== TDFende ==").AddComponent<GameController>();
         }
     }
 }

@@ -1,24 +1,23 @@
 {
-    "name": "FrontierTD.Urp",
-    "rootNamespace": "FrontierTD.Urp",
+    "name": "TDFende.Editor",
+    "rootNamespace": "TDFende.EditorTools",
     "references": [
-        "Unity.RenderPipelines.Universal.Runtime",
-        "Unity.RenderPipelines.Core.Runtime"
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [
-        "FRONTIERTD_URP"
-    ],
+    "defineConstraints": [],
     "versionDefines": [
         {
             "name": "com.unity.render-pipelines.universal",
             "expression": "17",
-            "define": "FRONTIERTD_URP"
+            "define": "TDFENDE_URP"
         }
     ],
     "noEngineReferences": false

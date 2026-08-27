@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>Torre: mira no inimigo mais próximo dentro do alcance e atira projéteis do pool.</summary>
     public class Tower : MonoBehaviour

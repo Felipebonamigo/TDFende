@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace FrontierTD
+namespace TDFende
 {
     /// <summary>
     /// Câmera RTS: pan com WASD/setas ou arrastando com o botão do meio, zoom no scroll.
