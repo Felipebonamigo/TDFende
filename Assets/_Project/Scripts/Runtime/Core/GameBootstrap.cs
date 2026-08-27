@@ -12,7 +12,9 @@ namespace TDFende
         static void Boot()
         {
             if (Object.FindFirstObjectByType<GameController>() != null) return;
-            new GameObject("== TDFende ==").AddComponent<GameController>();
+            if (Object.FindFirstObjectByType<TowerWarsController>() != null) return;
+            if (Object.FindFirstObjectByType<ModeSelect>() != null) return;
+            new GameObject("== TDFende ==").AddComponent<ModeSelect>();
         }
     }
 }

@@ -234,6 +234,33 @@ class Program
         Advance(fly, 60f);
         Check(fly.KilledByAttrition == 0, "Contra-jogo: Planador atravessa o território sem sofrer atrito");
 
+        // ---------- contrato de leitura da vista ----------
+        // A camada Unity desenha iterando compartimentos; se esta contagem divergir,
+        // aparecem inimigos fantasma na tela sem nenhum teste reclamar.
+        var viewLane = new LaneSim(24, 16);
+        var viewFeeder = new LaneSim(24, 16);
+        viewFeeder.DebugGrantGold(3000);
+        for (int i = 0; i < 5; i++) viewFeeder.TrySend(i % SendCatalog.Count, viewLane, rng);
+        Advance(viewLane, 2f);
+
+        int seen = 0;
+        bool hpCoerente = true;
+        for (int s = 0; s < viewLane.EnemySlotCount; s++)
+        {
+            if (!viewLane.TryGetEnemy(s, out var ev)) continue;
+            seen++;
+            if (ev.MaxHp <= 0f || ev.Hp > ev.MaxHp) hpCoerente = false;
+        }
+        Check(seen > 0 && hpCoerente, "Vista: todo inimigo exposto tem vida coerente");
+        Check(seen == viewLane.EnemiesAlive,
+            $"Vista: compartimentos ativos batem com EnemiesAlive ({seen} vs {viewLane.EnemiesAlive})");
+
+        viewLane.TryBuildTower(new Vector2Int(9, 8));
+        Check(viewLane.TowerCount == 1 && viewLane.TowerCell(0) == new Vector2Int(9, 8)
+              && viewLane.TowerLevel(0) == 1, "Vista: torre exposta com célula e nível corretos");
+        Check(viewLane.Map.CellToWorld(viewLane.GoalCell) == viewLane.GoalWorld,
+            "Vista: GoalWorld corresponde a GoalCell");
+
         // ---------- upgrade de torre ----------
         var up = new LaneSim(24, 16);
         up.DebugGrantGold(5000);

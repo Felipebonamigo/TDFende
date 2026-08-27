@@ -433,6 +433,26 @@ namespace TDFende
             _enemyCount--;
         }
 
+        // ---------------- leitura para a VISTA ----------------
+        // A camada Unity desenha a partir daqui em vez de manter estado próprio:
+        // uma fonte da verdade só, e o que aparece na tela é o que a simulação diz.
+
+        /// <summary>Número de compartimentos de inimigo (nem todos ativos). Iterar com TryGetEnemy.</summary>
+        public int EnemySlotCount => _enemies.Length;
+
+        /// <summary>Cópia do inimigo naquele compartimento; false se estiver vazio.</summary>
+        public bool TryGetEnemy(int slot, out SimEnemy enemy)
+        {
+            enemy = _enemies[slot];
+            return enemy.Active;
+        }
+
+        public Vector2Int TowerCell(int index) => _towers[index].Cell;
+        public int TowerLevel(int index) => _towers[index].Level;
+
+        public Vector2Int GoalCell => _goalCell;
+        public Vector3 GoalWorld => _goalWorld;
+
         /// <summary>Soma de HP dos inimigos vivos — leitura de ameaça para a IA e para o HUD.</summary>
         public float ThreatHp()
         {

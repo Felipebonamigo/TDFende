@@ -20,9 +20,15 @@ namespace TDFende
         readonly List<Color> _colors = new List<Color>();
         readonly List<int> _tris = new List<int>();
 
-        public TerritoryRenderer()
+        /// <param name="parent">
+        /// Opcional. No Tower Wars cada lane vive sob um pai deslocado, e o mesh é
+        /// construído em coordenadas locais do grid — sem isso as duas lanes se
+        /// desenhariam uma em cima da outra.
+        /// </param>
+        public TerritoryRenderer(Transform parent = null)
         {
             var go = new GameObject("Fronteira");
+            if (parent != null) go.transform.SetParent(parent, false);
             _mesh = new Mesh { name = "TerritoryMesh" };
             go.AddComponent<MeshFilter>().sharedMesh = _mesh;
             var mr = go.AddComponent<MeshRenderer>();

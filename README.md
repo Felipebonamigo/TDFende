@@ -12,6 +12,12 @@ Projeto-treino antes do RTS — alvo: Steam, com arquitetura mobile-ready desde 
    (acompanhe as mensagens `[TDFende]` no Console).
 4. Aperte **Play**. Não precisa abrir cena nenhuma — o jogo se monta sozinho em qualquer cena vazia.
 
+Aparece um seletor com dois modos:
+
+- **TD clássico** — uma lane, ondas infinitas (a fase 0).
+- **Tower Wars** — sua lane contra a da IA, em três dificuldades. Você defende **e** compra
+  inimigos para mandar na lane dela; cada envio sobe a sua renda para sempre.
+
 ## Controles
 
 | Ação | Controle |
@@ -24,6 +30,10 @@ Projeto-treino antes do RTS — alvo: Steam, com arquitetura mobile-ready desde 
 
 O fantasma verde/vermelho mostra onde pode construir. Não dá para murar o caminho por
 completo — o jogo bloqueia a torre que fecharia a última passagem.
+
+No **Tower Wars**, a sua lane é a de baixo (mais perto da câmera) e a da IA é a de cima.
+As teclas **1-6** (ou os botões do rodapé) compram e enviam. A altura do canhão de cada
+torre mostra o nível dela.
 
 ## O que está implementado (fase 0)
 
@@ -54,7 +64,7 @@ O visual não vem de asset comprado — vem de paleta coerente + luz + juice, tu
   se o URP existir (`defineConstraints`), então o jogo nunca quebra por causa dela
 - Feedback nos inimigos: "pop" ao nascer, flash branco no impacto, **tingimento azul sob atrito**
 
-## Modo Tower Wars (lógica pronta, sem tela ainda)
+## Modo Tower Wars
 
 O jogo mira o gênero **Line Tower Wars**: você defende a sua lane *e* compra inimigos para
 mandar na lane do adversário. Cada envio custa ouro agora e **sobe a sua renda para sempre** —
@@ -74,6 +84,12 @@ sem `Time.deltaTime`, sem `Random` do Unity). Isso dá três coisas de uma vez:
 | `LaneSim.cs` | Tabuleiro de um jogador: torres, inimigos, projéteis, fronteira, economia |
 | `TowerWarsAi.cs` | IA por utilidade (defender × atacar × esperar), 3 dificuldades |
 | `MatchSim.cs` | Partida entre dois lados, determinística por semente |
+
+A camada Unity fica em `Runtime/TowerWars/` e é só **vista**: `LaneView` lê o `LaneSim`
+todo frame e espelha na tela, sem guardar estado de jogo. Por isso a lane do adversário
+usa exatamente o mesmo código de desenho da sua — e no multiplayer ela vira só um `LaneSim`
+alimentado pela rede. O jogo roda em **passo fixo**, o mesmo do `FlowSim`: o que você joga
+é a simulação que foi balanceada com 300 partidas headless.
 
 O **Planador** existe por design: ignora o atrito. Sem ele, investir em fronteira seria vitória
 automática e o território deixaria de ser uma decisão.
