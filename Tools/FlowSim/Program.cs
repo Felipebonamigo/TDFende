@@ -344,6 +344,41 @@ class Program
             }
         }
         Check(sawAim, "Tiro: torre com inimigo no alcance reporta mira");
+
+        // A mira tem que ser ATUAL, não a do último disparo. Com a busca de alvo atrás
+        // do cooldown ela só mudava a cada 0,65s e o cano apontava para o passado.
+        var aimLane = new LaneSim(24, 16) { TrackAim = true };
+        var aimFeeder = new LaneSim(24, 16);
+        aimLane.DebugGrantGold(500);
+        aimLane.TryBuildTower(new Vector2Int(12, 8));
+        aimFeeder.DebugGrantGold(500);
+        aimFeeder.TrySend(5, aimLane, rng);
+
+        Vector3 prevAim = default;
+        bool hadPrev = false, aimMovedBetweenShots = false;
+        int shots = 0;
+        aimLane.TowerFired += _ => shots++;
+        for (int i = 0; i < 400; i++)
+        {
+            int shotsBefore = shots;
+            aimLane.Tick(TowerWarsConfig.FixedStep);
+            if (shots != shotsBefore) { hadPrev = false; continue; } // pula o tique do tiro
+            if (!aimLane.TryGetTowerAim(0, out var curAim)) { hadPrev = false; continue; }
+            if (hadPrev && (curAim - prevAim).sqrMagnitude > 1e-6f) aimMovedBetweenShots = true;
+            prevAim = curAim;
+            hadPrev = true;
+        }
+        Check(aimMovedBetweenShots, "Tiro: mira acompanha o alvo ENTRE disparos (não congela até o próximo tiro)");
+
+        // TrackAim é só custo de vista: ligar ou desligar não pode mudar a partida.
+        var trackOff = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 4242).Run();
+        var trackOnSim = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 4242);
+        trackOnSim.A.TrackAim = true;
+        trackOnSim.B.TrackAim = true;
+        var trackOn = trackOnSim.Run();
+        Check(trackOff.Winner == trackOn.Winner && trackOff.LivesA == trackOn.LivesA
+              && trackOff.LivesB == trackOn.LivesB && Math.Abs(trackOff.Seconds - trackOn.Seconds) < 0.001f,
+            "Tiro: TrackAim não altera a simulação (é só custo de vista)");
         Check(firedEvents > 0, $"Tiro: TowerFired dispara ({firedEvents}x)");
         Check(sawProjectile, "Tiro: projétil em voo é visível para a vista");
         Check(projInBounds, "Tiro: projétil desenhado cai dentro do mapa");

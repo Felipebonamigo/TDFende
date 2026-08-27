@@ -51,6 +51,8 @@ namespace TDFende
             _projectileRoot.SetParent(_root, false);
             _territory = new TerritoryRenderer(_root);
 
+            // existe uma vista: vale pagar a busca de alvo por tique para o cano acompanhar
+            _sim.TrackAim = true;
             _sim.EnemyDespawned += OnEnemyDespawned;
             _sim.TowerChanged += OnTowerChanged;
             _sim.TowerFired += OnTowerFired;
@@ -86,7 +88,7 @@ namespace TDFende
             Vfx.Instance?.Build(world);
             if (_isPlayer) Juice.Shake(0.10f);
             if (level > 1)
-                FloatingText.Instance?.Show(world + Vector3.up, $"nv {level}", Palette.TextGold);
+                FloatingText.Instance?.Show(world + Vector3.up * 1.6f, $"nível {level}", Palette.TextGold);
         }
 
         void BuildGround(Color tint)

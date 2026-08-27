@@ -146,6 +146,15 @@ namespace TDFende
         /// <summary>Ouro de graça, para montar cenário em teste e para o modo sandbox de playtest.</summary>
         public void DebugGrantGold(int amount) => Gold += amount;
 
+        /// <summary>
+        /// Manter a mira das torres viva entre disparos. É custo de VISTA: obriga a busca
+        /// de alvo a rodar todo tique em vez de só no tique do tiro, e isso triplicou o
+        /// tempo do laboratório de balanceamento quando estava sempre ligado.
+        /// O disparo não muda em nenhum dos casos, então ligar ou não é indiferente para
+        /// a simulação — e por isso fica desligado para quem só quer medir partidas.
+        /// </summary>
+        public bool TrackAim;
+
         // ---------------- construção ----------------
 
         public bool CanBuild(Vector2Int cell)
@@ -421,12 +430,19 @@ namespace TDFende
             {
                 var tw = _towers[t];
                 tw.Cooldown -= dt;
-                if (tw.Cooldown > 0f)
+
+                // Sem vista escutando, basta procurar alvo quando dá para atirar.
+                if (!TrackAim && tw.Cooldown > 0f)
                 {
                     _towers[t] = tw;
                     continue;
                 }
 
+                // Com vista, a busca de alvo roda TODO tique, não só no tique do tiro. Com ela
+                // atrás do cooldown, a mira só era atualizada a cada 0,65s: o cano
+                // apontava para onde o inimigo ESTAVA, dava um tranco a cada tiro, e
+                // o projétil saía de lado. O disparo em si continua preso ao cooldown,
+                // então o comportamento da simulação não muda — só a mira fica viva.
                 int target = -1;
                 float best = TowerWarsConfig.TowerRange * TowerWarsConfig.TowerRange;
                 for (int i = 0; i < _enemies.Length; i++)
@@ -442,21 +458,15 @@ namespace TDFende
                     }
                 }
 
-                if (target >= 0)
-                {
-                    // mira sempre que enxerga alguém, mesmo sem poder atirar ainda:
-                    // é o que faz o canhão acompanhar o inimigo em vez de saltar no tiro
-                    tw.Aim = _enemies[target].Pos;
-                    tw.HasAim = true;
+                tw.HasAim = target >= 0;
+                if (tw.HasAim) tw.Aim = _enemies[target].Pos;
 
+                if (target >= 0 && tw.Cooldown <= 0f)
+                {
                     tw.Cooldown = TowerWarsConfig.TowerCooldown;
                     var muzzle = tw.Pos + Vector3.up * 0.95f;
                     FireProjectile(target, (float)Math.Sqrt(best), TowerWarsConfig.DamageAtLevel(tw.Level), muzzle);
                     TowerFired?.Invoke(muzzle);
-                }
-                else
-                {
-                    tw.HasAim = false;
                 }
                 _towers[t] = tw;
             }

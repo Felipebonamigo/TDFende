@@ -230,9 +230,10 @@ namespace TDFende
             // ali não devia precisar lembrar de trocar de botão
             if ((_input.PlacePressed || _input.UpgradePressed) && onOwnTower)
             {
-                if (Player.TryUpgradeTowerAt(cell))
-                    FloatingText.Instance?.Show(_ghost.position + Vector3.up,
-                        $"-{_hoverUpgradeCost}", Palette.TextGold);
+                // Sem texto flutuante aqui: TryUpgradeTowerAt levanta TowerChanged e a
+                // LaneView já mostra "nv N" nesta mesma célula. Dois rótulos na mesma
+                // posição e na mesma cor viravam um borrão ilegível.
+                Player.TryUpgradeTowerAt(cell);
                 return;
             }
 
@@ -254,6 +255,9 @@ namespace TDFende
 
         void TrySelectedSend()
         {
+            // Guarda na origem: com a partida decidida, nenhum caminho deve conseguir
+            // comprar envio — nem o teclado, nem um botão que continue clicável.
+            if (Player.Dead || Foe.Dead) return;
             if (!Player.TrySend(_selectedSend, Foe, _rng)) return;
             Vfx.Instance?.Muzzle(_foeView.CellToWorld(Foe.SpawnCells[0]) + Vector3.up * 0.5f);
             FloatingText.Instance?.Show(
@@ -269,6 +273,7 @@ namespace TDFende
             // NullReference em Player.
             if (Player == null) return;
             EnsureStyles();
+            bool over = Player.Dead || Foe.Dead;
 
             GUILayout.BeginArea(InfoRect);
             GUILayout.Label($"VOCÊ   vidas {Player.Lives}   ouro {Player.Gold}   renda {Player.Income}", _label);
@@ -277,10 +282,12 @@ namespace TDFende
                             $"   torres {Player.TowerCount} (nv {Player.TotalTowerLevels})", _label);
             GUILayout.EndArea();
 
-            // painel de envios
+            // Painel de envios. Some com a partida decidida: GUI.Box não consome clique,
+            // então botão desenhado ANTES do véu de fim de jogo continuaria recebendo o
+            // clique por baixo dele.
             float w = SendButtonWidth, h = SendButtonHeight;
             float x0 = HudMargin, y0 = Screen.height - h - HudMargin;
-            for (int i = 0; i < SendCatalog.Count; i++)
+            for (int i = 0; i < SendCatalog.Count && !over; i++)
             {
                 var u = SendCatalog.Get(i);
                 bool afford = Player.CanAfford(i);
@@ -308,7 +315,7 @@ namespace TDFende
                 $"  |  clique numa torre sua: subir de nível{hover}\n" +
                 "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar", _box);
 
-            if (Player.Dead || Foe.Dead)
+            if (over)
             {
                 GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none);
                 GUI.Label(new Rect(0, Screen.height * 0.4f, Screen.width, 50),
