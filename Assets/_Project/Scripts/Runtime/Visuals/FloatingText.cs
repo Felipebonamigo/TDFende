@@ -76,7 +76,9 @@ namespace TDFende
                 var c = e.Color;
                 c.a = 1f - t * t; // segura opaco e some no fim
                 GUI.color = c;
-                GUI.Label(new Rect(sp.x - 60f, Screen.height - sp.y - 12f, 120f, 24f), e.Text, _style);
+                // 300 de largura, não 120: a mensagem mais longa ("Onda N limpa!  +25")
+                // não cabia em 120 px a 17 bold e saía cortada com reticências.
+                GUI.Label(new Rect(sp.x - 150f, Screen.height - sp.y - 12f, 300f, 24f), e.Text, _style);
             }
             GUI.color = prev;
         }

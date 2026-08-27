@@ -8,6 +8,22 @@ namespace TDFende
     /// </summary>
     public class DebugHud : MonoBehaviour
     {
+        // Medidas do HUD num lugar só, para o clique-no-mundo poder evitá-las.
+        static Rect InfoRect => new Rect(12f, 10f, 360f, 76f);
+        static Rect HelpRect => new Rect(12f, Screen.height - 128f, 500f, 116f);
+
+        /// <summary>
+        /// O clique é lido pelo Input legado, que a IMGUI não consome. Sem esta
+        /// checagem, clicar no painel de instruções constrói uma torre na célula
+        /// escondida atrás dele — cobrando o ouro e re-roteando a onda.
+        /// </summary>
+        public static bool PointerOverHud(Vector2 pointerPos)
+        {
+            // Input.mousePosition tem origem embaixo; Rect de GUI tem origem em cima
+            var p = new Vector2(pointerPos.x, Screen.height - pointerPos.y);
+            return InfoRect.Contains(p) || HelpRect.Contains(p);
+        }
+
         GameController _gc;
         GUIStyle _label;
         GUIStyle _big;
@@ -29,7 +45,7 @@ namespace TDFende
                 _box = new GUIStyle(GUI.skin.box) { fontSize = 13, alignment = TextAnchor.UpperLeft };
             }
 
-            GUILayout.BeginArea(new Rect(12, 10, 360, 120));
+            GUILayout.BeginArea(InfoRect);
             GUILayout.Label($"Vidas: {_gc.State.Lives}    Ouro: {_gc.State.Gold}", _label);
             GUILayout.Label($"Onda: {_gc.Wave}    Inimigos: {_gc.EnemiesAlive}    FPS: {_fps:0}", _label);
             if (_gc.Phase == WavePhase.Building)
@@ -38,7 +54,7 @@ namespace TDFende
                 GUILayout.Label("Onda em andamento!", _label);
             GUILayout.EndArea();
 
-            GUI.Box(new Rect(12, Screen.height - 128, 500, 116),
+            GUI.Box(HelpRect,
                 $"Clique esquerdo: construir torre ({GameConfig.TowerCost} de ouro)\n" +
                 $"Torres projetam FRONTEIRA: inimigos dentro dela sofrem {GameConfig.AttritionDps:0} de dano/s\n" +
                 "Inimigo ficando AZUL = sendo drenado.  Número ciano = morreu de atrito, dourado = de tiro\n" +

@@ -40,6 +40,12 @@ namespace TDFende
                     target = e;
                 }
             }
+            // O coice tem que voltar mesmo sem alvo: com este decaimento depois do
+            // early-return, a cabeça congelava recuada no último tiro da onda e ficava
+            // torta os 8 segundos inteiros até o próximo inimigo aparecer.
+            _recoil = Mathf.Max(0f, _recoil - 6f * Time.deltaTime);
+            _head.localPosition = _headRest - _head.localRotation * Vector3.forward * (_recoil * 0.12f);
+
             if (target == null) return;
 
             var look = target.transform.position - _head.position;
@@ -55,12 +61,8 @@ namespace TDFende
                 p.transform.position = muzzle;
                 p.Init(target, GameConfig.TowerDamage, _release);
                 Vfx.Instance?.Muzzle(muzzle);
-                _recoil = 1f;
+                _recoil = 1f; // coice: a cabeça recua e volta — o tiro ganha peso
             }
-
-            // coice: a cabeça recua e volta — o tiro ganha peso
-            _recoil = Mathf.Max(0f, _recoil - 6f * Time.deltaTime);
-            _head.localPosition = _headRest - _head.localRotation * Vector3.forward * (_recoil * 0.12f);
         }
     }
 }

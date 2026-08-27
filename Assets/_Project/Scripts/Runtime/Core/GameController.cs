@@ -87,8 +87,13 @@ namespace TDFende
         {
             _input.Tick();
             float dt = Time.deltaTime;
-            Juice.Tick(dt);
-            _cameraRig.Tick(_input, dt);
+
+            // Câmera e shake em tempo NÃO-escalado: o fim de jogo congela a simulação
+            // com timeScale = 0, e com dt escalado o tremor ficaria travado na tela e a
+            // câmera pararia de responder justamente quando dá vontade de olhar o mapa.
+            float uiDt = Time.unscaledDeltaTime;
+            Juice.Tick(uiDt);
+            _cameraRig.Tick(_input, uiDt);
             PulseBase();
 
             if (_input.RestartPressed)
@@ -159,6 +164,21 @@ namespace TDFende
             e.Init(Flow, Territory, _goalWorld, hp, speed, _onEnemyDespawn);
         }
 
+        /// <summary>
+        /// Congela a partida. Enemy e Tower são MonoBehaviours com Update próprio: sem
+        /// isto, a onda continuava andando por baixo do "FIM DE JOGO" — a tela tremia a
+        /// cada vazamento, chovia "-1 vida" com o contador já em zero, e o ouro subia.
+        /// </summary>
+        void EndGame()
+        {
+            Phase = WavePhase.GameOver;
+            Time.timeScale = 0f;
+        }
+
+        // Time.timeScale é estado GLOBAL: se este objeto morrer congelado, leva o
+        // próximo modo junto. Sempre devolver ao sair.
+        void OnDisable() => Time.timeScale = 1f;
+
         void OnEnemyDespawn(Enemy e, DespawnReason reason)
         {
             var pos = e.transform.position;
@@ -170,7 +190,7 @@ namespace TDFende
                 Vfx.Instance?.Leak(pos);
                 Juice.Shake(0.55f); // só aqui: o evento que dói merece tremer a tela
                 _floatingText.Show(pos + Vector3.up * 0.8f, "-1 vida", Palette.TextDanger);
-                if (State.GameOver) Phase = WavePhase.GameOver;
+                if (State.GameOver) EndGame();
                 return;
             }
 
@@ -240,6 +260,7 @@ namespace TDFende
             Wave = 0;
             Phase = WavePhase.Building;
             PhaseTimer = GameConfig.FirstWaveDelay;
+            Time.timeScale = 1f; // sai do congelamento do fim de jogo
         }
 
         // base "respira": mostra que está viva sem custar nada

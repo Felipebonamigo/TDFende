@@ -22,6 +22,20 @@ namespace TDFende.EditorTools
                     AssetDatabase.CreateFolder("Assets", "Settings");
 
                 var renderer = ScriptableObject.CreateInstance<UniversalRendererData>();
+
+                // SEM ISTO, o URP desliga TODO o pós-processamento — em silêncio.
+                // O campo nasce nulo, não tem [Reload] (então o ResourceReloader do URP não
+                // o conserta), e o UniversalRenderer trata nulo como "pós-processamento
+                // desativado": nem bloom, nem tonemap, nem vinheta, sem um aviso sequer.
+                // O PostFx montaria o VolumeProfile inteiro e nada apareceria na tela.
+                // GetDefaultPostProcessData() é internal do pacote, então carregamos o
+                // mesmo asset que ele usa, pelo caminho.
+                renderer.postProcessData = AssetDatabase.LoadAssetAtPath<PostProcessData>(
+                    "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset");
+                if (renderer.postProcessData == null)
+                    Debug.LogWarning("[TDFende] PostProcessData não encontrado: bloom, vinheta e " +
+                                     "tonemap ficarão desligados. O jogo roda, só fica mais cru.");
+
                 AssetDatabase.CreateAsset(renderer, "Assets/Settings/URP_Renderer.asset");
 
                 var pipeline = UniversalRenderPipelineAsset.Create(renderer);

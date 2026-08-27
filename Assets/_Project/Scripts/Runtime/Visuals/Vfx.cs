@@ -56,7 +56,12 @@ namespace TDFende
 
             var main = ps.main;
             main.duration = 1f;
-            main.loop = false;
+            // loop = true de propósito, mesmo sem emissão automática: um sistema NÃO-cíclico
+            // atinge o estado Stopped ao fim da duração (sem partículas, isso é 1s depois do
+            // boot), e Emit() num sistema parado não simula nada. Como o primeiro efeito do
+            // jogo só acontece muitos segundos depois, praticamente TODAS as partículas
+            // caíam num sistema morto. Cíclico + emission desligada = fica vivo e ocioso.
+            main.loop = true;
             main.playOnAwake = false;
             main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime * 0.6f, lifetime);
             main.startSpeed = new ParticleSystem.MinMaxCurve(speed * 0.4f, speed);

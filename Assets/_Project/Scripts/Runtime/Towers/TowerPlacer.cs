@@ -32,6 +32,12 @@ namespace TDFende
 
         public void Tick(IGameInput input, Camera cam)
         {
+            if (DebugHud.PointerOverHud(input.PointerPos))
+            {
+                Hide();
+                return;
+            }
+
             var ray = cam.ScreenPointToRay(input.PointerPos);
             if (!GroundPlane.Raycast(ray, out float dist))
             {
