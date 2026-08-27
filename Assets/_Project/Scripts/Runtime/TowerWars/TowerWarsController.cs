@@ -22,6 +22,7 @@ namespace TDFende
         LaneView _playerView;
         LaneView _foeView;
         TowerWarsAi _foeAi;
+        FloatingText _floatingText;
         Random _rng;
 
         IGameInput _input;
@@ -39,6 +40,37 @@ namespace TDFende
 
         static readonly Plane GroundPlane = new Plane(Vector3.up, Vector3.zero);
 
+        // Medidas do HUD num lugar só: OnGUI desenha com elas e o clique-no-mundo as
+        // consulta para não construir por baixo da interface.
+        const float HudMargin = 12f;
+        const float SendButtonWidth = 150f;
+        const float SendButtonHeight = 62f;
+        const float SendButtonGap = 6f;
+
+        /// <summary>
+        /// Retângulos do HUD em coordenadas de GUI (origem no canto superior esquerdo).
+        /// </summary>
+        Rect SendPanelRect =>
+            new Rect(HudMargin, Screen.height - SendButtonHeight - HudMargin,
+                SendCatalog.Count * (SendButtonWidth + SendButtonGap), SendButtonHeight);
+
+        Rect HelpBoxRect =>
+            new Rect(HudMargin, Screen.height - SendButtonHeight - HudMargin - 58f, 640f, 50f);
+
+        Rect InfoRect => new Rect(HudMargin, 10f, 420f, 76f);
+
+        /// <summary>
+        /// O clique do mouse é lido pelo Input legado, que a IMGUI não consome — sem esta
+        /// checagem, clicar num botão de envio TAMBÉM constrói uma torre na célula embaixo
+        /// dele, cobrando as duas coisas de um clique só.
+        /// </summary>
+        bool PointerOverHud()
+        {
+            // Input.mousePosition tem origem embaixo; Rect de GUI tem origem em cima
+            var p = new Vector2(_input.PointerPos.x, Screen.height - _input.PointerPos.y);
+            return SendPanelRect.Contains(p) || HelpBoxRect.Contains(p) || InfoRect.Contains(p);
+        }
+
         void Start()
         {
             var cam = Camera.main;
@@ -49,28 +81,48 @@ namespace TDFende
                 go.AddComponent<AudioListener>();
             }
 
+            // efeitos: sem estes dois, todo Vfx.Instance?. e FloatingText.Instance?.
+            // deste modo vira no-op silencioso e o jogo fica sem nenhum feedback
+            new Vfx();
+            _floatingText = gameObject.AddComponent<FloatingText>();
+            _floatingText.Init(cam);
+
             NewMatch();
 
             _input = new DesktopInput();
-            float span = Player.Map.WorldSize.z + LaneGap;
-            _cameraRig = new CameraRigDriver(cam, Vector3.zero, new Vector3(Player.Map.WorldSize.x, 0f, span * 2f));
             SceneAmbience.Apply(cam);
             BuildGhost();
+
+            // as duas lanes empilhadas ocupam bem mais em Z do que uma só; sem esta
+            // folga a câmera nasceria enquadrando apenas a sua metade do tabuleiro
+            float totalZ = Player.Map.WorldSize.z * 2f + LaneGap;
+            _cameraRig = new CameraRigDriver(cam, Vector3.zero,
+                new Vector3(Player.Map.WorldSize.x, 0f, totalZ), totalZ * 0.95f);
         }
 
         void NewMatch()
         {
-            foreach (Transform child in transform) Destroy(child.gameObject);
-            if (_playerView != null) Destroy(_playerView.Root.gameObject);
-            if (_foeView != null) Destroy(_foeView.Root.gameObject);
+            if (_playerView != null)
+            {
+                _playerView.Dispose(); // solta os eventos antes de destruir os objetos
+                Destroy(_playerView.Root.gameObject);
+            }
+            if (_foeView != null)
+            {
+                _foeView.Dispose();
+                Destroy(_foeView.Root.gameObject);
+            }
+            Juice.Reset();
+            _floatingText?.Clear();
 
             _rng = new Random(Seed);
             Player = new LaneSim(GameConfig.GridWidth, GameConfig.GridHeight);
             Foe = new LaneSim(GameConfig.GridWidth, GameConfig.GridHeight);
 
             float off = (Player.Map.WorldSize.z + LaneGap) * 0.5f;
-            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador", Color.white);
-            _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario", new Color(0.82f, 0.82f, 0.9f));
+            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador", Color.white, true);
+            _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario",
+                new Color(0.82f, 0.82f, 0.9f), false);
 
             _foeAi = new TowerWarsAi(Foe, Player, Difficulty, _rng);
             _accumulator = 0f;
@@ -131,6 +183,12 @@ namespace TDFende
 
         void HandleBuildInput()
         {
+            if (PointerOverHud())
+            {
+                _ghost.gameObject.SetActive(false);
+                return;
+            }
+
             var ray = _cameraRig.Camera.ScreenPointToRay(_input.PointerPos);
             if (!GroundPlane.Raycast(ray, out float dist))
             {
@@ -180,24 +238,29 @@ namespace TDFende
 
         void OnGUI()
         {
+            // O ModeSelect cria este componente DE DENTRO do próprio OnGUI dele, então
+            // ainda restam passes de GUI neste mesmo frame — e Start só roda na fase de
+            // Update, depois. Sem esta guarda, o primeiro clique no menu estoura
+            // NullReference em Player.
+            if (Player == null) return;
             EnsureStyles();
 
-            GUILayout.BeginArea(new Rect(12, 10, 420, 120));
+            GUILayout.BeginArea(InfoRect);
             GUILayout.Label($"VOCÊ   vidas {Player.Lives}   ouro {Player.Gold}   renda {Player.Income}", _label);
             GUILayout.Label($"IA ({Difficulty.Name})   vidas {Foe.Lives}   renda {Foe.Income}", _label);
             GUILayout.Label($"tempo {Player.MatchTime:0}s   escala dos envios x{Player.SendScale:0.0}", _label);
             GUILayout.EndArea();
 
             // painel de envios
-            float w = 150f, h = 62f;
-            float x0 = 12f, y0 = Screen.height - h - 12f;
+            float w = SendButtonWidth, h = SendButtonHeight;
+            float x0 = HudMargin, y0 = Screen.height - h - HudMargin;
             for (int i = 0; i < SendCatalog.Count; i++)
             {
                 var u = SendCatalog.Get(i);
                 bool afford = Player.CanAfford(i);
                 var prev = GUI.color;
                 GUI.color = afford ? Color.white : new Color(1f, 1f, 1f, 0.45f);
-                var r = new Rect(x0 + i * (w + 6f), y0, w, h);
+                var r = new Rect(x0 + i * (w + SendButtonGap), y0, w, h);
                 if (GUI.Button(r, $"[{i + 1}] {u.Name}\n{u.Cost} ouro  +{u.IncomeBonus} renda", _button) && afford)
                 {
                     _selectedSend = i;
@@ -206,7 +269,7 @@ namespace TDFende
                 GUI.color = prev;
             }
 
-            GUI.Box(new Rect(12, y0 - 58f, 640, 50f),
+            GUI.Box(HelpBoxRect,
                 $"Clique esquerdo na SUA lane (perto): construir torre ({TowerWarsConfig.TowerCost} ouro)\n" +
                 "1-6 ou os botões: enviar inimigo para a lane da IA (a de cima)  |  R: reiniciar", _box);
 

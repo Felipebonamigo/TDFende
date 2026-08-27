@@ -234,6 +234,81 @@ class Program
         Advance(fly, 60f);
         Check(fly.KilledByAttrition == 0, "Contra-jogo: Planador atravessa o território sem sofrer atrito");
 
+        // ---------- eventos que alimentam o feedback visual ----------
+        // A vista só desenha explosão/tremor porque estes eventos disparam. Se pararem,
+        // o jogo fica mudo e nenhum outro teste percebe.
+        var evLane = new LaneSim(24, 16);
+        var evFeeder = new LaneSim(24, 16);
+        int evTower = 0, evAttrition = 0, evLeak = 0, evUpgrade = 0;
+        var evPositions = new List<Vector3>();
+
+        evLane.EnemyDespawned += (pos, reason) =>
+        {
+            evPositions.Add(pos);
+            if (reason == DespawnReason.KilledByTower) evTower++;
+            else if (reason == DespawnReason.KilledByAttrition) evAttrition++;
+            else evLeak++;
+        };
+        evLane.TowerChanged += (pos, level) => { if (level > 1) evUpgrade++; };
+
+        evFeeder.DebugGrantGold(4000);
+        evFeeder.TrySend(0, evLane, rng);            // sem defesa ainda: tem que vazar
+        Advance(evLane, 20f);
+        Check(evLeak == 1 && evTower == 0 && evAttrition == 0,
+            $"Eventos: vazamento dispara uma vez ({evLeak})");
+        Check(evLane.TotalLeaked == evLeak, "Eventos: contagem de vazamento bate com o placar");
+
+        evLane.DebugGrantGold(4000);
+        for (int x = 6; x <= 16; x += 2) evLane.TryBuildTower(new Vector2Int(x, 8));
+        Check(evLane.TryUpgradeCheapestTower() && evUpgrade == 1,
+            "Eventos: upgrade dispara TowerChanged com nível > 1");
+
+        for (int i = 0; i < 8; i++) evFeeder.TrySend(1, evLane, rng);
+        Advance(evLane, 40f);
+        Check(evTower > 0, $"Eventos: morte por tiro dispara ({evTower})");
+        Check(evAttrition > 0, $"Eventos: morte por atrito dispara ({evAttrition})");
+        Check(evTower + evAttrition == evLane.KilledByTower + evLane.KilledByAttrition,
+            "Eventos: total de mortes bate com o placar");
+        bool posInBounds = true;
+        foreach (var p in evPositions)
+        {
+            var evCell = evLane.Map.WorldToCell(p);
+            if (!evLane.Map.InBounds(evCell.x, evCell.y)) posInBounds = false;
+        }
+        Check(posInBounds, "Eventos: posição reportada cai dentro do mapa (a vista desenha ali)");
+
+        // ---------- tiro visível: mira e projétil em voo ----------
+        // A vista não tem como desenhar tiro nenhum sem estas duas leituras. Sem elas,
+        // a torre mata mas parece desligada.
+        var shootLane = new LaneSim(24, 16);
+        var shootFeeder = new LaneSim(24, 16);
+        shootLane.DebugGrantGold(500);
+        shootLane.TryBuildTower(new Vector2Int(12, 8));
+        Check(!shootLane.TryGetTowerAim(0, out _), "Tiro: torre sem alvo não tem mira");
+
+        int firedEvents = 0;
+        shootLane.TowerFired += _ => firedEvents++;
+        shootFeeder.DebugGrantGold(500);
+        shootFeeder.TrySend(5, shootLane, rng); // Colosso: aguenta vários tiros
+
+        bool sawAim = false, sawProjectile = false, projInBounds = true;
+        for (int i = 0; i < 400; i++)
+        {
+            shootLane.Tick(TowerWarsConfig.FixedStep);
+            if (shootLane.TryGetTowerAim(0, out _)) sawAim = true;
+            for (int s = 0; s < shootLane.ProjectileSlotCount; s++)
+            {
+                if (!shootLane.TryGetProjectile(s, out var pp)) continue;
+                sawProjectile = true;
+                var pc = shootLane.Map.WorldToCell(pp);
+                if (!shootLane.Map.InBounds(pc.x, pc.y)) projInBounds = false;
+            }
+        }
+        Check(sawAim, "Tiro: torre com inimigo no alcance reporta mira");
+        Check(firedEvents > 0, $"Tiro: TowerFired dispara ({firedEvents}x)");
+        Check(sawProjectile, "Tiro: projétil em voo é visível para a vista");
+        Check(projInBounds, "Tiro: projétil desenhado cai dentro do mapa");
+
         // ---------- contrato de leitura da vista ----------
         // A camada Unity desenha iterando compartimentos; se esta contagem divergir,
         // aparecem inimigos fantasma na tela sem nenhum teste reclamar.

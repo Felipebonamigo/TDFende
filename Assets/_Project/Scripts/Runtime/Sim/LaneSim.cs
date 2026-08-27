@@ -37,6 +37,8 @@ namespace TDFende
             public Vector3 Pos;
             public float Cooldown;
             public int Level;
+            public Vector3 Aim;      // último alvo visto; a vista gira o canhão para cá
+            public bool HasAim;
         }
 
         struct SimProjectile
@@ -46,6 +48,8 @@ namespace TDFende
             public int TargetGeneration;
             public float Damage;
             public float TimeLeft;
+            public float TotalTime;  // com Origin, permite à vista desenhar o tiro em voo
+            public Vector3 Origin;
         }
 
         // ---- estado do tabuleiro ----
@@ -86,6 +90,20 @@ namespace TDFende
 
         /// <summary>Compras por tipo de envio. Se um tipo domina, o roster é decorativo.</summary>
         public readonly int[] SendsByType = new int[SendCatalog.Count];
+
+        /// <summary>
+        /// Disparado quando um inimigo sai do mapa, com onde e por quê.
+        /// A simulação não sabe o que é partícula: quem escuta decide se desenha.
+        /// É assim que a vista ganha feedback sem a lógica depender do Unity — e
+        /// é o mesmo gancho que a rede vai usar para replicar eventos.
+        /// </summary>
+        public event System.Action<Vector3, DespawnReason> EnemyDespawned;
+
+        /// <summary>Disparado quando uma torre é construída ou sobe de nível.</summary>
+        public event System.Action<Vector3, int> TowerChanged;
+
+        /// <summary>Disparado a cada tiro, na boca do cano — a vista faz o clarão.</summary>
+        public event System.Action<Vector3> TowerFired;
 
         public int TowerCount => _towers.Count;
         public int EnemiesAlive => _enemyCount;
@@ -162,6 +180,7 @@ namespace TDFende
             Map.SetBlocked(cell, true);
             _towerCells.Add(cell);
             _towers.Add(new SimTower { Cell = cell, Pos = Map.CellToWorld(cell), Cooldown = 0f, Level = 1 });
+            TowerChanged?.Invoke(Map.CellToWorld(cell), 1);
 
             Flow.Rebuild(_goalCell);
             Territory.Rebuild(_towerCells, TowerWarsConfig.BorderRadius);
@@ -203,6 +222,7 @@ namespace TDFende
             t.Level++;
             _towers[pick] = t;
             TotalUpgrades++;
+            TowerChanged?.Invoke(t.Pos, t.Level);
             return true;
         }
 
@@ -332,6 +352,7 @@ namespace TDFende
                     {
                         Gold += _enemies[i].Bounty;
                         KilledByAttrition++;
+                        EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.KilledByAttrition);
                         Kill(i);
                         continue;
                     }
@@ -343,6 +364,7 @@ namespace TDFende
                 {
                     Lives--;
                     TotalLeaked++;
+                    EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.Leaked);
                     Kill(i);
                 }
             }
@@ -377,14 +399,25 @@ namespace TDFende
 
                 if (target >= 0)
                 {
+                    // mira sempre que enxerga alguém, mesmo sem poder atirar ainda:
+                    // é o que faz o canhão acompanhar o inimigo em vez de saltar no tiro
+                    tw.Aim = _enemies[target].Pos;
+                    tw.HasAim = true;
+
                     tw.Cooldown = TowerWarsConfig.TowerCooldown;
-                    FireProjectile(target, (float)Math.Sqrt(best), TowerWarsConfig.DamageAtLevel(tw.Level));
+                    var muzzle = tw.Pos + Vector3.up * 0.95f;
+                    FireProjectile(target, (float)Math.Sqrt(best), TowerWarsConfig.DamageAtLevel(tw.Level), muzzle);
+                    TowerFired?.Invoke(muzzle);
+                }
+                else
+                {
+                    tw.HasAim = false;
                 }
                 _towers[t] = tw;
             }
         }
 
-        void FireProjectile(int targetSlot, float distance, float damage)
+        void FireProjectile(int targetSlot, float distance, float damage, Vector3 origin)
         {
             int slot = -1;
             for (int i = 0; i < _projectiles.Length; i++)
@@ -399,9 +432,11 @@ namespace TDFende
             _projectiles[slot].TargetSlot = targetSlot;
             _projectiles[slot].TargetGeneration = _enemies[targetSlot].Generation;
             _projectiles[slot].Damage = damage;
+            _projectiles[slot].Origin = origin;
             // tempo de voo importa: dano em trânsito para um alvo que já morreu é DPS jogado fora,
             // e é isso que faz torre empilhada render menos do que a conta ingênua diz.
-            _projectiles[slot].TimeLeft = distance / TowerWarsConfig.ProjectileSpeed;
+            _projectiles[slot].TimeLeft = _projectiles[slot].TotalTime =
+                Math.Max(distance / TowerWarsConfig.ProjectileSpeed, 0.0001f);
         }
 
         void TickProjectiles(float dt)
@@ -422,6 +457,7 @@ namespace TDFende
                 {
                     Gold += _enemies[s].Bounty;
                     KilledByTower++;
+                    EnemyDespawned?.Invoke(_enemies[s].Pos, DespawnReason.KilledByTower);
                     Kill(s);
                 }
             }
@@ -449,6 +485,38 @@ namespace TDFende
 
         public Vector2Int TowerCell(int index) => _towers[index].Cell;
         public int TowerLevel(int index) => _towers[index].Level;
+
+        /// <summary>Para onde a torre está mirando; false se não viu ninguém no último tiro.</summary>
+        public bool TryGetTowerAim(int index, out Vector3 aim)
+        {
+            aim = _towers[index].Aim;
+            return _towers[index].HasAim;
+        }
+
+        public int ProjectileSlotCount => _projectiles.Length;
+
+        /// <summary>
+        /// Posição do tiro em voo, interpolada entre a boca do cano e o alvo.
+        /// A simulação resolve o acerto por tempo, não por posição — isto existe só
+        /// para a vista ter o que desenhar entre a torre e o inimigo.
+        /// </summary>
+        public bool TryGetProjectile(int slot, out Vector3 pos)
+        {
+            pos = default;
+            if (!_projectiles[slot].Active) return false;
+
+            int target = _projectiles[slot].TargetSlot;
+            var dest = _enemies[target].Active
+                       && _enemies[target].Generation == _projectiles[slot].TargetGeneration
+                ? _enemies[target].Pos
+                : _projectiles[slot].Origin; // alvo já morreu: some no lugar
+
+            float t = 1f - _projectiles[slot].TimeLeft / _projectiles[slot].TotalTime;
+            if (t < 0f) t = 0f;
+            else if (t > 1f) t = 1f;
+            pos = _projectiles[slot].Origin + (dest - _projectiles[slot].Origin) * t;
+            return true;
+        }
 
         public Vector2Int GoalCell => _goalCell;
         public Vector3 GoalWorld => _goalWorld;

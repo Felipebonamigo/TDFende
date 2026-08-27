@@ -12,19 +12,24 @@ namespace TDFende
         const float DragPanFactor = 0.05f; // pixels -> unidades de mundo, escala com o zoom
         const float ZoomStep = 2.5f;
         const float MinDist = 8f;
-        const float MaxDist = 30f;
         const float Pitch = 55f;
 
         readonly Transform _rig;
         readonly Camera _cam;
         readonly Vector3 _boundsMin;
         readonly Vector3 _boundsMax;
-        float _dist = 16f;
-        float _targetDist = 16f;
+        readonly float _maxDist;
+        float _dist;
+        float _targetDist;
 
         public Camera Camera => _cam;
 
-        public CameraRigDriver(Camera cam, Vector3 center, Vector3 worldSize)
+        /// <param name="startDist">
+        /// Distância inicial da câmera. O padrão enquadra um tabuleiro de uma lane;
+        /// o Tower Wars empilha duas e precisa de mais recuo, senão nasceria mostrando
+        /// só a sua metade. O teto de zoom acompanha o valor pedido.
+        /// </param>
+        public CameraRigDriver(Camera cam, Vector3 center, Vector3 worldSize, float startDist = 16f)
         {
             _cam = cam;
             _rig = new GameObject("CameraRig").transform;
@@ -32,6 +37,8 @@ namespace TDFende
             cam.transform.SetParent(_rig, false);
             _boundsMin = center - worldSize * 0.6f;
             _boundsMax = center + worldSize * 0.6f;
+            _dist = _targetDist = startDist;
+            _maxDist = Mathf.Max(30f, startDist * 1.25f);
             Apply();
         }
 
@@ -46,7 +53,7 @@ namespace TDFende
             p.z = Mathf.Clamp(p.z, _boundsMin.z, _boundsMax.z);
             _rig.position = p;
 
-            _targetDist = Mathf.Clamp(_targetDist - input.ZoomDelta * ZoomStep, MinDist, MaxDist);
+            _targetDist = Mathf.Clamp(_targetDist - input.ZoomDelta * ZoomStep, MinDist, _maxDist);
             _dist = Mathf.Lerp(_dist, _targetDist, 10f * dt);
             Apply();
         }

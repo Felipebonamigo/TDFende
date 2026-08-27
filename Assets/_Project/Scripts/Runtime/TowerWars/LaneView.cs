@@ -23,6 +23,8 @@ namespace TDFende
         readonly List<Transform> _enemyPool = new List<Transform>(64);
         readonly List<Renderer> _enemyRenderers = new List<Renderer>(64);
         readonly List<Transform> _towerObjects = new List<Transform>(32);
+        readonly List<Transform> _projectilePool = new List<Transform>(64);
+        Transform _projectileRoot;
         readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
 
         int _drawnTowers;
@@ -31,9 +33,12 @@ namespace TDFende
         public Transform Root => _root;
         public LaneSim Sim => _sim;
 
-        public LaneView(LaneSim sim, Vector3 offset, string name, Color groundTint)
+        readonly bool _isPlayer;
+
+        public LaneView(LaneSim sim, Vector3 offset, string name, Color groundTint, bool isPlayer)
         {
             _sim = sim;
+            _isPlayer = isPlayer;
             _root = new GameObject(name).transform;
             _root.position = offset;
 
@@ -42,7 +47,46 @@ namespace TDFende
             _enemyRoot.SetParent(_root, false);
             _towerRoot = new GameObject("Torres").transform;
             _towerRoot.SetParent(_root, false);
+            _projectileRoot = new GameObject("Projeteis").transform;
+            _projectileRoot.SetParent(_root, false);
             _territory = new TerritoryRenderer(_root);
+
+            _sim.EnemyDespawned += OnEnemyDespawned;
+            _sim.TowerChanged += OnTowerChanged;
+            _sim.TowerFired += OnTowerFired;
+        }
+
+        void OnTowerFired(Vector3 localMuzzle) => Vfx.Instance?.Muzzle(_root.TransformPoint(localMuzzle));
+
+        /// <summary>Solta os eventos. Sem isso, uma lane descartada continuaria desenhando.</summary>
+        public void Dispose()
+        {
+            _sim.EnemyDespawned -= OnEnemyDespawned;
+            _sim.TowerChanged -= OnTowerChanged;
+            _sim.TowerFired -= OnTowerFired;
+        }
+
+        void OnEnemyDespawned(Vector3 localPos, DespawnReason reason)
+        {
+            var world = _root.TransformPoint(localPos);
+            if (reason == DespawnReason.Leaked)
+            {
+                Vfx.Instance?.Leak(world);
+                // só treme a tela quando o vazamento é SEU: doeu em você, não no outro
+                if (_isPlayer) Juice.Shake(0.55f);
+                FloatingText.Instance?.Show(world + Vector3.up, "-1", Palette.TextDanger);
+                return;
+            }
+            Vfx.Instance?.KillBurst(world, reason == DespawnReason.KilledByAttrition);
+        }
+
+        void OnTowerChanged(Vector3 localPos, int level)
+        {
+            var world = _root.TransformPoint(localPos);
+            Vfx.Instance?.Build(world);
+            if (_isPlayer) Juice.Shake(0.10f);
+            if (level > 1)
+                FloatingText.Instance?.Show(world + Vector3.up, $"nv {level}", Palette.TextGold);
         }
 
         void BuildGround(Color tint)
@@ -83,6 +127,37 @@ namespace TDFende
         {
             SyncTowers();
             SyncEnemies();
+            SyncProjectiles();
+        }
+
+        void SyncProjectiles()
+        {
+            int used = 0;
+            for (int s = 0; s < _sim.ProjectileSlotCount; s++)
+            {
+                if (!_sim.TryGetProjectile(s, out var p)) continue;
+                RentProjectile(used++).localPosition = p;
+            }
+            for (int i = used; i < _projectilePool.Count; i++)
+                if (_projectilePool[i].gameObject.activeSelf)
+                    _projectilePool[i].gameObject.SetActive(false);
+        }
+
+        Transform RentProjectile(int index)
+        {
+            while (_projectilePool.Count <= index)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                go.name = "Projetil";
+                Object.Destroy(go.GetComponent<Collider>());
+                go.transform.SetParent(_projectileRoot, false);
+                go.transform.localScale = Vector3.one * 0.22f;
+                go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.Projectile);
+                _projectilePool.Add(go.transform);
+            }
+            var t = _projectilePool[index];
+            if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
+            return t;
         }
 
         void SyncTowers()
@@ -99,6 +174,15 @@ namespace TDFende
                 var head = _towerObjects[i].GetChild(1);
                 head.localPosition = new Vector3(0f, 0.95f + 0.10f * (level - 1), 0f);
                 head.localScale = new Vector3(0.35f, 0.25f, 0.6f + 0.08f * (level - 1));
+
+                // canhão acompanha o alvo. Sem isto todos apontam para +Z para sempre,
+                // e a torre parece desligada mesmo enquanto mata.
+                if (!_sim.TryGetTowerAim(i, out var aim)) continue;
+                var look = aim - _towerObjects[i].localPosition;
+                look.y = 0f;
+                if (look.sqrMagnitude <= 0.0001f) continue;
+                head.localRotation = Quaternion.Slerp(
+                    head.localRotation, Quaternion.LookRotation(look), 10f * Time.deltaTime);
             }
 
             // o território muda junto com as torres; reconstruir só quando isso acontece
@@ -142,8 +226,14 @@ namespace TDFende
                 if (!_sim.TryGetEnemy(s, out var e)) continue;
 
                 var t = RentEnemy(used);
-                t.localPosition = e.Pos;
-                t.localScale = Vector3.one * (0.45f + 0.25f * SizeOf(e.TypeId));
+
+                // A cápsula primitiva do Unity tem 2 unidades de altura, então escala
+                // uniforme afunda o boneco no chão — e quanto maior o inimigo, mais
+                // enterrado. Escala (d, h/2, d) e o centro na metade da altura fazem
+                // o pé encostar exatamente no piso, em qualquer tamanho.
+                float scale = 0.45f + 0.25f * SizeOf(e.TypeId);
+                t.localScale = new Vector3(0.55f * scale, 0.5f * scale, 0.55f * scale);
+                t.localPosition = new Vector3(e.Pos.x, 0.5f * scale, e.Pos.z);
 
                 var c = Color.Lerp(Palette.EnemyHurt, TypeColor(e.TypeId), e.MaxHp > 0f ? e.Hp / e.MaxHp : 1f);
                 // dentro do território, puxa pro ciano: dá pra VER o atrito agindo

@@ -3,13 +3,6 @@ using UnityEngine;
 
 namespace TDFende
 {
-    public enum DespawnReason
-    {
-        Leaked,             // chegou na base
-        KilledByTower,
-        KilledByAttrition   // morreu dentro do território, sem tiro
-    }
-
     /// <summary>
     /// Inimigo: segue o flow field até a base. Sem physics, sem NavMesh —
     /// movimento puro guiado pelo campo compartilhado.
