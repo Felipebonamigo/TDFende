@@ -18,6 +18,13 @@ namespace TDFende
         float ZoomDelta { get; }
         Vector2 PointerPos { get; }   // posição em tela
         bool PlacePressed { get; }
+
+        /// <summary>
+        /// Ação secundária sobre o que está sob o cursor (subir torre).
+        /// No desktop é o botão direito; no toque vira toque-longo — é exatamente
+        /// para trocas assim que o jogo consome intenções em vez de cliques.
+        /// </summary>
+        bool UpgradePressed { get; }
         bool CallWavePressed { get; }
         bool RestartPressed { get; }
     }

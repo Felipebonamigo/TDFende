@@ -277,6 +277,45 @@ class Program
         }
         Check(posInBounds, "Eventos: posição reportada cai dentro do mapa (a vista desenha ali)");
 
+        // ---------- upgrade pelo jogador (célula escolhida) ----------
+        // A IA usa TryUpgradeCheapestTower; o jogador precisa escolher QUAL torre sobe,
+        // senão só um lado escala a defesa e o balanceamento medido não vale.
+        var pick2 = new LaneSim(24, 16);
+        pick2.DebugGrantGold(5000);
+        var cellA = new Vector2Int(8, 8);
+        var cellB = new Vector2Int(14, 8);
+        pick2.TryBuildTower(cellA);
+        pick2.TryBuildTower(cellB);
+
+        Check(pick2.UpgradeCostAt(new Vector2Int(3, 3)) == -1, "Upgrade do jogador: célula vazia devolve -1");
+        Check(pick2.UpgradeCostAt(cellA) == TowerWarsConfig.UpgradeCost(1),
+            "Upgrade do jogador: custo da célula é o do nível atual");
+
+        int goldPre2 = pick2.Gold;
+        Check(pick2.TryUpgradeTowerAt(cellA), "Upgrade do jogador: aceito na torre escolhida");
+        Check(pick2.Gold == goldPre2 - TowerWarsConfig.UpgradeCost(1), "Upgrade do jogador: cobra o custo certo");
+        Check(pick2.TowerLevel(pick2.TowerIndexAt(cellA)) == 2
+              && pick2.TowerLevel(pick2.TowerIndexAt(cellB)) == 1,
+            "Upgrade do jogador: sobe SÓ a torre escolhida");
+        Check(!pick2.TryUpgradeTowerAt(new Vector2Int(3, 3)), "Upgrade do jogador: recusado em célula sem torre");
+
+        while (pick2.TryUpgradeTowerAt(cellA)) { }
+        Check(pick2.TowerLevel(pick2.TowerIndexAt(cellA)) == TowerWarsConfig.MaxTowerLevel,
+            "Upgrade do jogador: chega ao nível máximo");
+        Check(pick2.UpgradeCostAt(cellA) == 0, "Upgrade do jogador: no máximo, custo devolve 0");
+        Check(!pick2.TryUpgradeTowerAt(cellA), "Upgrade do jogador: recusado no nível máximo");
+
+        int upEvents2 = 0;
+        pick2.TowerChanged += (_, __) => upEvents2++;
+        pick2.TryUpgradeTowerAt(cellB);
+        Check(upEvents2 == 1, "Upgrade do jogador: dispara TowerChanged (partícula e texto)");
+
+        var poorUp = new LaneSim(24, 16);
+        poorUp.TryBuildTower(new Vector2Int(9, 8));
+        while (poorUp.TryUpgradeTowerAt(new Vector2Int(9, 8))) { }
+        Check(poorUp.Gold < poorUp.UpgradeCostAt(new Vector2Int(9, 8)),
+            "Upgrade do jogador: para quando o ouro acaba");
+
         // ---------- tiro visível: mira e projétil em voo ----------
         // A vista não tem como desenhar tiro nenhum sem estas duas leituras. Sem elas,
         // a torre mata mas parece desligada.

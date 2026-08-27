@@ -35,6 +35,8 @@ namespace TDFende
         public TowerWarsAi.Personality Difficulty = TowerWarsAi.Personality.Normal;
 
         int _selectedSend;
+        Vector2Int _hoverCell;
+        int _hoverUpgradeCost = -1;    // -1 sem torre, 0 já no máximo, >0 custo
         float _accumulator;            // passo fixo: a simulação não depende do frame rate
         GUIStyle _label, _big, _box, _button;
 
@@ -127,6 +129,9 @@ namespace TDFende
             _foeAi = new TowerWarsAi(Foe, Player, Difficulty, _rng);
             _accumulator = 0f;
             _selectedSend = 0;
+            // sem isto, o custo de upgrade da partida ANTERIOR sobrevive e o HUD
+            // consulta uma torre que não existe mais no LaneSim novo
+            _hoverUpgradeCost = -1;
         }
 
         void BuildGhost()
@@ -175,6 +180,7 @@ namespace TDFende
             else
             {
                 _ghost.gameObject.SetActive(false);
+                _hoverUpgradeCost = -1; // partida acabou: nada de dica de upgrade parada na tela
             }
 
             _playerView.Sync();
@@ -186,6 +192,7 @@ namespace TDFende
             if (PointerOverHud())
             {
                 _ghost.gameObject.SetActive(false);
+                _hoverUpgradeCost = -1;
                 return;
             }
 
@@ -201,17 +208,35 @@ namespace TDFende
             if (!Player.Map.InBounds(cell.x, cell.y))
             {
                 _ghost.gameObject.SetActive(false);
+                _hoverUpgradeCost = -1;
                 return;
             }
 
-            bool valid = Player.CanBuild(cell);
+            _hoverCell = cell;
+            _hoverUpgradeCost = Player.UpgradeCostAt(cell);
+            bool onOwnTower = _hoverUpgradeCost >= 0;
+            bool canBuild = Player.CanBuild(cell);
+            bool canUpgrade = _hoverUpgradeCost > 0 && Player.Gold >= _hoverUpgradeCost;
+
             _ghost.gameObject.SetActive(true);
             _ghost.position = _playerView.CellToWorld(cell) + Vector3.up * 0.05f;
-            var c = valid ? Palette.GhostValid : Palette.GhostInvalid;
+            var c = onOwnTower
+                ? (canUpgrade ? Palette.TextGold : Palette.GhostInvalid)
+                : (canBuild ? Palette.GhostValid : Palette.GhostInvalid);
             _mpb.SetColor(MaterialFactory.ColorProperty, c * (0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f)));
             _ghostRenderer.SetPropertyBlock(_mpb);
 
-            if (valid && _input.PlacePressed && Player.TryBuildTower(cell))
+            // clique esquerdo em torre própria também sobe: quem já está com o cursor
+            // ali não devia precisar lembrar de trocar de botão
+            if ((_input.PlacePressed || _input.UpgradePressed) && onOwnTower)
+            {
+                if (Player.TryUpgradeTowerAt(cell))
+                    FloatingText.Instance?.Show(_ghost.position + Vector3.up,
+                        $"-{_hoverUpgradeCost}", Palette.TextGold);
+                return;
+            }
+
+            if (canBuild && _input.PlacePressed && Player.TryBuildTower(cell))
                 Vfx.Instance?.Build(_ghost.position);
         }
 
@@ -248,7 +273,8 @@ namespace TDFende
             GUILayout.BeginArea(InfoRect);
             GUILayout.Label($"VOCÊ   vidas {Player.Lives}   ouro {Player.Gold}   renda {Player.Income}", _label);
             GUILayout.Label($"IA ({Difficulty.Name})   vidas {Foe.Lives}   renda {Foe.Income}", _label);
-            GUILayout.Label($"tempo {Player.MatchTime:0}s   escala dos envios x{Player.SendScale:0.0}", _label);
+            GUILayout.Label($"tempo {Player.MatchTime:0}s   escala dos envios x{Player.SendScale:0.0}" +
+                            $"   torres {Player.TowerCount} (nv {Player.TotalTowerLevels})", _label);
             GUILayout.EndArea();
 
             // painel de envios
@@ -269,9 +295,18 @@ namespace TDFende
                 GUI.color = prev;
             }
 
+            // Re-consulta o índice em vez de confiar no valor guardado: OnGUI roda várias
+            // vezes por frame e em pontos do ciclo onde o Update ainda não atualizou o hover.
+            int hoverIdx = _hoverUpgradeCost > 0 ? Player.TowerIndexAt(_hoverCell) : -1;
+            string hover =
+                hoverIdx >= 0
+                    ? $"  ►  subir esta torre para nv {Player.TowerLevel(hoverIdx) + 1}: {_hoverUpgradeCost} ouro"
+                    : _hoverUpgradeCost == 0 ? "  ►  torre já no nível máximo" : "";
+
             GUI.Box(HelpBoxRect,
-                $"Clique esquerdo na SUA lane (perto): construir torre ({TowerWarsConfig.TowerCost} ouro)\n" +
-                "1-6 ou os botões: enviar inimigo para a lane da IA (a de cima)  |  R: reiniciar", _box);
+                $"Clique na SUA lane (a de baixo): torre nova {TowerWarsConfig.TowerCost} ouro" +
+                $"  |  clique numa torre sua: subir de nível{hover}\n" +
+                "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar", _box);
 
             if (Player.Dead || Foe.Dead)
             {

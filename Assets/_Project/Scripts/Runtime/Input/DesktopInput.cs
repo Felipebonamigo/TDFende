@@ -12,6 +12,7 @@ namespace TDFende
         public float ZoomDelta { get; private set; }
         public Vector2 PointerPos { get; private set; }
         public bool PlacePressed { get; private set; }
+        public bool UpgradePressed { get; private set; }
         public bool CallWavePressed { get; private set; }
         public bool RestartPressed { get; private set; }
 
@@ -23,6 +24,7 @@ namespace TDFende
             DragPanDelta = Input.GetMouseButton(2) ? PointerPos - _lastMouse : Vector2.zero;
             _lastMouse = PointerPos;
             PlacePressed = Input.GetMouseButtonDown(0);
+            UpgradePressed = Input.GetMouseButtonDown(1);
             CallWavePressed = Input.GetKeyDown(KeyCode.Space);
             RestartPressed = Input.GetKeyDown(KeyCode.R);
         }

@@ -200,6 +200,51 @@ namespace TDFende
             return best;
         }
 
+        /// <summary>Índice da torre naquela célula, ou -1.</summary>
+        public int TowerIndexAt(Vector2Int cell)
+        {
+            for (int i = 0; i < _towers.Count; i++)
+                if (_towers[i].Cell == cell) return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// Custo para subir a torre daquela célula. -1 se não há torre, e 0 se ela já
+        /// está no nível máximo — a vista usa a diferença para explicar o porquê.
+        /// </summary>
+        public int UpgradeCostAt(Vector2Int cell)
+        {
+            int i = TowerIndexAt(cell);
+            if (i < 0) return -1;
+            if (_towers[i].Level >= TowerWarsConfig.MaxTowerLevel) return 0;
+            return TowerWarsConfig.UpgradeCost(_towers[i].Level);
+        }
+
+        /// <summary>
+        /// Sobe a torre de uma célula escolhida. É a versão do jogador; a IA usa
+        /// TryUpgradeCheapestTower. Sem isto, só a IA escalaria a defesa — e o
+        /// balanceamento foi medido com os dois lados fazendo upgrade.
+        /// </summary>
+        public bool TryUpgradeTowerAt(Vector2Int cell)
+        {
+            if (Dead) return false;
+            int i = TowerIndexAt(cell);
+            if (i < 0) return false;
+
+            var t = _towers[i];
+            if (t.Level >= TowerWarsConfig.MaxTowerLevel) return false;
+            int cost = TowerWarsConfig.UpgradeCost(t.Level);
+            if (Gold < cost) return false;
+
+            Gold -= cost;
+            GoldSpentOnTowers += cost;
+            t.Level++;
+            _towers[i] = t;
+            TotalUpgrades++;
+            TowerChanged?.Invoke(t.Pos, t.Level);
+            return true;
+        }
+
         /// <summary>
         /// Sobe a torre de menor nível que couber no bolso. Espalhar upgrade antes de
         /// concentrar rende mais dano por ouro, porque o custo cresce com o nível.
