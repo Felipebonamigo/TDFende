@@ -23,6 +23,10 @@ se der errado no passo 1, pare e me mande o erro — o resto não importa ainda.
 + `versionDefines`. Se aparecer erro de referência não resolvida, é ali — e o jogo deve rodar
 mesmo assim, porque tudo tem fallback para o pipeline Built-in.
 
+Já foi verificado à mão, contra a fonte do URP embutido nesta versão do editor, que **todos os
+nomes de API usados pelo `PostFx.cs` existem**. Então, se aquele arquivo der erro, o problema é
+o padrão de asmdef — não um nome de API errado. Isso encurta a investigação.
+
 ## 2. TD clássico (3 min)
 
 No menu, escolha **TD clássico**. É a fase 0, a parte mais antiga e a única que já passou por
