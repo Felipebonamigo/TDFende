@@ -1,4 +1,5 @@
 using System;
+using Random = System.Random; // dentro do Unity, "Random" puro colide com UnityEngine.Random (CS0104)
 using UnityEngine;
 
 namespace TDFende
@@ -21,10 +22,13 @@ namespace TDFende
             public bool PlaysCounters;     // percebe território inimigo e manda voador
             public int PlacementSamples;   // quantas células avalia por torre (esperteza do maze)
 
+            // Fácil erra de um jeito específico: não lê contra-jogo (PlaysCounters = false)
+            // e reage devagar. Não é uma versão "capada" em tudo — quando era, perdia 100%
+            // das partidas, e adversário que nunca ganha não ensina o jogo a ninguém.
             public static Personality Easy => new Personality
             {
-                Name = "Fácil", DecisionInterval = 2.5f, SafetyMargin = 2.2f,
-                GreedBias = 0.6f, PlaysCounters = false, PlacementSamples = 6
+                Name = "Fácil", DecisionInterval = 1.6f, SafetyMargin = 1.7f,
+                GreedBias = 0.85f, PlaysCounters = false, PlacementSamples = 12
             };
 
             public static Personality Normal => new Personality
@@ -120,43 +124,74 @@ namespace TDFende
 
         bool TryUpgrade() => _me.TryUpgradeCheapestTower();
 
+        readonly float[] _sendScores = new float[SendCatalog.Count];
+
         /// <summary>
-        /// Escolhe o envio de melhor utilidade: renda por ouro, com bônus para o que
-        /// o adversário tem dificuldade de matar.
+        /// Escolhe o envio por SORTEIO PONDERADO, não por argmax. Argmax sobre pontuação
+        /// quase estática degenerava em compra única (medido: Planador 68% no Normal,
+        /// Couraçado 94% no Fácil, três tipos com 0%) — com sorteio o melhor continua
+        /// favorito, mas o roster inteiro participa. O rng é o da partida, então a
+        /// escolha continua determinística por semente.
         /// </summary>
         int ChooseSend()
         {
-            int best = -1;
-            float bestScore = 0f;
             bool foeHasTerritory = _foe.TowerCount >= 4;
+            float foeShot = _foe.AvgShotDamage;
+            float total = 0f;
 
             for (int id = 0; id < SendCatalog.Count; id++)
             {
+                _sendScores[id] = 0f;
                 if (!_me.CanAfford(id)) continue;
                 var u = SendCatalog.Get(id);
 
                 // Base: renda comprada por ouro gasto.
-                float score = u.IncomeBonus / (float)u.Cost;
-                score *= _p.GreedBias;
+                float score = (u.IncomeBonus / (float)u.Cost) * _p.GreedBias;
 
-                // Pressão: HP entregue por ouro (o que realmente ameaça vazar).
-                score += 0.35f * (u.Hp * u.Count) / (u.Cost * 100f);
+                // Pressão: vida entregue por ouro, valendo mais quando anda rápido
+                // (menos tempo exposto a torre e a atrito).
+                float speedFactor = u.Speed / 2.2f;
+                score += 0.35f * (u.Hp * u.Count * speedFactor) / (u.Cost * 100f);
+
+                // Enxame explora overkill: torre de tiro forte desperdiça o excedente
+                // num corpo fraco, e o tempo de voo já perdido não volta.
+                // A HP comparada é a ESCALADA (a que vai nascer de fato na lane do
+                // adversário) — contra a HP de catálogo, o overkill computado só crescia
+                // com o relógio enquanto o real caía, e a IA comprava Enxame justamente
+                // quando ele era o pior envio.
+                if (u.Count > 1 && foeShot > 0f)
+                {
+                    float bodyHp = u.Hp * _foe.SendScale;
+                    float waste = Math.Min(foeShot / bodyHp, 3f);
+                    score *= 1f + 0.25f * waste;
+                }
 
                 if (_p.PlaysCounters)
                 {
                     // Voador contra quem investiu em território é o contra-jogo do modo.
-                    if (u.IgnoresTerritory && foeHasTerritory) score *= 1.6f;
+                    if (u.IgnoresTerritory && foeHasTerritory) score *= 1.5f;
                     // Enxame frágil derrete no atrito: evita quando o outro tem fronteira.
-                    if (u.AttritionScale > 1.2f && foeHasTerritory) score *= 0.55f;
+                    if (u.AttritionScale > 1.2f && foeHasTerritory) score *= 0.6f;
                 }
 
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    best = id;
-                }
+                if (score <= 0f) continue;
+                // Quadrado antes do sorteio: acentua o favorito sem matar a variedade.
+                _sendScores[id] = score * score;
+                total += _sendScores[id];
             }
-            return best;
+
+            if (total <= 0f) return -1;
+
+            double roll = _rng.NextDouble() * total;
+            int last = -1; // fallback: arredondamento float pode deixar o roll "vazar" pelo fim
+            for (int id = 0; id < SendCatalog.Count; id++)
+            {
+                if (_sendScores[id] <= 0f) continue;
+                last = id;
+                roll -= _sendScores[id];
+                if (roll <= 0.0) return id;
+            }
+            return last;
         }
 
         /// <summary>

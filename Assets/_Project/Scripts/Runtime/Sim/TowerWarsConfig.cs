@@ -50,9 +50,9 @@ namespace TDFende
         /// </summary>
         /// Não é const: o Tools/FlowSim varre este valor em lote para escolhê-lo por medição.
         /// Valor atual escolhido por varredura (25 partidas x 20 combinações), com upgrade
-        /// de torre ligado: 88% das partidas terminam por morte, atrito responde por 15,9%
-        /// das mortes, duração média 6,1 min.
-        public static float AttritionPctPerSecond = 0.19f;
+        /// de torre ligado: 100% das partidas terminam por morte, atrito responde por ~32%
+        /// das mortes, duração média 9,1 min. Re-varrido após o sorteio ponderado de envios.
+        public static float AttritionPctPerSecond = 0.16f;
 
         /// <summary>
         /// Vida (e recompensa) dos envios crescem com o relógio da partida.
@@ -60,7 +60,7 @@ namespace TDFende
         /// teto de tempo com os dois lados intactos.
         /// </summary>
         /// Não é const: varrido em lote pelo Tools/FlowSim junto com o atrito.
-        public static float SendScalePerMinute = 1.25f;
+        public static float SendScalePerMinute = 1.80f;
 
         // Ritmo da partida
         public const float FixedStep = 1f / 30f;   // passo fixo da simulação headless

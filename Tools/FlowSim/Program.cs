@@ -127,9 +127,12 @@ class Program
     }
 
     // Roda a lane por N segundos de tempo simulado, em passo fixo.
+    // Round, não truncamento: 30f / (1f/30f) dá 899,9999 em float, e truncar
+    // simularia um passo a MENOS do que o pedido — exatamente na fronteira
+    // que os testes de tique de renda medem.
     static void Advance(LaneSim lane, float seconds)
     {
-        int steps = (int)(seconds / TowerWarsConfig.FixedStep);
+        int steps = (int)Math.Round(seconds / (double)TowerWarsConfig.FixedStep);
         for (int i = 0; i < steps; i++) lane.Tick(TowerWarsConfig.FixedStep);
     }
 
@@ -181,6 +184,13 @@ class Program
         int g0 = inc.Gold;
         Advance(inc, TowerWarsConfig.IncomeTickSeconds + 0.2f);
         Check(inc.Gold == g0 + inc.Income, "Renda: pinga uma vez por tique de renda");
+
+        // sem folga: pedir EXATAMENTE um tique tem que entregar um tique
+        // (pega regressão do truncamento de passos no próprio Advance)
+        var incExact = new LaneSim(24, 16);
+        int gE = incExact.Gold;
+        Advance(incExact, TowerWarsConfig.IncomeTickSeconds);
+        Check(incExact.Gold == gE + incExact.Income, "Renda: Advance com duração exata dispara o tique");
 
         // ---------- vazamento sem defesa ----------
         var atk = new LaneSim(24, 16);
@@ -326,6 +336,53 @@ class Program
             if (r.Winner == 1) hardWins++;
         }
         Check(hardWins >= n * 2 / 3, $"IA: Difícil ganha do Fácil em {hardWins}/{n}");
+
+        // ---------- roster precisa ser usado, não decorativo ----------
+        // Um tipo dominando >60% significa que existe resposta certa e cinco enfeites.
+        var mixTotals = new long[SendCatalog.Count];
+        long mixAll = 0;
+        for (int s = 0; s < 12; s++)
+        {
+            var m = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 800 + s);
+            m.Run();
+            for (int i = 0; i < SendCatalog.Count; i++)
+            {
+                mixTotals[i] += m.A.SendsByType[i] + m.B.SendsByType[i];
+                mixAll += m.A.SendsByType[i] + m.B.SendsByType[i];
+            }
+        }
+        double maxShare = 0;
+        int usedTypes = 0;
+        for (int i = 0; i < SendCatalog.Count; i++)
+        {
+            double share = mixAll == 0 ? 0 : mixTotals[i] / (double)mixAll;
+            if (share > maxShare) maxShare = share;
+            if (share >= 0.05) usedTypes++;
+        }
+        Check(maxShare <= 0.60, $"Roster: nenhum envio domina ({maxShare * 100:0}% o maior, meta <= 60%)");
+        Check(usedTypes >= 4, $"Roster: {usedTypes}/6 tipos com uso >= 5% (meta >= 4)");
+
+        // ---------- Fácil precisa ser fácil, não inútil ----------
+        // Adversário que perde 100% não ensina o jogo a ninguém: não dá para ver
+        // o que se fez de certo. A escada de dificuldade tem que ter degrau, não penhasco.
+        int normalOverEasy = 0;
+        for (int s = 0; s < n; s++)
+            if (new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Easy, 600 + s).Run().Winner == 1)
+                normalOverEasy++;
+        float easyLossRate = normalOverEasy / (float)n;
+        Check(easyLossRate >= 0.60f && easyLossRate <= 0.90f,
+            $"IA: Fácil perde para Normal em {normalOverEasy}/{n} ({easyLossRate * 100:0}%, meta 60-90%)");
+
+        // ---------- espelho não pode empatar por tempo ----------
+        int mirrorTimeouts = 0;
+        for (int s = 0; s < n; s++)
+        {
+            var m = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 700 + s);
+            m.Run();
+            if (!m.A.Dead && !m.B.Dead) mirrorTimeouts++;
+        }
+        Check(mirrorTimeouts <= n / 4,
+            $"IA: Normal x Normal estoura o tempo em {mirrorTimeouts}/{n} (meta <= 25%)");
     }
 
     // Simula um inimigo: anda seguindo SampleDirection em passos de 0.05

@@ -1,4 +1,5 @@
 using System;
+using Random = System.Random; // dentro do Unity, "Random" puro colide com UnityEngine.Random (CS0104)
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -82,6 +83,9 @@ namespace TDFende
         public int GoldSpentOnTowers { get; private set; }
         public int GoldSpentOnSends { get; private set; }
         public int TotalUpgrades { get; private set; }
+
+        /// <summary>Compras por tipo de envio. Se um tipo domina, o roster é decorativo.</summary>
+        public readonly int[] SendsByType = new int[SendCatalog.Count];
 
         public int TowerCount => _towers.Count;
         public int EnemiesAlive => _enemyCount;
@@ -214,6 +218,19 @@ namespace TDFende
             }
         }
 
+        /// <summary>Dano médio por tiro da defesa — a IA usa para ler overkill contra enxame.</summary>
+        public float AvgShotDamage
+        {
+            get
+            {
+                if (_towers.Count == 0) return 0f;
+                float sum = 0f;
+                for (int i = 0; i < _towers.Count; i++)
+                    sum += TowerWarsConfig.DamageAtLevel(_towers[i].Level);
+                return sum / _towers.Count;
+            }
+        }
+
         /// <summary>Soma dos níveis — mede quanto a defesa acompanhou a escalada do ataque.</summary>
         public int TotalTowerLevels
         {
@@ -242,6 +259,7 @@ namespace TDFende
             GoldSpentOnSends += u.Cost;
             Income += u.IncomeBonus;
             TotalSent += u.Count;
+            SendsByType[sendId]++;
 
             for (int i = 0; i < u.Count; i++)
                 target.SpawnIncoming(sendId, rng);

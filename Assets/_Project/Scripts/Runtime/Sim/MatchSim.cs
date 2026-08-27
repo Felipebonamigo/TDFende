@@ -30,10 +30,27 @@ namespace TDFende
         public MatchResult Run()
         {
             float dt = TowerWarsConfig.FixedStep;
+            bool flip = false;
             while (Elapsed < TowerWarsConfig.MatchTimeLimit && !A.Dead && !B.Dead)
             {
-                _aiA.Tick(dt);
-                _aiB.Tick(dt);
+                // Alterna quem decide primeiro a cada passo. Com ordem fixa, o segundo
+                // via as compras do primeiro DENTRO do mesmo passo — e como os timers de
+                // decisão se realinham, a vantagem virava permanente na partida inteira
+                // (medido: trocar as duas linhas invertia o vencedor em sementes
+                // alinhadas). Alternar dá o primeiro movimento a cada lado metade do
+                // tempo, e continua determinístico por semente.
+                if (flip)
+                {
+                    _aiB.Tick(dt);
+                    _aiA.Tick(dt);
+                }
+                else
+                {
+                    _aiA.Tick(dt);
+                    _aiB.Tick(dt);
+                }
+                flip = !flip;
+
                 A.Tick(dt);
                 B.Tick(dt);
                 Elapsed += dt;

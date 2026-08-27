@@ -16,6 +16,35 @@ static class BalanceLab
         Duel("Difícil x Normal", TowerWarsAi.Personality.Hard, TowerWarsAi.Personality.Normal, matches);
         Duel("Normal x Fácil", TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Easy, matches);
         Duel("Difícil x Fácil", TowerWarsAi.Personality.Hard, TowerWarsAi.Personality.Easy, matches);
+        SendMix("Normal", TowerWarsAi.Personality.Normal, matches);
+        SendMix("Fácil", TowerWarsAi.Personality.Easy, matches);
+    }
+
+    /// <summary>
+    /// Distribuição de compras de uma personalidade. Um roster saudável tem várias
+    /// linhas com uso relevante; se um tipo passa de ~60%, existe uma resposta certa
+    /// e as outras cinco são enfeite.
+    /// </summary>
+    static void SendMix(string who, TowerWarsAi.Personality p, int matches)
+    {
+        var totals = new long[SendCatalog.Count];
+        for (int s = 0; s < matches; s++)
+        {
+            var m = new MatchSim(p, p, 31000 + s);
+            m.Run();
+            for (int i = 0; i < SendCatalog.Count; i++)
+                totals[i] += m.A.SendsByType[i] + m.B.SendsByType[i];
+        }
+
+        long all = 0;
+        foreach (var t in totals) all += t;
+        Console.WriteLine($"### Compras — {who}  (total {all})");
+        for (int i = 0; i < SendCatalog.Count; i++)
+        {
+            double pct = all == 0 ? 0 : 100.0 * totals[i] / all;
+            Console.WriteLine($"  {SendCatalog.Get(i).Name,-10} {pct,5:0.0}%  {new string('#', (int)(pct / 2))}");
+        }
+        Console.WriteLine();
     }
 
     /// <summary>
@@ -27,10 +56,10 @@ static class BalanceLab
     {
         // Grade grossa encontra a região; a fina resolve dentro dela.
         float[] attritions = fine
-            ? new[] { 0.10f, 0.13f, 0.16f, 0.19f, 0.22f }
+            ? new[] { 0.13f, 0.16f, 0.19f, 0.22f }
             : new[] { 0.06f, 0.10f, 0.14f, 0.18f, 0.24f, 0.30f };
         float[] scales = fine
-            ? new[] { 0.95f, 1.05f, 1.15f, 1.25f }
+            ? new[] { 1.25f, 1.50f, 1.80f, 2.20f, 2.70f }
             : new[] { 0.55f, 0.90f, 1.30f, 1.80f, 2.40f };
 
         float keepAttr = TowerWarsConfig.AttritionPctPerSecond;
