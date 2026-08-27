@@ -88,9 +88,42 @@ cd Tools/FlowSim
 dotnet run
 ```
 
-22 verificações: conversões de grid, alcançabilidade, anti-muro (`PlacementBlocksPath`),
-proibição de corte de quina, simulação de caminhada spawn→base e geometria do território.
-É o embrião da ferramenta de balanceamento da fase 3 (simular milhares de ondas sem abrir o editor).
+66 verificações: grid, pathfinding, anti-muro, território, economia de envios, upgrades,
+determinismo por semente, ritmo de partida e diversidade do roster.
+
+Outros modos:
+
+```bash
+dotnet run -- match 60
+```
+
+Relatório de 300 partidas IA×IA (vitórias, duração, renda, % de mortes por atrito, mix de compras).
+
+```bash
+dotnet run -- sweep 25 fine
+```
+
+Varre atrito × escalada e recomenda os valores por medição — foi assim que
+`AttritionPctPerSecond` e `SendScalePerMinute` foram escolhidos.
+
+## Verificação de compilação do lado Unity
+
+```bash
+cd Tools/CompileCheck
+dotnet build
+```
+
+Compila **todos** os scripts de `Runtime/` contra as **DLLs reais** do editor instalado
+(referenciar assembly não exige licença; só abrir o editor exige). Acha a versão sozinho
+via `ProjectSettings/ProjectVersion.txt`.
+
+Existe porque o `FlowSim` usa stubs mínimos de `UnityEngine` e por isso é **cego** para
+erros que só aparecem com a API completa. Caso real: `Random` sem qualificação compilava
+headless mas é ambíguo com `UnityEngine.Random` (CS0104) — o projeto não abriria, e nenhum
+dos 66 testes pegava. Esta verificação reproduz o erro.
+
+Não cobre: comportamento em runtime, importação de assets, shaders, e a assembly opcional
+`Runtime/Urp` (que depende do pacote URP, ausente até a primeira abertura do editor).
 
 ## Próximo passo
 
