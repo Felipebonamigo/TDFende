@@ -54,6 +54,30 @@ O visual não vem de asset comprado — vem de paleta coerente + luz + juice, tu
   se o URP existir (`defineConstraints`), então o jogo nunca quebra por causa dela
 - Feedback nos inimigos: "pop" ao nascer, flash branco no impacto, **tingimento azul sob atrito**
 
+## Modo Tower Wars (lógica pronta, sem tela ainda)
+
+O jogo mira o gênero **Line Tower Wars**: você defende a sua lane *e* compra inimigos para
+mandar na lane do adversário. Cada envio custa ouro agora e **sobe a sua renda para sempre** —
+o jogo inteiro é o triângulo *torre × envio × renda*.
+
+Está tudo em `Assets/_Project/Scripts/Runtime/Sim/`, como **lógica pura** (sem MonoBehaviour,
+sem `Time.deltaTime`, sem `Random` do Unity). Isso dá três coisas de uma vez:
+
+1. roda no `Tools/FlowSim`, então dá para balancear com milhares de partidas;
+2. o lado Unity vira uma *vista* disto, em vez de duplicar as regras;
+3. passo fixo + semente = partida reprodutível — que é o que o multiplayer por eventos vai pedir.
+
+| Arquivo | Papel |
+|---|---|
+| `SendCatalog.cs` | Roster de envios (custo, vida, renda, recompensa, silhueta) |
+| `TowerWarsConfig.cs` | Todos os números do modo |
+| `LaneSim.cs` | Tabuleiro de um jogador: torres, inimigos, projéteis, fronteira, economia |
+| `TowerWarsAi.cs` | IA por utilidade (defender × atacar × esperar), 3 dificuldades |
+| `MatchSim.cs` | Partida entre dois lados, determinística por semente |
+
+O **Planador** existe por design: ignora o atrito. Sem ele, investir em fronteira seria vitória
+automática e o território deixaria de ser uma decisão.
+
 ## Testes headless
 
 A lógica pura (grid, flow field, território) compila e roda **fora do Unity** — os mesmos

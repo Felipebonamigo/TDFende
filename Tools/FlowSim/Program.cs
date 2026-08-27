@@ -14,8 +14,25 @@ class Program
         if (!cond) _failed++;
     }
 
-    static int Main()
+    static int Main(string[] args)
     {
+        // `dotnet run -- match [N]` roda o laboratório de balanceamento em vez dos testes.
+        if (args.Length > 0 && args[0] == "match")
+        {
+            int n = args.Length > 1 ? int.Parse(args[1]) : 100;
+            BalanceLab.Run(n);
+            return 0;
+        }
+
+        // `dotnet run -- sweep [N]` varre os knobs de balanceamento e recomenda valores.
+        if (args.Length > 0 && args[0] == "sweep")
+        {
+            int n = args.Length > 1 ? int.Parse(args[1]) : 30;
+            bool fine = args.Length > 2 && args[2] == "fine";
+            BalanceLab.Sweep(n, fine);
+            return 0;
+        }
+
         const int W = 24, H = 16;
 
         // ---------- GridMap: conversões ----------
@@ -100,9 +117,215 @@ class Program
         Check(terr.Contains(4, 8) && terr.Contains(16, 8) && !terr.Contains(10, 8),
             "Territory: torres afastadas geram bolhas separadas");
 
+        // ================= TOWER WARS =================
+        Console.WriteLine();
+        TowerWarsTests();
+
         Console.WriteLine();
         Console.WriteLine(_failed == 0 ? ">>> TODOS OS TESTES PASSARAM" : $">>> {_failed} TESTE(S) FALHARAM");
         return _failed;
+    }
+
+    // Roda a lane por N segundos de tempo simulado, em passo fixo.
+    static void Advance(LaneSim lane, float seconds)
+    {
+        int steps = (int)(seconds / TowerWarsConfig.FixedStep);
+        for (int i = 0; i < steps; i++) lane.Tick(TowerWarsConfig.FixedStep);
+    }
+
+    static void TowerWarsTests()
+    {
+        var rng = new Random(1234);
+
+        // ---------- catálogo ----------
+        Check(SendCatalog.Count >= 5, "Catálogo: tem variedade de envios");
+        int flying = 0, swarm = 0;
+        for (int i = 0; i < SendCatalog.Count; i++)
+        {
+            if (SendCatalog.Get(i).IgnoresTerritory) flying++;
+            if (SendCatalog.Get(i).Count > 1) swarm++;
+        }
+        Check(flying >= 1, "Catálogo: existe contra-jogo da fronteira (unidade que ignora território)");
+        Check(swarm >= 1, "Catálogo: existe enxame (silhueta distinta)");
+
+        // ---------- estado inicial ----------
+        var a = new LaneSim(24, 16);
+        var b = new LaneSim(24, 16);
+        Check(a.Gold == TowerWarsConfig.StartGold && a.Lives == TowerWarsConfig.StartLives
+              && a.Income == TowerWarsConfig.BaseIncome, "Lane: estado inicial correto");
+
+        // ---------- envio: paga aqui, nasce lá, renda sobe aqui ----------
+        int goldBefore = a.Gold, incomeBefore = a.Income;
+        var recruta = SendCatalog.Get(0);
+        bool sent = a.TrySend(0, b, rng);
+        Check(sent, "Envio: compra aceita com ouro suficiente");
+        Check(a.Gold == goldBefore - recruta.Cost, "Envio: cobra o ouro de QUEM ENVIA");
+        Check(a.Income == incomeBefore + recruta.IncomeBonus, "Envio: sobe a renda de QUEM ENVIA");
+        Check(b.EnemiesAlive == recruta.Count, "Envio: inimigo nasce na lane do ADVERSÁRIO");
+        Check(a.EnemiesAlive == 0, "Envio: não nasce nada na própria lane");
+
+        // ---------- enxame gera vários bonecos ----------
+        var c = new LaneSim(24, 16);
+        var d = new LaneSim(24, 16);
+        c.TrySend(1, d, rng);
+        Check(d.EnemiesAlive == SendCatalog.Get(1).Count, "Envio: enxame gera Count bonecos");
+
+        // ---------- sem ouro, sem envio ----------
+        var poor = new LaneSim(24, 16);
+        var poorFoe = new LaneSim(24, 16);
+        while (poor.CanAfford(5)) poor.TrySend(5, poorFoe, rng);
+        Check(!poor.TrySend(5, poorFoe, rng), "Envio: recusado sem ouro");
+
+        // ---------- renda pinga no relógio ----------
+        var inc = new LaneSim(24, 16);
+        int g0 = inc.Gold;
+        Advance(inc, TowerWarsConfig.IncomeTickSeconds + 0.2f);
+        Check(inc.Gold == g0 + inc.Income, "Renda: pinga uma vez por tique de renda");
+
+        // ---------- vazamento sem defesa ----------
+        var atk = new LaneSim(24, 16);
+        var undefended = new LaneSim(24, 16);
+        atk.TrySend(0, undefended, rng);
+        int livesBefore = undefended.Lives;
+        Advance(undefended, 30f);
+        Check(undefended.Lives == livesBefore - 1, "Vazamento: inimigo sem defesa tira exatamente 1 vida");
+        Check(undefended.TotalLeaked == 1, "Vazamento: contabilizado");
+        Check(undefended.EnemiesAlive == 0, "Vazamento: inimigo sai da lane");
+
+        // ---------- torre mata e paga bounty ----------
+        var def = new LaneSim(24, 16);
+        var sender = new LaneSim(24, 16);
+        int built = 0;
+        for (int x = 8; x <= 14 && built < 4; x += 2)
+            if (def.TryBuildTower(new Vector2Int(x, 8))) built++;
+        Check(built > 0, "Construção: torres colocadas no meio do caminho");
+        int goldPre = def.Gold;
+        sender.DebugGrantGold(500);
+        sender.TrySend(0, def, rng);
+        Advance(def, 30f);
+        Check(def.KilledByTower > 0, "Torre: mata o Recruta antes da base");
+        Check(def.Gold > goldPre, "Torre: abate paga bounty para o DEFENSOR");
+
+        // ---------- atrito mata sozinho ----------
+        var attr = new LaneSim(24, 16);
+        var attrFoe = new LaneSim(24, 16);
+        for (int x = 6; x <= 16; x += 2) attr.TryBuildTower(new Vector2Int(x, 8));
+        attrFoe.DebugGrantGold(2000);
+        for (int i = 0; i < 6; i++) attrFoe.TrySend(1, attr, rng); // Enxame: frágil
+        Advance(attr, 60f);
+        Check(attr.KilledByAttrition > 0, "Atrito: fronteira mata sem tiro nenhum");
+
+        // ---------- voador é imune ao atrito ----------
+        var fly = new LaneSim(24, 16);
+        var flyFoe = new LaneSim(24, 16);
+        for (int x = 6; x <= 16; x += 2) fly.TryBuildTower(new Vector2Int(x, 8));
+        flyFoe.DebugGrantGold(2000);
+        for (int i = 0; i < 6; i++) flyFoe.TrySend(4, fly, rng); // Planador
+        Advance(fly, 60f);
+        Check(fly.KilledByAttrition == 0, "Contra-jogo: Planador atravessa o território sem sofrer atrito");
+
+        // ---------- upgrade de torre ----------
+        var up = new LaneSim(24, 16);
+        up.DebugGrantGold(5000);
+        up.TryBuildTower(new Vector2Int(10, 8));
+        Check(up.TotalTowerLevels == 1, "Upgrade: torre nasce no nível 1");
+
+        int goldB4 = up.Gold;
+        float dpsB4 = up.TowerDps;
+        Check(up.TryUpgradeCheapestTower(), "Upgrade: aceito com ouro");
+        Check(up.TotalTowerLevels == 2, "Upgrade: sobe o nível");
+        Check(up.Gold == goldB4 - TowerWarsConfig.UpgradeCost(1), "Upgrade: cobra o custo do nível atual");
+        Check(up.TowerDps > dpsB4, "Upgrade: aumenta o DPS da defesa");
+
+        Check(TowerWarsConfig.UpgradeCost(3) > TowerWarsConfig.UpgradeCost(1),
+            "Upgrade: custo cresce com o nível (torre nova segue competindo)");
+
+        while (up.TryUpgradeCheapestTower()) { }
+        Check(up.TotalTowerLevels == TowerWarsConfig.MaxTowerLevel, "Upgrade: para no nível máximo");
+
+        var broke = new LaneSim(24, 16);
+        broke.TryBuildTower(new Vector2Int(10, 8));
+        // gasta até não caber mais: o custo sobe com o nível, então parar pelo custo
+        // do nível 1 seria laço infinito — quem decide é a própria chamada.
+        while (broke.TryUpgradeCheapestTower()) { }
+        int lvlBefore = broke.TotalTowerLevels;
+        Check(broke.Gold < TowerWarsConfig.UpgradeCost(broke.TotalTowerLevels),
+            "Upgrade: sobrou ouro, mas menos que o próximo nível custa");
+        Check(!broke.TryUpgradeCheapestTower() && broke.TotalTowerLevels == lvlBefore,
+            "Upgrade: recusado sem ouro");
+
+        // torre subida mata mais rápido que torre nível 1 — o efeito tem que aparecer na simulação
+        var lvl1 = new LaneSim(24, 16);
+        var lvl6 = new LaneSim(24, 16);
+        var feeder = new LaneSim(24, 16);
+        lvl1.TryBuildTower(new Vector2Int(12, 8));
+        lvl6.DebugGrantGold(5000);
+        lvl6.TryBuildTower(new Vector2Int(12, 8));
+        while (lvl6.TryUpgradeCheapestTower()) { }
+        feeder.DebugGrantGold(5000);
+        feeder.TrySend(5, lvl1, rng);   // Colosso nos dois, mesmo instante
+        feeder.TrySend(5, lvl6, rng);
+        Advance(lvl1, 25f);
+        Advance(lvl6, 25f);
+        Check(lvl6.KilledByTower >= lvl1.KilledByTower && lvl6.TotalLeaked <= lvl1.TotalLeaked,
+            "Upgrade: torre nível 6 segura o que a nível 1 deixa passar");
+
+        // ---------- não dá para murar ----------
+        var wall = new LaneSim(24, 16);
+        wall.DebugGrantGold(100000);
+        int placed = 0;
+        for (int y = 0; y < wall.Map.Height; y++)
+            if (wall.TryBuildTower(new Vector2Int(12, y))) placed++;
+        Check(placed < wall.Map.Height, "Anti-muro: a última célula da parede é recusada");
+
+        // ---------- determinismo ----------
+        var m1 = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 777).Run();
+        var m2 = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 777).Run();
+        Check(m1.Winner == m2.Winner && Math.Abs(m1.Seconds - m2.Seconds) < 0.001f
+              && m1.LivesA == m2.LivesA && m1.LivesB == m2.LivesB,
+            "Determinismo: mesma semente devolve exatamente a mesma partida");
+
+        var m3 = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 778).Run();
+        Check(m1.Seconds != m3.Seconds || m1.LivesA != m3.LivesA,
+            "Determinismo: sementes diferentes dão partidas diferentes");
+
+        // ---------- a partida termina ----------
+        int decided = 0, matches = 20;
+        for (int s = 0; s < matches; s++)
+            if (new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 100 + s).Run().Winner != 0)
+                decided++;
+        Check(decided >= matches * 3 / 4, $"Partida: decide no tempo em {decided}/{matches} sementes");
+
+        // ---------- a partida precisa ACABAR, não expirar ----------
+        // Sem escalada, o ataque nunca alcança a defesa e todo jogo bate no teto de tempo.
+        int byDeath = 0, sample = 20;
+        for (int s = 0; s < sample; s++)
+        {
+            var m = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 300 + s);
+            m.Run();
+            if (m.A.Dead || m.B.Dead) byDeath++;
+        }
+        Check(byDeath >= sample * 3 / 4,
+            $"Ritmo: partida termina por morte (não por tempo) em {byDeath}/{sample}");
+
+        // ---------- o atrito precisa PESAR ----------
+        // Se a fronteira não mata, ela é enfeite e o gancho do jogo não existe.
+        double attrShare = 0;
+        for (int s = 0; s < sample; s++)
+            attrShare += new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 400 + s)
+                .Run().AttritionShare;
+        attrShare /= sample;
+        Check(attrShare >= 0.12,
+            $"Gancho: atrito responde por parte relevante das mortes ({attrShare * 100:0.0}%, meta >= 12%)");
+
+        // ---------- dificuldade significa alguma coisa ----------
+        int hardWins = 0, n = 30;
+        for (int s = 0; s < n; s++)
+        {
+            var r = new MatchSim(TowerWarsAi.Personality.Hard, TowerWarsAi.Personality.Easy, 500 + s).Run();
+            if (r.Winner == 1) hardWins++;
+        }
+        Check(hardWins >= n * 2 / 3, $"IA: Difícil ganha do Fácil em {hardWins}/{n}");
     }
 
     // Simula um inimigo: anda seguindo SampleDirection em passos de 0.05
