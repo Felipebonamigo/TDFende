@@ -186,16 +186,74 @@ class Program
     static int KillsAgainst(int sendId, int towerType, float seconds) =>
         Duel(sendId, towerType, seconds).KilledByTower;
 
-    /// <summary>Dano de TORRE entregue = o que falta nos vivos + a vida cheia de quem morreu.</summary>
+    /// <summary>
+    /// Dano de TORRE entregue = o que falta nos vivos + a vida cheia de quem morreu.
+    /// Devolve -1 se alguém VAZOU: o dano levado por quem escapou some do placar, e a
+    /// comparação viraria um número inventado. É assim que o teste da Sentinela comparava
+    /// contra um zero fabricado em vez de contra o dano real do Canhão.
+    /// </summary>
     static float DamageDealt(int sendId, int towerType, float seconds, int sends = 4)
     {
         var lane = Duel(sendId, towerType, seconds, sends);
+        if (lane.TotalLeaked > 0) return -1f;
+
         float dealt = 0f;
         float maxHp = SendCatalog.Get(sendId).Hp; // escala ~1 nos primeiros segundos
         for (int s = 0; s < lane.EnemySlotCount; s++)
             if (lane.TryGetEnemy(s, out var e)) dealt += e.MaxHp - e.Hp;
         dealt += lane.KilledByTower * maxHp;
         return dealt;
+    }
+
+    /// <summary>
+    /// Segundos até a torre derrubar um único alvo, ou -1 se ele vazou antes.
+    /// É a métrica certa quando as duas torres MATAM: aí o dano acumulado empata no teto
+    /// da vida do alvo e não distingue nada.
+    /// </summary>
+    static float TimeToKill(int sendId, int towerType, float limit = 12f)
+    {
+        float saved = TowerWarsConfig.AttritionPctPerSecond;
+        TowerWarsConfig.AttritionPctPerSecond = 0f; // isolar a torre do território
+        try
+        {
+            var lane = new LaneSim(24, 16);
+            var feeder = new LaneSim(24, 16);
+            lane.DebugGrantGold(5000);
+            lane.TryBuildTower(new Vector2Int(10, 8), towerType);
+            lane.TryBuildTower(new Vector2Int(12, 7), towerType);
+            lane.TryBuildTower(new Vector2Int(12, 9), towerType);
+            feeder.DebugGrantGold(5000);
+            feeder.TrySend(sendId, lane, new Random(77));
+
+            int steps = (int)System.Math.Round(limit / (double)TowerWarsConfig.FixedStep);
+            for (int i = 0; i < steps; i++)
+            {
+                lane.Tick(TowerWarsConfig.FixedStep);
+                if (lane.KilledByTower > 0) return (i + 1) * TowerWarsConfig.FixedStep;
+                if (lane.TotalLeaked > 0) return -1f; // escapou: medição inválida
+            }
+            return -1f;
+        }
+        finally { TowerWarsConfig.AttritionPctPerSecond = saved; }
+    }
+
+    /// <summary>Avanço do inimigo mais adiantado, com uma torre do tipo dado numa célula.</summary>
+    static float DeepestXWith(int towerType, Vector2Int cell, float seconds)
+    {
+        float saved = TowerWarsConfig.AttritionPctPerSecond;
+        TowerWarsConfig.AttritionPctPerSecond = 0f; // raio de fronteira varia por tipo
+        try
+        {
+            var lane = new LaneSim(24, 16);
+            var feeder = new LaneSim(24, 16);
+            lane.DebugGrantGold(3000);
+            lane.TryBuildTower(cell, towerType);
+            feeder.DebugGrantGold(3000);
+            feeder.TrySend(2, lane, new Random(5)); // Corredor: rápido, sente a lentidão
+            Advance(lane, seconds);
+            return DeepestX(lane);
+        }
+        finally { TowerWarsConfig.AttritionPctPerSecond = saved; }
     }
 
     static float DeepestX(LaneSim lane)
@@ -232,6 +290,21 @@ class Program
         Console.WriteLine($"  semente {replay.Seed} | dificuldade {replay.Difficulty} | " +
                           $"grid {replay.Width}x{replay.Height} | {replay.Ticks} tiques " +
                           $"({replay.Ticks * TowerWarsConfig.FixedStep:0.0}s) | {replay.Commands.Count} comandos");
+
+        // Catálogo diferente = outros números = OUTRA partida. Sem este aviso, o relatório
+        // sairia plausível e errado, e a investigação perseguiria um bug que não existe.
+        string nowSig = Replay.CurrentCatalogSignature();
+        if (replay.CatalogSignature.Length == 0)
+            Console.WriteLine("  AVISO: gravação sem assinatura de catálogo (arquivo antigo); " +
+                              "não dá para saber se os números batem.");
+        else if (replay.CatalogSignature != nowSig)
+        {
+            Console.WriteLine($"  ERRO: catálogo diferente do da gravação " +
+                              $"(arquivo {replay.CatalogSignature}, atual {nowSig}).");
+            Console.WriteLine("  A reprodução usaria outros números e daria um desfecho que " +
+                              "nunca aconteceu. Restaure o balanceamento da gravação e rode de novo.");
+            return 3;
+        }
 
         // resumo do que o jogador fez, para ver a estratégia sem assistir
         int builds = 0, upgrades = 0;
@@ -536,24 +609,23 @@ class Program
             $"Torres: Canhão bate mais forte no alvo único que o Morteiro ({cannonSolo:0} vs {mortarSolo:0})");
 
         // Sentinela contra PLANADOR (voador) tem que superar o Canhão
-        float cannonVsFlyer = DamageDealt(4, towerType: 0, seconds: 10f);
-        float sentryVsFlyer = DamageDealt(4, towerType: 3, seconds: 10f);
-        Check(sentryVsFlyer > cannonVsFlyer,
-            $"Torres: Sentinela bate mais no Planador que o Canhão ({sentryVsFlyer:0} vs {cannonVsFlyer:0})");
+        // Contra o Planador a pergunta é TEMPO ATÉ MATAR, não dano acumulado: as duas o
+        // matam, então o dano bate no teto da vida dele (120) e os números empatam.
+        float cannonKillTime = TimeToKill(4, towerType: 0);
+        float sentryKillTime = TimeToKill(4, towerType: 3);
+        Check(cannonKillTime > 0f && sentryKillTime > 0f,
+            "Torres: as duas chegam a matar o Planador (medição válida)");
+        Check(sentryKillTime < cannonKillTime,
+            $"Torres: Sentinela derruba o Planador mais rápido que o Canhão " +
+            $"({sentryKillTime:0.00}s vs {cannonKillTime:0.00}s)");
 
-        // Gelo tem que efetivamente atrasar: mesmo inimigo, menos distância percorrida
-        var iceLane = new LaneSim(24, 16);
-        var plainLane = new LaneSim(24, 16);
-        var iceFeeder = new LaneSim(24, 16);
-        iceLane.DebugGrantGold(3000);
-        iceLane.TryBuildTower(new Vector2Int(6, 8), 2); // Gelo
-        iceFeeder.DebugGrantGold(3000);
-        iceFeeder.TrySend(2, iceLane, new Random(5));   // Corredor: rápido
-        iceFeeder.TrySend(2, plainLane, new Random(5));
-        Advance(iceLane, 4f);
-        Advance(plainLane, 4f);
-        float iceX = DeepestX(iceLane), plainX = DeepestX(plainLane);
-        Check(iceX < plainX, $"Torres: Gelo atrasa o avanço ({iceX:0.0} vs {plainX:0.0} sem torre)");
+        // Gelo tem que atrasar POR CAUSA DA LENTIDÃO. Comparar contra lane vazia media o
+        // desvio do labirinto, não o efeito: o teste passava mesmo com a lentidão desligada.
+        // Contra um Canhão na MESMA célula, o labirinto é idêntico e só a lentidão difere.
+        float iceX = DeepestXWith(towerType: 2, cell: new Vector2Int(6, 8), seconds: 4f);
+        float cannonX = DeepestXWith(towerType: 0, cell: new Vector2Int(6, 8), seconds: 4f);
+        Check(iceX < cannonX,
+            $"Torres: Gelo atrasa mais que um Canhão na MESMA célula ({iceX:0.0} vs {cannonX:0.0})");
 
         // território varia por tipo: Gelo cobre mais chão que Sentinela
         var wideLane = new LaneSim(24, 16);
@@ -614,6 +686,26 @@ class Program
         Check(!Replay.TryParse("lixo\nqualquer", out _, out _), "Replay: cabeçalho errado é recusado");
         Check(!Replay.TryParse(Replay.Header + "\n12 voar 3", out _, out _),
             "Replay: comando desconhecido é recusado");
+
+        // Recusas que evitam "número plausível e errado" — a pior falha para um replay,
+        // porque manda a investigação atrás de um bug que não existe.
+        Check(!Replay.TryParse(Replay.Header + "\ndifficulty Dificil\n", out _, out string dErr)
+              && dErr.Contains("desconhecida"),
+            "Replay: dificuldade sem acento é RECUSADA (não vira Normal em silêncio)");
+        Check(Replay.TryParse(Replay.Header + "\ndifficulty Difícil\n", out _, out _),
+            "Replay: dificuldade escrita certo é aceita");
+        Check(!Replay.TryParse(Replay.Header + "\n50 send 0\n10 send 0\n", out _, out string oErr)
+              && oErr.Contains("crescente"),
+            "Replay: tique fora de ordem é recusado (senão o resto sumia em silêncio)");
+        Check(!Replay.TryParse(Replay.Header + $"\n10 send {SendCatalog.Count}\n", out _, out _),
+            "Replay: envio fora do catálogo é recusado (em vez de estourar na reprodução)");
+        Check(!Replay.TryParse(Replay.Header + $"\n10 build 5 5 {TowerCatalog.Count}\n", out _, out _),
+            "Replay: torre fora do catálogo é recusada");
+
+        // assinatura do catálogo viaja com o arquivo
+        Check(rec.Serialize().Contains("catalog "), "Replay: arquivo carrega a assinatura do catálogo");
+        Check(parsed.CatalogSignature == Replay.CurrentCatalogSignature(),
+            "Replay: assinatura lida bate com o catálogo em uso");
 
         // comando aplicado em fronteira de TIQUE: mesma lista, mesmo resultado, sempre
         var r1 = rec.Run().StateFingerprint();
@@ -902,6 +994,25 @@ class Program
         }
         Check(mirrorTimeouts <= n / 4,
             $"IA: Normal x Normal estoura o tempo em {mirrorTimeouts}/{n} (meta <= 25%)");
+
+        // A IA precisa subir TODOS os tipos, não só o Canhão. Comparar preço bruto fazia
+        // o upgrade de nível 1 do Canhão (20) ser o único abaixo do custo de um Canhão
+        // novo (25): 995 torres de contra-jogo construídas e nenhuma subida de nível.
+        int upgradesTotal = 0, levelsAboveOne = 0;
+        for (int s = 0; s < 12; s++)
+        {
+            var m = new MatchSim(TowerWarsAi.Personality.Hard, TowerWarsAi.Personality.Normal, 9100 + s);
+            m.Run();
+            foreach (var lane in new[] { m.A, m.B })
+            {
+                upgradesTotal += lane.TotalUpgrades;
+                for (int i = 0; i < lane.TowerCount; i++)
+                    if (lane.TowerTypeId(i) != 0 && lane.TowerLevel(i) > 1) levelsAboveOne++;
+            }
+        }
+        Check(upgradesTotal > 0, $"IA: sobe torres de nível ({upgradesTotal} upgrades)");
+        Check(levelsAboveOne > 0,
+            $"IA: sobe também torres que NÃO são Canhão ({levelsAboveOne} acima do nível 1)");
     }
 
     // Simula um inimigo: anda seguindo SampleDirection em passos de 0.05

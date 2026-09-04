@@ -30,6 +30,9 @@ namespace TDFende
         /// que o teste de reprodução pegou o defeito.
         /// </summary>
         public int Ticks;
+
+        /// <summary>Assinatura dos catálogos na gravação. Vazio = arquivo anterior a este campo.</summary>
+        public string CatalogSignature = "";
         public readonly List<(int Tick, MatchCommand Cmd)> Commands = new List<(int, MatchCommand)>();
 
         public void Record(int tick, MatchCommand cmd) => Commands.Add((tick, cmd));
@@ -42,6 +45,7 @@ namespace TDFende
             sb.Append("difficulty ").Append(Difficulty).Append('\n');
             sb.Append("grid ").Append(Width).Append(' ').Append(Height).Append('\n');
             sb.Append("ticks ").Append(Ticks.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            sb.Append("catalog ").Append(CurrentCatalogSignature()).Append('\n');
             foreach (var (tick, cmd) in Commands)
                 sb.Append(tick.ToString(CultureInfo.InvariantCulture)).Append(' ').Append(cmd).Append('\n');
             return sb.ToString();
@@ -74,8 +78,22 @@ namespace TDFende
                         break;
 
                     case "difficulty":
-                        if (p.Length < 2) { error = $"linha {i + 1}: dificuldade ausente"; return false; }
+                        // Recusar nome desconhecido em vez de cair no Normal em silêncio:
+                        // uma partida gravada no Difícil replicada como Normal é OUTRA
+                        // partida, com IA, vidas e mortes diferentes — e o relatório ainda
+                        // imprimiria "Difícil". Basta o acento se perder no caminho.
+                        if (p.Length < 2 || !IsKnownDifficulty(p[1]))
+                        {
+                            error = $"linha {i + 1}: dificuldade desconhecida " +
+                                    $"\"{(p.Length > 1 ? p[1] : "")}\" (esperava Fácil, Normal ou Difícil)";
+                            return false;
+                        }
                         replay.Difficulty = p[1];
+                        break;
+
+                    case "catalog":
+                        if (p.Length < 2) { error = $"linha {i + 1}: assinatura de catálogo ausente"; return false; }
+                        replay.CatalogSignature = p[1];
                         break;
 
                     case "ticks":
@@ -92,6 +110,29 @@ namespace TDFende
                     default:
                         if (!TryParseCommand(p, out int tick, out var cmd))
                         { error = $"linha {i + 1}: comando não reconhecido \"{line}\""; return false; }
+
+                        // Fora de ordem, a reprodução travaria o cursor e descartaria TODO
+                        // o resto em silêncio, reportando o desfecho de meia partida.
+                        if (replay.Commands.Count > 0 && tick < replay.Commands[replay.Commands.Count - 1].Tick)
+                        {
+                            error = $"linha {i + 1}: tique {tick} vem depois de " +
+                                    $"{replay.Commands[replay.Commands.Count - 1].Tick} (a lista tem que ser crescente)";
+                            return false;
+                        }
+                        if (cmd.Kind == CommandKind.Send
+                            && (cmd.SendId < 0 || cmd.SendId >= SendCatalog.Count))
+                        {
+                            error = $"linha {i + 1}: envio {cmd.SendId} não existe " +
+                                    $"(catálogo atual tem {SendCatalog.Count})";
+                            return false;
+                        }
+                        if (cmd.Kind == CommandKind.Build
+                            && (cmd.TowerType < 0 || cmd.TowerType >= TowerCatalog.Count))
+                        {
+                            error = $"linha {i + 1}: torre {cmd.TowerType} não existe " +
+                                    $"(catálogo atual tem {TowerCatalog.Count})";
+                            return false;
+                        }
                         replay.Commands.Add((tick, cmd));
                         break;
                 }
@@ -128,13 +169,53 @@ namespace TDFende
             }
         }
 
+        public static bool IsKnownDifficulty(string name) =>
+            name == TowerWarsAi.Personality.Easy.Name
+            || name == TowerWarsAi.Personality.Normal.Name
+            || name == TowerWarsAi.Personality.Hard.Name;
+
         public static TowerWarsAi.Personality PersonalityFromName(string name)
         {
-            switch (name)
+            if (name == TowerWarsAi.Personality.Easy.Name) return TowerWarsAi.Personality.Easy;
+            if (name == TowerWarsAi.Personality.Hard.Name) return TowerWarsAi.Personality.Hard;
+            return TowerWarsAi.Personality.Normal;
+        }
+
+        /// <summary>
+        /// Impressão digital dos catálogos em uso. Um arquivo de balanceamento editado
+        /// muda a partida inteira, e sem isto a reprodução usaria números diferentes dos
+        /// da gravação e reportaria um desfecho que nunca aconteceu.
+        /// </summary>
+        public static string CurrentCatalogSignature()
+        {
+            unchecked
             {
-                case "Fácil": return TowerWarsAi.Personality.Easy;
-                case "Difícil": return TowerWarsAi.Personality.Hard;
-                default: return TowerWarsAi.Personality.Normal;
+                int h = 17;
+                for (int i = 0; i < SendCatalog.Count; i++)
+                {
+                    var u = SendCatalog.Get(i);
+                    h = h * 31 + u.Cost;
+                    h = h * 31 + u.IncomeBonus;
+                    h = h * 31 + u.Count;
+                    h = h * 31 + u.Bounty;
+                    h = h * 31 + u.Hp.GetHashCode();
+                    h = h * 31 + u.Speed.GetHashCode();
+                    h = h * 31 + u.AttritionScale.GetHashCode();
+                }
+                for (int i = 0; i < TowerCatalog.Count; i++)
+                {
+                    var t = TowerCatalog.Get(i);
+                    h = h * 31 + t.Cost;
+                    h = h * 31 + t.Range.GetHashCode();
+                    h = h * 31 + t.Cooldown.GetHashCode();
+                    h = h * 31 + t.Damage.GetHashCode();
+                    h = h * 31 + t.SplashRadius.GetHashCode();
+                    h = h * 31 + t.SlowFactor.GetHashCode();
+                    h = h * 31 + t.SlowSeconds.GetHashCode();
+                    h = h * 31 + t.VsFlyingMultiplier.GetHashCode();
+                    h = h * 31 + t.BorderRadius.GetHashCode();
+                }
+                return h.ToString("x8", CultureInfo.InvariantCulture);
             }
         }
 
@@ -152,7 +233,9 @@ namespace TDFende
             int next = 0;
             for (int t = 0; t < stop && !runner.Over; t++)
             {
-                while (next < Commands.Count && Commands[next].Tick == runner.TickCount)
+                // <= e não ==: com == , um tique já passado travaria o cursor para sempre
+                // e o resto da partida seria descartado sem um aviso sequer.
+                while (next < Commands.Count && Commands[next].Tick <= runner.TickCount)
                     runner.Enqueue(Commands[next++].Cmd);
                 runner.Step();
             }

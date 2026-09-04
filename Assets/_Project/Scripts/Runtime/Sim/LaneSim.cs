@@ -240,6 +240,58 @@ namespace TDFende
             Territory.Rebuild(_towerCells, _towerRadii);
         }
 
+        /// <summary>
+        /// Melhor upgrade disponível por DANO POR OURO, não por preço.
+        /// Comparar preço bruto fazia a IA subir só Canhão: o upgrade de nível 1 dele custa
+        /// 20, e nenhum outro upgrade do catálogo fica abaixo do preço de um Canhão novo (25).
+        /// Medido: 995 torres de contra-jogo construídas, ZERO subidas de nível.
+        /// </summary>
+        public bool TryGetBestUpgrade(out int cost, out float dpsGain)
+        {
+            cost = 0;
+            dpsGain = 0f;
+            float bestRatio = -1f;
+
+            for (int i = 0; i < _towers.Count; i++)
+            {
+                if (_towers[i].Level >= TowerWarsConfig.MaxTowerLevel) continue;
+                int c = TowerCatalog.UpgradeCost(_towers[i].TypeId, _towers[i].Level);
+                if (c <= 0 || Gold < c) continue;
+
+                var type = TowerCatalog.Get(_towers[i].TypeId);
+                float gain = (TowerCatalog.DamageAtLevel(_towers[i].TypeId, _towers[i].Level + 1)
+                              - TowerCatalog.DamageAtLevel(_towers[i].TypeId, _towers[i].Level))
+                             / type.Cooldown;
+                float ratio = gain / c;
+                if (ratio <= bestRatio) continue;
+
+                bestRatio = ratio;
+                cost = c;
+                dpsGain = gain;
+                _bestUpgradeIndex = i;
+            }
+            return bestRatio > 0f;
+        }
+
+        int _bestUpgradeIndex = -1;
+
+        /// <summary>Aplica o upgrade escolhido por TryGetBestUpgrade.</summary>
+        public bool TryUpgradeBest()
+        {
+            if (Dead || !TryGetBestUpgrade(out int cost, out _)) return false;
+            int i = _bestUpgradeIndex;
+            if (i < 0 || i >= _towers.Count) return false;
+
+            Gold -= cost;
+            GoldSpentOnTowers += cost;
+            var t = _towers[i];
+            t.Level++;
+            _towers[i] = t;
+            TotalUpgrades++;
+            TowerChanged?.Invoke(t.Pos, t.Level);
+            return true;
+        }
+
         /// <summary>Custo de subir a torre mais barata de subir, ou -1 se nada é possível.</summary>
         public int CheapestUpgradeCost()
         {

@@ -117,18 +117,28 @@ namespace TDFende
             if (_me.TowerCount < CoverageTarget)
                 return BuildSomewhere() || TryUpgrade();
 
-            int up = _me.CheapestUpgradeCost();
-            bool canUpgrade = up >= 0 && _me.Gold >= up;
-            bool canBuild = _me.Gold >= TowerCatalog.Get(0).Cost;
+            // Comparar DANO POR OURO dos dois caminhos, não preço bruto. Com preço bruto,
+            // só o upgrade de nível 1 do Canhão (20) passava por ser o único abaixo do
+            // custo de um Canhão novo (25) — Morteiro, Gelo e Sentinela nunca subiam de
+            // nível na partida inteira, medido em 995 torres construídas.
+            bool canUpgrade = _me.TryGetBestUpgrade(out int upCost, out float upDps);
+            float upgradeValue = canUpgrade ? upDps / upCost : -1f;
 
-            // Com cobertura feita, sobe o que for mais barato por dano entregue.
-            if (canUpgrade && (!canBuild || up <= TowerCatalog.Get(0).Cost))
+            int buildType = ChooseTowerType();
+            float buildValue = -1f;
+            if (buildType >= 0)
+            {
+                var bt = TowerCatalog.Get(buildType);
+                buildValue = bt.Dps / bt.Cost;
+            }
+
+            if (canUpgrade && upgradeValue >= buildValue)
                 return TryUpgrade() || BuildSomewhere();
 
             return BuildSomewhere() || TryUpgrade();
         }
 
-        bool TryUpgrade() => _me.TryUpgradeCheapestTower();
+        bool TryUpgrade() => _me.TryUpgradeBest();
 
         readonly float[] _towerScores = new float[TowerCatalog.Count];
 
