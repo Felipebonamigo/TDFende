@@ -54,5 +54,32 @@ namespace TDFende
                 }
             }
         }
+
+        /// <summary>
+        /// Versão com raio POR TORRE: cada tipo projeta uma fronteira de tamanho
+        /// diferente, então uma linha de Gelo cobre bem mais chão que uma de Sentinela.
+        /// </summary>
+        public void Rebuild(IReadOnlyList<Vector2Int> towerCells, IReadOnlyList<float> radii)
+        {
+            System.Array.Clear(_inside, 0, _inside.Length);
+            if (towerCells.Count == 0) return;
+
+            for (int y = 0; y < _map.Height; y++)
+            for (int x = 0; x < _map.Width; x++)
+            {
+                for (int t = 0; t < towerCells.Count; t++)
+                {
+                    float r = t < radii.Count ? radii[t] : 0f;
+                    if (r <= 0f) continue;
+                    float dx = x - towerCells[t].x;
+                    float dy = y - towerCells[t].y;
+                    if (dx * dx + dy * dy <= r * r)
+                    {
+                        _inside[y * _map.Width + x] = true;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

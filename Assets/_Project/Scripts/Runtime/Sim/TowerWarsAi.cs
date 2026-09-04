@@ -19,28 +19,34 @@ namespace TDFende
             public float DecisionInterval; // segundos entre decisões (reação)
             public float SafetyMargin;     // quanto de folga defensiva exige antes de atacar
             public float GreedBias;        // >1 favorece renda; <1 favorece defesa
-            public bool PlaysCounters;     // percebe território inimigo e manda voador
+            /// <summary>
+            /// Quanto ela percebe contra-jogo: 0 = cega, 1 = leitura cheia. Era um bool,
+            /// mas com quatro tipos de torre "cega" virou catastrófico — o Fácil construía
+            /// pelo dano por ouro, nunca fazia Sentinela e perdia 97% para o Normal.
+            /// Difficuldade agora é um botão contínuo, não um interruptor.
+            /// </summary>
+            public float CounterStrength;
             public int PlacementSamples;   // quantas células avalia por torre (esperteza do maze)
 
-            // Fácil erra de um jeito específico: não lê contra-jogo (PlaysCounters = false)
-            // e reage devagar. Não é uma versão "capada" em tudo — quando era, perdia 100%
-            // das partidas, e adversário que nunca ganha não ensina o jogo a ninguém.
+            // Fácil erra de um jeito específico: lê contra-jogo pela metade e reage
+            // devagar. Não é uma versão "capada" em tudo — quando era, perdia 100% das
+            // partidas, e adversário que nunca ganha não ensina o jogo a ninguém.
             public static Personality Easy => new Personality
             {
-                Name = "Fácil", DecisionInterval = 1.6f, SafetyMargin = 1.7f,
-                GreedBias = 0.85f, PlaysCounters = false, PlacementSamples = 12
+                Name = "Fácil", DecisionInterval = 1.35f, SafetyMargin = 1.5f,
+                GreedBias = 0.85f, CounterStrength = 0.6f, PlacementSamples = 14
             };
 
             public static Personality Normal => new Personality
             {
                 Name = "Normal", DecisionInterval = 1.2f, SafetyMargin = 1.4f,
-                GreedBias = 1.0f, PlaysCounters = true, PlacementSamples = 18
+                GreedBias = 1.0f, CounterStrength = 1.0f, PlacementSamples = 18
             };
 
             public static Personality Hard => new Personality
             {
                 Name = "Difícil", DecisionInterval = 0.6f, SafetyMargin = 1.0f,
-                GreedBias = 1.35f, PlaysCounters = true, PlacementSamples = 40
+                GreedBias = 1.35f, CounterStrength = 1.3f, PlacementSamples = 40
             };
         }
 
@@ -88,14 +94,14 @@ namespace TDFende
             if (wantsTower && ReinforceDefense()) return;
 
             // Sem pressão: converte ouro em renda + pressão no adversário.
-            if (!wantsTower || _me.Gold >= TowerWarsConfig.TowerCost * 3)
+            if (!wantsTower || _me.Gold >= TowerCatalog.Get(0).Cost * 3)
             {
                 int pick = ChooseSend();
                 if (pick >= 0 && _me.TrySend(pick, _foe, _rng)) return;
             }
 
             // Sobrou ouro e nada urgente: engrossa a defesa.
-            if (_me.Gold >= TowerWarsConfig.TowerCost * 4)
+            if (_me.Gold >= TowerCatalog.Get(0).Cost * 4)
                 ReinforceDefense();
         }
 
@@ -113,16 +119,71 @@ namespace TDFende
 
             int up = _me.CheapestUpgradeCost();
             bool canUpgrade = up >= 0 && _me.Gold >= up;
-            bool canBuild = _me.Gold >= TowerWarsConfig.TowerCost;
+            bool canBuild = _me.Gold >= TowerCatalog.Get(0).Cost;
 
             // Com cobertura feita, sobe o que for mais barato por dano entregue.
-            if (canUpgrade && (!canBuild || up <= TowerWarsConfig.TowerCost))
+            if (canUpgrade && (!canBuild || up <= TowerCatalog.Get(0).Cost))
                 return TryUpgrade() || BuildSomewhere();
 
             return BuildSomewhere() || TryUpgrade();
         }
 
         bool TryUpgrade() => _me.TryUpgradeCheapestTower();
+
+        readonly float[] _towerScores = new float[TowerCatalog.Count];
+
+        /// <summary>
+        /// Escolhe o TIPO de torre pela ameaça que está na tela agora: enxame pede área,
+        /// voador pede Sentinela, gordo-e-rápido pede Gelo. Sem isto a IA construiria só
+        /// Canhão e as outras três seriam decoração no catálogo.
+        ///
+        /// CounterStrength gradua o quanto ela lê a ameaça: é o que separa o Fácil do
+        /// Difícil sem transformar o Fácil em adversário inútil.
+        /// </summary>
+        int ChooseTowerType()
+        {
+            float swarmHp = 0f, flyerHp = 0f, fastHp = 0f, totalHp = 0.001f;
+            for (int s = 0; s < _me.EnemySlotCount; s++)
+            {
+                if (!_me.TryGetEnemy(s, out var e)) continue;
+                var u = SendCatalog.Get(e.TypeId);
+                totalHp += e.Hp;
+                if (u.Count > 1) swarmHp += e.Hp;
+                if (u.IgnoresTerritory) flyerHp += e.Hp;
+                if (u.Speed >= 3.5f) fastHp += e.Hp;
+            }
+
+            for (int id = 0; id < TowerCatalog.Count; id++)
+            {
+                var t = TowerCatalog.Get(id);
+                if (_me.Gold < t.Cost) { _towerScores[id] = 0f; continue; }
+
+                // base: dano por ouro, com o território contando como valor
+                float score = t.Dps / t.Cost + t.BorderRadius * 0.02f;
+
+                float cs = _p.CounterStrength;
+                if (t.SplashRadius > 0f) score *= 1f + 1.6f * cs * (swarmHp / totalHp);
+                if (t.VsFlyingMultiplier > 1f) score *= 1f + 2.2f * cs * (flyerHp / totalHp);
+                if (t.SlowFactor < 1f) score *= 1f + 1.4f * cs * (fastHp / totalHp);
+
+                _towerScores[id] = score * score; // acentua o favorito sem zerar o resto
+            }
+
+            float total = 0f;
+            foreach (var s in _towerScores) total += s;
+            if (total <= 0f) return -1;
+
+            double roll = _rng.NextDouble() * total;
+            int last = -1;
+            for (int id = 0; id < TowerCatalog.Count; id++)
+            {
+                if (_towerScores[id] <= 0f) continue;
+                last = id;
+                roll -= _towerScores[id];
+                if (roll <= 0.0) return id;
+            }
+            return last;
+        }
 
         readonly float[] _sendScores = new float[SendCatalog.Count];
 
@@ -166,13 +227,12 @@ namespace TDFende
                     score *= 1f + 0.25f * waste;
                 }
 
-                if (_p.PlaysCounters)
-                {
-                    // Voador contra quem investiu em território é o contra-jogo do modo.
-                    if (u.IgnoresTerritory && foeHasTerritory) score *= 1.5f;
-                    // Enxame frágil derrete no atrito: evita quando o outro tem fronteira.
-                    if (u.AttritionScale > 1.2f && foeHasTerritory) score *= 0.6f;
-                }
+                // Voador contra quem investiu em território é o contra-jogo do modo.
+                if (u.IgnoresTerritory && foeHasTerritory)
+                    score *= 1f + 0.5f * _p.CounterStrength;
+                // Enxame frágil derrete no atrito: evita quando o outro tem fronteira.
+                if (u.AttritionScale > 1.2f && foeHasTerritory)
+                    score *= 1f - 0.4f * _p.CounterStrength;
 
                 if (score <= 0f) continue;
                 // Quadrado antes do sorteio: acentua o favorito sem matar a variedade.
@@ -201,6 +261,9 @@ namespace TDFende
         /// </summary>
         bool BuildSomewhere()
         {
+            int typeId = ChooseTowerType();
+            if (typeId < 0) return false;
+
             int w = _me.Map.Width, h = _me.Map.Height;
             Vector2Int bestCell = default;
             float bestScore = float.NegativeInfinity;
@@ -209,7 +272,7 @@ namespace TDFende
             for (int s = 0; s < _p.PlacementSamples; s++)
             {
                 var cell = new Vector2Int(_rng.Next(1, w - 1), _rng.Next(0, h));
-                if (!_me.CanBuild(cell)) continue;
+                if (!_me.CanBuild(cell, typeId)) continue;
 
                 float score = 0f;
 
@@ -241,7 +304,7 @@ namespace TDFende
                 }
             }
 
-            return found && _me.TryBuildTower(bestCell);
+            return found && _me.TryBuildTower(bestCell, typeId);
         }
     }
 }

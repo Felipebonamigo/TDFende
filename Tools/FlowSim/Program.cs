@@ -131,6 +131,56 @@ class Program
         return _failed;
     }
 
+    // ---- ajudantes dos testes de torre: mesmo cenário, só muda o tipo de torre ----
+
+    static LaneSim Duel(int sendId, int towerType, float seconds)
+    {
+        var lane = new LaneSim(24, 16);
+        var feeder = new LaneSim(24, 16);
+        lane.DebugGrantGold(5000);
+        // três torres na frente do caminho, para o alvo passar pelo alcance
+        lane.TryBuildTower(new Vector2Int(10, 8), towerType);
+        lane.TryBuildTower(new Vector2Int(12, 7), towerType);
+        lane.TryBuildTower(new Vector2Int(12, 9), towerType);
+        feeder.DebugGrantGold(5000);
+        for (int i = 0; i < 4; i++) feeder.TrySend(sendId, lane, new Random(77 + i));
+        Advance(lane, seconds);
+        return lane;
+    }
+
+    static int KillsAgainst(int sendId, int towerType, float seconds) =>
+        Duel(sendId, towerType, seconds).KilledByTower;
+
+    /// <summary>Dano entregue = vida que sumiu dos que morreram + a que falta nos vivos.</summary>
+    static float DamageDealt(int sendId, int towerType, float seconds)
+    {
+        var lane = Duel(sendId, towerType, seconds);
+        float dealt = 0f;
+        for (int s = 0; s < lane.EnemySlotCount; s++)
+            if (lane.TryGetEnemy(s, out var e)) dealt += e.MaxHp - e.Hp;
+        // quem morreu contribuiu com a vida inteira
+        var u = SendCatalog.Get(sendId);
+        dealt += lane.KilledByTower * u.Hp;
+        return dealt;
+    }
+
+    static float DeepestX(LaneSim lane)
+    {
+        float x = float.NegativeInfinity;
+        for (int s = 0; s < lane.EnemySlotCount; s++)
+            if (lane.TryGetEnemy(s, out var e) && e.Pos.x > x) x = e.Pos.x;
+        return x == float.NegativeInfinity ? 0f : x;
+    }
+
+    static int TerritoryCells(LaneSim lane)
+    {
+        int n = 0;
+        for (int y = 0; y < lane.Map.Height; y++)
+        for (int x = 0; x < lane.Map.Width; x++)
+            if (lane.Territory.Contains(x, y)) n++;
+        return n;
+    }
+
     static int RunReplay(string path)
     {
         if (!System.IO.File.Exists(path))
@@ -328,6 +378,103 @@ class Program
             if (!evLane.Map.InBounds(evCell.x, evCell.y)) posInBounds = false;
         }
         Check(posInBounds, "Eventos: posição reportada cai dentro do mapa (a vista desenha ali)");
+
+        // ---------- morte súbita: a partida SEMPRE termina ----------
+        // É garantia estrutural, não ajuste: se a defesa ficar mais forte no futuro, a
+        // escalada quadrática ainda a ultrapassa em tempo finito.
+        var sdLane = new LaneSim(24, 16);
+        Check(!sdLane.InSuddenDeath, "Morte súbita: não começa ligada");
+        float scaleEarly = sdLane.SendScale;
+        Advance(sdLane, TowerWarsConfig.SuddenDeathMinutes * 60f + 1f);
+        Check(sdLane.InSuddenDeath, "Morte súbita: liga depois do limiar");
+
+        float scaleAt8 = sdLane.SendScale;
+        Advance(sdLane, 60f);
+        float scaleAt9 = sdLane.SendScale;
+        Advance(sdLane, 60f);
+        float scaleAt10 = sdLane.SendScale;
+        Check(scaleAt8 > scaleEarly, "Morte súbita: escala sobe depois do limiar");
+        Check(scaleAt10 - scaleAt9 > scaleAt9 - scaleAt8,
+            "Morte súbita: aceleração é crescente (quadrática, não linear)");
+
+        int sdDecided = 0, sdTimedOut = 0;
+        for (int s = 0; s < 20; s++)
+        {
+            var m = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 8800 + s);
+            m.Run();
+            if (m.A.Dead || m.B.Dead) sdDecided++; else sdTimedOut++;
+        }
+        Check(sdTimedOut == 0, $"Morte súbita: nenhuma partida bate no teto de tempo ({sdDecided}/20 decididas)");
+
+        // ---------- tipos de torre: cada uma responde a alguma coisa ----------
+        // Uma torre que não vence NENHUM envio melhor que o Canhão não precisa existir;
+        // estes testes são a régua que impede o catálogo de virar enfeite.
+        Check(TowerCatalog.Count >= 4, "Torres: catálogo tem variedade");
+
+        int splashers = 0, slowers = 0, antiAir = 0;
+        for (int i = 0; i < TowerCatalog.Count; i++)
+        {
+            var tt = TowerCatalog.Get(i);
+            if (tt.SplashRadius > 0f) splashers++;
+            if (tt.SlowFactor < 1f) slowers++;
+            if (tt.VsFlyingMultiplier > 1f) antiAir++;
+        }
+        Check(splashers >= 1 && slowers >= 1 && antiAir >= 1,
+            "Torres: existe resposta para enxame, para velocidade e para voador");
+
+        // Morteiro (área) contra ENXAME tem que matar mais que o Canhão no mesmo tempo
+        int cannonSwarmKills = KillsAgainst(1, towerType: 0, seconds: 12f);
+        int mortarSwarmKills = KillsAgainst(1, towerType: 1, seconds: 12f);
+        Check(mortarSwarmKills > cannonSwarmKills,
+            $"Torres: Morteiro mata mais Enxame que o Canhão ({mortarSwarmKills} vs {cannonSwarmKills})");
+
+        // ...e contra ALVO ÚNICO (Colosso) o Canhão tem que ser melhor, senão o Morteiro
+        // seria simplesmente superior e a escolha não existiria
+        float cannonSolo = DamageDealt(5, towerType: 0, seconds: 12f);
+        float mortarSolo = DamageDealt(5, towerType: 1, seconds: 12f);
+        Check(cannonSolo > mortarSolo,
+            $"Torres: Canhão bate mais forte no alvo único que o Morteiro ({cannonSolo:0} vs {mortarSolo:0})");
+
+        // Sentinela contra PLANADOR (voador) tem que superar o Canhão
+        float cannonVsFlyer = DamageDealt(4, towerType: 0, seconds: 10f);
+        float sentryVsFlyer = DamageDealt(4, towerType: 3, seconds: 10f);
+        Check(sentryVsFlyer > cannonVsFlyer,
+            $"Torres: Sentinela bate mais no Planador que o Canhão ({sentryVsFlyer:0} vs {cannonVsFlyer:0})");
+
+        // Gelo tem que efetivamente atrasar: mesmo inimigo, menos distância percorrida
+        var iceLane = new LaneSim(24, 16);
+        var plainLane = new LaneSim(24, 16);
+        var iceFeeder = new LaneSim(24, 16);
+        iceLane.DebugGrantGold(3000);
+        iceLane.TryBuildTower(new Vector2Int(6, 8), 2); // Gelo
+        iceFeeder.DebugGrantGold(3000);
+        iceFeeder.TrySend(2, iceLane, new Random(5));   // Corredor: rápido
+        iceFeeder.TrySend(2, plainLane, new Random(5));
+        Advance(iceLane, 4f);
+        Advance(plainLane, 4f);
+        float iceX = DeepestX(iceLane), plainX = DeepestX(plainLane);
+        Check(iceX < plainX, $"Torres: Gelo atrasa o avanço ({iceX:0.0} vs {plainX:0.0} sem torre)");
+
+        // território varia por tipo: Gelo cobre mais chão que Sentinela
+        var wideLane = new LaneSim(24, 16);
+        var narrowLane = new LaneSim(24, 16);
+        wideLane.DebugGrantGold(3000);
+        narrowLane.DebugGrantGold(3000);
+        wideLane.TryBuildTower(new Vector2Int(12, 8), 2);   // Gelo, raio 3.25
+        narrowLane.TryBuildTower(new Vector2Int(12, 8), 3); // Sentinela, raio 1.5
+        Check(TerritoryCells(wideLane) > TerritoryCells(narrowLane),
+            $"Torres: fronteira do Gelo é maior que a da Sentinela " +
+            $"({TerritoryCells(wideLane)} vs {TerritoryCells(narrowLane)} células)");
+
+        // custo é POR TIPO: com pouco ouro, a cara é recusada e a barata ainda cabe
+        var poorType = new LaneSim(24, 16);
+        poorType.TryBuildTower(new Vector2Int(8, 8), 0);
+        poorType.TryBuildTower(new Vector2Int(9, 8), 0);
+        poorType.TryBuildTower(new Vector2Int(10, 8), 0); // 120 - 3x25 = 45 de ouro
+        Check(!poorType.CanBuild(new Vector2Int(11, 8), 3),
+            $"Torres: Sentinela (50) recusada com {poorType.Gold} de ouro");
+        Check(poorType.CanBuild(new Vector2Int(11, 8), 0),
+            "Torres: Canhão (25) ainda cabe com o mesmo ouro");
 
         // ---------- replay: a partida reproduz byte a byte ----------
         // É o que transforma "achei estranho no editor" num arquivo que eu reproduzo

@@ -62,6 +62,18 @@ namespace TDFende
         /// Não é const: varrido em lote pelo Tools/FlowSim junto com o atrito.
         public static float SendScalePerMinute = 1.80f;
 
+        /// <summary>
+        /// Morte súbita: a partir daqui a escalada dos envios acelera de forma QUADRÁTICA.
+        ///
+        /// Existe como garantia estrutural, não como ajuste. A escalada linear empata com
+        /// a defesa sempre que a defesa fica mais forte — foi o que aconteceu quando os
+        /// quatro tipos de torre entraram e as partidas voltaram a bater no teto de tempo.
+        /// Com um termo quadrático, o ataque ultrapassa qualquer defesa fixa em tempo
+        /// finito, então a partida termina independentemente de balanceamento futuro.
+        /// </summary>
+        public const float SuddenDeathMinutes = 7f;
+        public const float SuddenDeathAccel = 1.6f;
+
         // Ritmo da partida
         public const float FixedStep = 1f / 30f;   // passo fixo da simulação headless
         public const float MatchTimeLimit = 900f;  // 15 min: empate técnico decide por vidas

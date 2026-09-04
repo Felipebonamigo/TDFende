@@ -19,9 +19,10 @@ namespace TDFende
         public CommandKind Kind;
         public int X, Y;
         public int SendId;
+        public int TowerType;
 
-        public static MatchCommand Build(int x, int y) =>
-            new MatchCommand { Kind = CommandKind.Build, X = x, Y = y };
+        public static MatchCommand Build(int x, int y, int towerType = 0) =>
+            new MatchCommand { Kind = CommandKind.Build, X = x, Y = y, TowerType = towerType };
 
         public static MatchCommand Upgrade(int x, int y) =>
             new MatchCommand { Kind = CommandKind.Upgrade, X = x, Y = y };
@@ -31,7 +32,7 @@ namespace TDFende
 
         public override string ToString() => Kind switch
         {
-            CommandKind.Build => $"build {X} {Y}",
+            CommandKind.Build => $"build {X} {Y} {TowerType}",
             CommandKind.Upgrade => $"upgrade {X} {Y}",
             _ => $"send {SendId}"
         };

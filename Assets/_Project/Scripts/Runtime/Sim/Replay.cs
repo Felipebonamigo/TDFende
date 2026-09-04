@@ -111,7 +111,11 @@ namespace TDFende
                 case "upgrade":
                     if (p.Length < 4 || !int.TryParse(p[2], out int x) || !int.TryParse(p[3], out int y))
                         return false;
-                    cmd = p[1] == "build" ? MatchCommand.Build(x, y) : MatchCommand.Upgrade(x, y);
+                    if (p[1] == "upgrade") { cmd = MatchCommand.Upgrade(x, y); return true; }
+                    // tipo é opcional: gravação anterior aos tipos de torre continua legível
+                    int type = 0;
+                    if (p.Length >= 5 && !int.TryParse(p[4], out type)) return false;
+                    cmd = MatchCommand.Build(x, y, type);
                     return true;
 
                 case "send":

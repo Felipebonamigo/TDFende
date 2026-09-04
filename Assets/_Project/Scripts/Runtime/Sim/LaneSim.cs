@@ -29,6 +29,11 @@ namespace TDFende
             public float AttritionScale;
             public int Bounty;
             public int TypeId;
+            public bool IgnoresTerritory; // voador: alvo da Sentinela, imune ao atrito
+            public float SlowFactor;      // 1 = velocidade cheia
+            public float SlowLeft;        // segundos restantes de lentidão
+
+            public float CurrentSpeed => SlowLeft > 0f ? Speed * SlowFactor : Speed;
         }
 
         struct SimTower
@@ -37,6 +42,7 @@ namespace TDFende
             public Vector3 Pos;
             public float Cooldown;
             public int Level;
+            public int TypeId;
             public Vector3 Aim;      // último alvo visto; a vista gira o canhão para cá
             public bool HasAim;
         }
@@ -50,6 +56,7 @@ namespace TDFende
             public float TimeLeft;
             public float TotalTime;  // com Origin, permite à vista desenhar o tiro em voo
             public Vector3 Origin;
+            public int TowerTypeId;  // decide área e bônus anti-aéreo no impacto
         }
 
         // ---- estado do tabuleiro ----
@@ -59,6 +66,7 @@ namespace TDFende
 
         readonly List<SimTower> _towers = new List<SimTower>();
         readonly List<Vector2Int> _towerCells = new List<Vector2Int>();
+        readonly List<float> _towerRadii = new List<float>();
         readonly List<Vector2Int> _spawnCells = new List<Vector2Int>();
         SimEnemy[] _enemies = new SimEnemy[256];
         SimProjectile[] _projectiles = new SimProjectile[512];
@@ -77,7 +85,22 @@ namespace TDFende
         public float MatchTime { get; private set; }
 
         /// <summary>Multiplicador de vida/recompensa aplicado a quem nasce agora.</summary>
-        public float SendScale => 1f + (MatchTime / 60f) * TowerWarsConfig.SendScalePerMinute;
+        public float SendScale
+        {
+            get
+            {
+                float minutes = MatchTime / 60f;
+                float scale = 1f + minutes * TowerWarsConfig.SendScalePerMinute;
+
+                // morte súbita: termo quadrático que garante o fim da partida
+                float over = minutes - TowerWarsConfig.SuddenDeathMinutes;
+                if (over > 0f) scale += over * over * TowerWarsConfig.SuddenDeathAccel;
+                return scale;
+            }
+        }
+
+        /// <summary>true depois do limiar de morte súbita — o HUD avisa.</summary>
+        public bool InSuddenDeath => MatchTime / 60f > TowerWarsConfig.SuddenDeathMinutes;
 
         // ---- placar (para o balanceamento ler) ----
         public int TotalLeaked { get; private set; }
@@ -121,7 +144,7 @@ namespace TDFende
             _goalWorld = Map.CellToWorld(_goalCell);
             _spawnCells.Add(new Vector2Int(2, row));
             Flow.Rebuild(_goalCell);
-            Territory.Rebuild(_towerCells, TowerWarsConfig.BorderRadius);
+            RebuildTerritory();
 
             Gold = TowerWarsConfig.StartGold;
             Income = TowerWarsConfig.BaseIncome;
@@ -157,14 +180,14 @@ namespace TDFende
 
         // ---------------- construção ----------------
 
-        public bool CanBuild(Vector2Int cell)
+        public bool CanBuild(Vector2Int cell, int typeId = 0)
         {
             if (Dead) return false;
             if (!Map.InBounds(cell.x, cell.y) || Map.IsBlocked(cell)) return false;
             if (cell == _goalCell) return false;
             for (int i = 0; i < _spawnCells.Count; i++)
                 if (cell == _spawnCells[i]) return false;
-            if (Gold < TowerWarsConfig.TowerCost) return false;
+            if (Gold < TowerCatalog.Get(typeId).Cost) return false;
 
             // não construir em cima de inimigo
             var center = Map.CellToWorld(cell);
@@ -180,20 +203,37 @@ namespace TDFende
             return !Flow.PlacementBlocksPath(cell, _spawnCells);
         }
 
-        public bool TryBuildTower(Vector2Int cell)
+        public bool TryBuildTower(Vector2Int cell, int typeId = 0)
         {
-            if (!CanBuild(cell)) return false;
-            Gold -= TowerWarsConfig.TowerCost;
-            GoldSpentOnTowers += TowerWarsConfig.TowerCost;
+            if (!CanBuild(cell, typeId)) return false;
+            int cost = TowerCatalog.Get(typeId).Cost;
+            Gold -= cost;
+            GoldSpentOnTowers += cost;
 
             Map.SetBlocked(cell, true);
             _towerCells.Add(cell);
-            _towers.Add(new SimTower { Cell = cell, Pos = Map.CellToWorld(cell), Cooldown = 0f, Level = 1 });
+            _towers.Add(new SimTower
+            {
+                Cell = cell, Pos = Map.CellToWorld(cell), Cooldown = 0f, Level = 1, TypeId = typeId
+            });
             TowerChanged?.Invoke(Map.CellToWorld(cell), 1);
 
             Flow.Rebuild(_goalCell);
-            Territory.Rebuild(_towerCells, TowerWarsConfig.BorderRadius);
+            RebuildTerritory();
             return true;
+        }
+
+        /// <summary>
+        /// Território é a UNIÃO dos raios de cada torre — e o raio varia por tipo, então
+        /// uma linha de Gelo projeta fronteira bem mais larga que uma de Sentinela.
+        /// É o que liga a escolha de torre à mecânica central do jogo.
+        /// </summary>
+        void RebuildTerritory()
+        {
+            _towerRadii.Clear();
+            for (int i = 0; i < _towers.Count; i++)
+                _towerRadii.Add(TowerCatalog.Get(_towers[i].TypeId).BorderRadius);
+            Territory.Rebuild(_towerCells, _towerRadii);
         }
 
         /// <summary>Custo de subir a torre mais barata de subir, ou -1 se nada é possível.</summary>
@@ -203,7 +243,7 @@ namespace TDFende
             for (int i = 0; i < _towers.Count; i++)
             {
                 if (_towers[i].Level >= TowerWarsConfig.MaxTowerLevel) continue;
-                int c = TowerWarsConfig.UpgradeCost(_towers[i].Level);
+                int c = TowerCatalog.UpgradeCost(_towers[i].TypeId, _towers[i].Level);
                 if (best < 0 || c < best) best = c;
             }
             return best;
@@ -226,7 +266,7 @@ namespace TDFende
             int i = TowerIndexAt(cell);
             if (i < 0) return -1;
             if (_towers[i].Level >= TowerWarsConfig.MaxTowerLevel) return 0;
-            return TowerWarsConfig.UpgradeCost(_towers[i].Level);
+            return TowerCatalog.UpgradeCost(_towers[i].TypeId, _towers[i].Level);
         }
 
         /// <summary>
@@ -242,7 +282,7 @@ namespace TDFende
 
             var t = _towers[i];
             if (t.Level >= TowerWarsConfig.MaxTowerLevel) return false;
-            int cost = TowerWarsConfig.UpgradeCost(t.Level);
+            int cost = TowerCatalog.UpgradeCost(t.TypeId, t.Level);
             if (Gold < cost) return false;
 
             Gold -= cost;
@@ -265,7 +305,7 @@ namespace TDFende
             for (int i = 0; i < _towers.Count; i++)
             {
                 if (_towers[i].Level >= TowerWarsConfig.MaxTowerLevel) continue;
-                int c = TowerWarsConfig.UpgradeCost(_towers[i].Level);
+                int c = TowerCatalog.UpgradeCost(_towers[i].TypeId, _towers[i].Level);
                 if (c < pickCost) { pickCost = c; pick = i; }
             }
             if (pick < 0 || Gold < pickCost) return false;
@@ -287,7 +327,8 @@ namespace TDFende
             {
                 float dps = 0f;
                 for (int i = 0; i < _towers.Count; i++)
-                    dps += TowerWarsConfig.DamageAtLevel(_towers[i].Level) / TowerWarsConfig.TowerCooldown;
+                    dps += TowerCatalog.DamageAtLevel(_towers[i].TypeId, _towers[i].Level)
+                           / TowerCatalog.Get(_towers[i].TypeId).Cooldown;
                 return dps;
             }
         }
@@ -361,6 +402,9 @@ namespace TDFende
             _enemies[slot].Hp = _enemies[slot].MaxHp;
             _enemies[slot].Speed = u.Speed;
             _enemies[slot].AttritionScale = u.AttritionScale;
+            _enemies[slot].IgnoresTerritory = u.IgnoresTerritory;
+            _enemies[slot].SlowFactor = 1f;
+            _enemies[slot].SlowLeft = 0f;
             // recompensa acompanha a vida, senão o defensor quebra no fim da partida
             _enemies[slot].Bounty = (int)(u.Bounty * scale);
             _enemies[slot].TypeId = sendId;
@@ -394,8 +438,10 @@ namespace TDFende
             {
                 if (!_enemies[i].Active) continue;
 
+                if (_enemies[i].SlowLeft > 0f) _enemies[i].SlowLeft -= dt;
+
                 var dir = Flow.SampleDirection(_enemies[i].Pos);
-                _enemies[i].Pos += dir * (_enemies[i].Speed * dt);
+                _enemies[i].Pos += dir * (_enemies[i].CurrentSpeed * dt);
 
                 // atrito: perde vida só por estar dentro do território
                 if (_enemies[i].AttritionScale > 0f && Territory.Contains(_enemies[i].Pos))
@@ -443,8 +489,9 @@ namespace TDFende
                 // apontava para onde o inimigo ESTAVA, dava um tranco a cada tiro, e
                 // o projétil saía de lado. O disparo em si continua preso ao cooldown,
                 // então o comportamento da simulação não muda — só a mira fica viva.
+                var type = TowerCatalog.Get(tw.TypeId);
                 int target = -1;
-                float best = TowerWarsConfig.TowerRange * TowerWarsConfig.TowerRange;
+                float best = type.Range * type.Range;
                 for (int i = 0; i < _enemies.Length; i++)
                 {
                     if (!_enemies[i].Active) continue;
@@ -463,16 +510,17 @@ namespace TDFende
 
                 if (target >= 0 && tw.Cooldown <= 0f)
                 {
-                    tw.Cooldown = TowerWarsConfig.TowerCooldown;
+                    tw.Cooldown = type.Cooldown;
                     var muzzle = tw.Pos + Vector3.up * 0.95f;
-                    FireProjectile(target, (float)Math.Sqrt(best), TowerWarsConfig.DamageAtLevel(tw.Level), muzzle);
+                    FireProjectile(target, (float)Math.Sqrt(best),
+                        TowerCatalog.DamageAtLevel(tw.TypeId, tw.Level), muzzle, tw.TypeId);
                     TowerFired?.Invoke(muzzle);
                 }
                 _towers[t] = tw;
             }
         }
 
-        void FireProjectile(int targetSlot, float distance, float damage, Vector3 origin)
+        void FireProjectile(int targetSlot, float distance, float damage, Vector3 origin, int towerTypeId)
         {
             int slot = -1;
             for (int i = 0; i < _projectiles.Length; i++)
@@ -488,10 +536,34 @@ namespace TDFende
             _projectiles[slot].TargetGeneration = _enemies[targetSlot].Generation;
             _projectiles[slot].Damage = damage;
             _projectiles[slot].Origin = origin;
+            _projectiles[slot].TowerTypeId = towerTypeId;
             // tempo de voo importa: dano em trânsito para um alvo que já morreu é DPS jogado fora,
             // e é isso que faz torre empilhada render menos do que a conta ingênua diz.
             _projectiles[slot].TimeLeft = _projectiles[slot].TotalTime =
                 Math.Max(distance / TowerWarsConfig.ProjectileSpeed, 0.0001f);
+        }
+
+        /// <summary>Aplica dano e lentidão de um tipo de torre a um inimigo.</summary>
+        void HitEnemy(int slot, float damage, TowerType type)
+        {
+            if (!_enemies[slot].Active) return;
+
+            // Sentinela é a resposta ao voador: contra o resto ela é fraca de propósito.
+            if (_enemies[slot].IgnoresTerritory) damage *= type.VsFlyingMultiplier;
+
+            if (type.SlowSeconds > 0f)
+            {
+                _enemies[slot].SlowFactor = type.SlowFactor;
+                _enemies[slot].SlowLeft = type.SlowSeconds;
+            }
+
+            _enemies[slot].Hp -= damage;
+            if (_enemies[slot].Hp > 0f) return;
+
+            Gold += _enemies[slot].Bounty;
+            KilledByTower++;
+            EnemyDespawned?.Invoke(_enemies[slot].Pos, DespawnReason.KilledByTower);
+            Kill(slot);
         }
 
         void TickProjectiles(float dt)
@@ -507,13 +579,25 @@ namespace TDFende
                 if (!_enemies[s].Active || _enemies[s].Generation != _projectiles[p].TargetGeneration)
                     continue; // alvo morreu antes do impacto: tiro perdido
 
-                _enemies[s].Hp -= _projectiles[p].Damage;
-                if (_enemies[s].Hp <= 0f)
+                var type = TowerCatalog.Get(_projectiles[p].TowerTypeId);
+                var impact = _enemies[s].Pos;
+
+                if (type.SplashRadius <= 0f)
                 {
-                    Gold += _enemies[s].Bounty;
-                    KilledByTower++;
-                    EnemyDespawned?.Invoke(_enemies[s].Pos, DespawnReason.KilledByTower);
-                    Kill(s);
+                    HitEnemy(s, _projectiles[p].Damage, type);
+                    continue;
+                }
+
+                // Área: pega o alvo e a vizinhança. É o que faz o Morteiro responder ao
+                // Enxame — contra alvo único ele continua pior que o Canhão.
+                float r2 = type.SplashRadius * type.SplashRadius;
+                for (int i = _enemies.Length - 1; i >= 0; i--)
+                {
+                    if (!_enemies[i].Active) continue;
+                    var d = _enemies[i].Pos - impact;
+                    d.y = 0f;
+                    if (d.sqrMagnitude > r2) continue;
+                    HitEnemy(i, _projectiles[p].Damage, type);
                 }
             }
         }
@@ -540,6 +624,14 @@ namespace TDFende
 
         public Vector2Int TowerCell(int index) => _towers[index].Cell;
         public int TowerLevel(int index) => _towers[index].Level;
+        public int TowerTypeId(int index) => _towers[index].TypeId;
+
+        /// <summary>Tipo da torre naquela célula, ou -1 se não há torre.</summary>
+        public int TowerTypeAt(Vector2Int cell)
+        {
+            int i = TowerIndexAt(cell);
+            return i < 0 ? -1 : _towers[i].TypeId;
+        }
 
         /// <summary>Para onde a torre está mirando; false se não viu ninguém no último tiro.</summary>
         public bool TryGetTowerAim(int index, out Vector3 aim)

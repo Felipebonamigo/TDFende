@@ -70,7 +70,7 @@ namespace TDFende
         {
             switch (cmd.Kind)
             {
-                case CommandKind.Build: return Player.TryBuildTower(new Vector2Int(cmd.X, cmd.Y));
+                case CommandKind.Build: return Player.TryBuildTower(new Vector2Int(cmd.X, cmd.Y), cmd.TowerType);
                 case CommandKind.Upgrade: return Player.TryUpgradeTowerAt(new Vector2Int(cmd.X, cmd.Y));
                 case CommandKind.Send: return Player.TrySend(cmd.SendId, Foe, _rng);
                 default: return false;

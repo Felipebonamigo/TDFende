@@ -166,7 +166,7 @@ namespace TDFende
         {
             // torres só nascem, nunca somem: basta criar as que faltam
             for (int i = _drawnTowers; i < _sim.TowerCount; i++)
-                _towerObjects.Add(CreateTower(_sim.TowerCell(i)));
+                _towerObjects.Add(CreateTower(_sim.TowerCell(i), _sim.TowerTypeId(i)));
             _drawnTowers = _sim.TowerCount;
 
             // altura do canhão mostra o nível — leitura de força sem número na tela
@@ -195,18 +195,45 @@ namespace TDFende
             }
         }
 
-        Transform CreateTower(Vector2Int cell)
+        // Cada tipo tem corpo e cor próprios: no zoom do jogo é a SILHUETA que diz o que
+        // é a torre, não um rótulo. Cubo=Canhão, cilindro largo=Morteiro,
+        // cápsula=Gelo, cilindro fino e alto=Sentinela.
+        static PrimitiveType BodyShape(int typeId) => typeId switch
         {
-            var root = new GameObject("Torre").transform;
+            1 => PrimitiveType.Cylinder,
+            2 => PrimitiveType.Capsule,
+            3 => PrimitiveType.Cylinder,
+            _ => PrimitiveType.Cube
+        };
+
+        static Vector3 BodyScale(int typeId) => typeId switch
+        {
+            1 => new Vector3(0.85f, 0.30f, 0.85f), // Morteiro: baixo e gordo
+            2 => new Vector3(0.55f, 0.40f, 0.55f), // Gelo: arredondado
+            3 => new Vector3(0.42f, 0.62f, 0.42f), // Sentinela: fina e alta
+            _ => new Vector3(0.80f, 0.80f, 0.80f)
+        };
+
+        static Color BodyColor(int typeId) => typeId switch
+        {
+            1 => Palette.TextDanger,      // Morteiro
+            2 => Palette.EnemyDrained,    // Gelo: o mesmo ciano do atrito, e não é coincidência
+            3 => Palette.GhostValid,      // Sentinela
+            _ => Palette.TowerBody
+        };
+
+        Transform CreateTower(Vector2Int cell, int typeId)
+        {
+            var root = new GameObject($"Torre_{TowerCatalog.Get(typeId).Name}").transform;
             root.SetParent(_towerRoot, false);
             root.localPosition = _sim.Map.CellToWorld(cell);
 
-            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var body = GameObject.CreatePrimitive(BodyShape(typeId));
             Object.Destroy(body.GetComponent<Collider>());
             body.transform.SetParent(root, false);
             body.transform.localPosition = new Vector3(0f, 0.4f, 0f);
-            body.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
-            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.TowerBody);
+            body.transform.localScale = BodyScale(typeId);
+            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(BodyColor(typeId));
 
             var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.Destroy(head.GetComponent<Collider>());

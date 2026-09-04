@@ -35,6 +35,7 @@ namespace TDFende
         public TowerWarsAi.Personality Difficulty = TowerWarsAi.Personality.Normal;
 
         int _selectedSend;
+        int _selectedTower;            // Q/E ou os botões do topo trocam o tipo a construir
         Vector2Int _hoverCell;
         int _hoverUpgradeCost = -1;    // -1 sem torre, 0 já no máximo, >0 custo
         float _accumulator;            // passo fixo: a simulação não depende do frame rate
@@ -61,6 +62,14 @@ namespace TDFende
 
         Rect InfoRect => new Rect(HudMargin, 10f, 420f, 76f);
 
+        const float TowerButtonWidth = 132f;
+        const float TowerButtonHeight = 54f;
+
+        /// <summary>Barra de tipos de torre, acima do painel de envios.</summary>
+        Rect TowerPanelRect =>
+            new Rect(HudMargin, Screen.height - SendButtonHeight - HudMargin - 58f - TowerButtonHeight - 6f,
+                TowerCatalog.Count * (TowerButtonWidth + SendButtonGap), TowerButtonHeight);
+
         /// <summary>
         /// O clique do mouse é lido pelo Input legado, que a IMGUI não consome — sem esta
         /// checagem, clicar num botão de envio TAMBÉM constrói uma torre na célula embaixo
@@ -70,7 +79,8 @@ namespace TDFende
         {
             // Input.mousePosition tem origem embaixo; Rect de GUI tem origem em cima
             var p = new Vector2(_input.PointerPos.x, Screen.height - _input.PointerPos.y);
-            return SendPanelRect.Contains(p) || HelpBoxRect.Contains(p) || InfoRect.Contains(p);
+            return SendPanelRect.Contains(p) || TowerPanelRect.Contains(p)
+                   || HelpBoxRect.Contains(p) || InfoRect.Contains(p);
         }
 
         void Start()
@@ -167,6 +177,7 @@ namespace TDFende
             bool over = Player.Dead || Foe.Dead;
             if (!over)
             {
+                HandleTowerSelect();
                 HandleBuildInput();
                 HandleSendInput();
 
@@ -218,7 +229,7 @@ namespace TDFende
             _hoverCell = cell;
             _hoverUpgradeCost = Player.UpgradeCostAt(cell);
             bool onOwnTower = _hoverUpgradeCost >= 0;
-            bool canBuild = Player.CanBuild(cell);
+            bool canBuild = Player.CanBuild(cell, _selectedTower);
             bool canUpgrade = _hoverUpgradeCost > 0 && Player.Gold >= _hoverUpgradeCost;
 
             _ghost.gameObject.SetActive(true);
@@ -241,7 +252,17 @@ namespace TDFende
             }
 
             if (canBuild && _input.PlacePressed)
-                _runner.Enqueue(MatchCommand.Build(cell.x, cell.y));
+                _runner.Enqueue(MatchCommand.Build(cell.x, cell.y, _selectedTower));
+        }
+
+        void HandleTowerSelect()
+        {
+            // Q/E ciclam o tipo. Teclado perto da mão que já está no mouse — obrigar a
+            // viajar até um botão a cada troca mataria o ritmo do jogo.
+            if (Input.GetKeyDown(KeyCode.E))
+                _selectedTower = (_selectedTower + 1) % TowerCatalog.Count;
+            if (Input.GetKeyDown(KeyCode.Q))
+                _selectedTower = (_selectedTower + TowerCatalog.Count - 1) % TowerCatalog.Count;
         }
 
         void HandleSendInput()
@@ -310,6 +331,22 @@ namespace TDFende
                             $"   torres {Player.TowerCount} (nv {Player.TotalTowerLevels})", _label);
             GUILayout.EndArea();
 
+            // Barra de tipos de torre. A selecionada aparece marcada, porque o fantasma
+            // no chão não diz sozinho QUAL torre vai nascer ali.
+            var tp = TowerPanelRect;
+            for (int i = 0; i < TowerCatalog.Count && !over; i++)
+            {
+                var tt = TowerCatalog.Get(i);
+                var r = new Rect(tp.x + i * (TowerButtonWidth + SendButtonGap), tp.y,
+                    TowerButtonWidth, TowerButtonHeight);
+                bool selected = i == _selectedTower;
+                var prev = GUI.color;
+                if (!selected) GUI.color = new Color(1f, 1f, 1f, Player.Gold >= tt.Cost ? 0.65f : 0.35f);
+                if (GUI.Button(r, $"{(selected ? "▶ " : "")}{tt.Name}\n{tt.Cost} ouro", _button))
+                    _selectedTower = i;
+                GUI.color = prev;
+            }
+
             // Painel de envios. Some com a partida decidida: GUI.Box não consome clique,
             // então botão desenhado ANTES do véu de fim de jogo continuaria recebendo o
             // clique por baixo dele.
@@ -339,7 +376,8 @@ namespace TDFende
                     : _hoverUpgradeCost == 0 ? "  ►  torre já no nível máximo" : "";
 
             GUI.Box(HelpBoxRect,
-                $"Clique na SUA lane (a de baixo): torre nova {TowerWarsConfig.TowerCost} ouro" +
+                $"Clique na SUA lane (a de baixo): {TowerCatalog.Get(_selectedTower).Name} " +
+                $"({TowerCatalog.Get(_selectedTower).Cost} ouro)  |  Q/E troca a torre" +
                 $"  |  clique numa torre sua: subir de nível{hover}\n" +
                 "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", _box);
 
