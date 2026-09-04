@@ -146,6 +146,10 @@ namespace TDFende
             Flow.Rebuild(_goalCell);
             RebuildTerritory();
 
+            // a partir daqui os catálogos não podem mais mudar: vetores já dimensionados
+            SendCatalog.Lock();
+            TowerCatalog.Lock();
+
             Gold = TowerWarsConfig.StartGold;
             Income = TowerWarsConfig.BaseIncome;
             Lives = TowerWarsConfig.StartLives;

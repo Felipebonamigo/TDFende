@@ -1,0 +1,6 @@
+﻿# TDFende — torres. Uma linha por tipo; campo ausente usa o padrão.
+# border=0 significa que a torre não projeta fronteira.
+name=Canhão;cost=25;range=3.5;cooldown=0.65;damage=12;splash=0;slow=1;slowsecs=0;vsflying=1;border=2.75
+name=Morteiro;cost=45;range=4.2;cooldown=1.15;damage=14;splash=1.6;slow=1;slowsecs=0;vsflying=1;border=2
+name=Gelo;cost=40;range=3.2;cooldown=0.9;damage=4;splash=0;slow=0.55;slowsecs=1.6;vsflying=1;border=3.25
+name=Sentinela;cost=50;range=4.5;cooldown=0.75;damage=9;splash=0;slow=1;slowsecs=0;vsflying=2.6;border=1.5

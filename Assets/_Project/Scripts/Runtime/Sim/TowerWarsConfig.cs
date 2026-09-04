@@ -41,10 +41,11 @@ namespace TDFende
         /// por 1,8% das mortes, ou seja, era enfeite.
         /// </summary>
         /// Não é const: o Tools/FlowSim varre este valor em lote para escolhê-lo por medição.
-        /// Valor atual escolhido por varredura (25 partidas x 20 combinações), com upgrade
-        /// de torre ligado: 100% das partidas terminam por morte, atrito responde por ~32%
-        /// das mortes, duração média 9,1 min. Re-varrido após o sorteio ponderado de envios.
-        public static float AttritionPctPerSecond = 0.16f;
+        /// Re-varrido com os 4 tipos de torre e morte súbita: as 20 combinações testadas
+        /// dão 100% de partidas decididas — a garantia estrutural tirou o precipício, e o
+        /// balanceamento ficou robusto num intervalo largo. Este par rende 9,1 min de
+        /// média e atrito em ~41% das mortes.
+        public static float AttritionPctPerSecond = 0.19f;
 
         /// <summary>
         /// Vida (e recompensa) dos envios crescem com o relógio da partida.

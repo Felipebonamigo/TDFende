@@ -38,7 +38,8 @@ namespace TDFende
         /// Índice 0 é a torre básica: é o que o jogo constrói quando ninguém escolhe nada,
         /// e a régua contra a qual as outras têm que se justificar.
         /// </summary>
-        public static readonly TowerType[] All =
+        // Mutável porque um arquivo de balanceamento pode substituí-lo em runtime.
+        public static TowerType[] All =
         {
             new TowerType
             {
@@ -72,8 +73,32 @@ namespace TDFende
             },
         };
 
+        static readonly TowerType[] Defaults = (TowerType[])All.Clone();
+
         public static int Count => All.Length;
         public static TowerType Get(int id) => All[id < 0 || id >= All.Length ? 0 : id];
+
+        /// <summary>Ver SendCatalog.Locked — mesma razão: vetores dimensionados por Count.</summary>
+        public static bool Locked { get; private set; }
+        public static void Lock() => Locked = true;
+
+        public static bool LoadFrom(string text, out string error)
+        {
+            if (Locked)
+            {
+                error = "catálogo já em uso: carregue no boot, antes da primeira partida";
+                return false;
+            }
+            if (!CatalogJson.TryParseTowers(text, out var parsed, out error)) return false;
+            All = parsed;
+            return true;
+        }
+
+        public static void ResetToDefaults()
+        {
+            All = (TowerType[])Defaults.Clone();
+            Locked = false;
+        }
 
         /// <summary>
         /// Custo por nível: sobe com o nível E com o preço-base da torre, para que subir

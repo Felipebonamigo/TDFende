@@ -1,0 +1,30 @@
+Arquivos de balanceamento do TDFende
+====================================
+
+Estes são os valores de FÁBRICA, exportados do código. Servem como ponto de partida.
+
+COMO USAR
+  1. Copie estes arquivos para a pasta de dados do jogo. O caminho aparece quando você
+     clica em "Exportar balanceamento" no menu inicial.
+  2. Edite os números.
+  3. Dê Play. O jogo carrega no boot e avisa no Console.
+
+REGRAS DO FORMATO
+  - Uma linha por unidade/torre.
+  - Campo ausente usa o padrão, então dá para escrever só o que muda.
+  - Linha começando com # é comentário.
+  - DECIMAL COM PONTO: 2.75, nunca 2,75.
+  - Salve em UTF-8 (é como estes arquivos já estão) para os acentos não quebrarem.
+
+SE ERRAR
+  Arquivo inválido nunca derrota o jogo: aparece um aviso no Console dizendo a linha do
+  problema, e a partida roda com os valores de fábrica. Apagar os arquivos volta ao padrão.
+
+O QUE NÃO DÁ PARA MUDAR AQUI
+  A quantidade de tipos. O jogo dimensiona vetores pelo tamanho do catálogo quando a
+  primeira partida nasce, então acrescentar ou remover linhas funciona, mas só é lido no
+  boot — nunca no meio de uma partida.
+
+MEDIR O EFEITO
+  cd Tools/FlowSim
+  dotnet run -- match 60

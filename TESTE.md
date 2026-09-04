@@ -72,17 +72,30 @@ Não precisa de relatório. Uma frase por item já resolve. O que mais ajuda:
 
 ---
 
-## Ajustar você mesmo
+## Ajustar você mesmo, sem recompilar
 
-Todo o balanceamento vive em dois arquivos, e mudar um número não exige recompilar nada além
-do próprio script:
+No menu inicial há **Exportar balanceamento**. Ele escreve dois arquivos de texto na sua
+pasta de dados do jogo:
 
-- `Assets/_Project/Scripts/Runtime/Sim/TowerWarsConfig.cs` — economia, atrito, escalada, upgrades
-- `Assets/_Project/Scripts/Runtime/Sim/SendCatalog.cs` — os seis tipos de envio
+- `envios.txt` — os seis tipos de inimigo que se compra
+- `torres.txt` — os quatro tipos de torre
 
-Se mexer, dá para medir o efeito sem abrir o editor:
+Edite, salve, dê Play de novo. O jogo carrega no boot. Uma linha por unidade, campo ausente
+usa o padrão, `#` é comentário. **Decimal com ponto** (`2.75`, nunca `2,75`).
+
+Arquivo torto nunca derruba o jogo: vira aviso no Console com a linha do erro e o jogo segue
+com os valores de fábrica. Apagar os arquivos volta tudo ao padrão.
+
+Para medir o efeito sem abrir o editor:
 
 ```bash
 cd Tools/FlowSim
 dotnet run -- match 60
 ```
+
+E se algo parecer errado durante o jogo, aperte **F9**: ele grava a partida inteira num
+arquivo. Me mande esse arquivo e eu reproduzo aqui, tique a tique, em vez de depender da
+descrição.
+
+Ainda em código (mexer exige recompilar): `Sim/TowerWarsConfig.cs` tem economia, atrito,
+escalada e morte súbita.

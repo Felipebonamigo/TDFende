@@ -33,6 +33,25 @@ class Program
             return 0;
         }
 
+        // `dotnet run -- dump-catalogs [pasta]` escreve os catálogos como arquivo de
+        // balanceamento, para o Felipe editar número sem tocar em C# nem recompilar.
+        if (args.Length > 0 && args[0] == "dump-catalogs")
+        {
+            string dir = args.Length > 1
+                ? args[1]
+                : System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../../Balanceamento");
+            System.IO.Directory.CreateDirectory(dir);
+            string sendsPath = System.IO.Path.Combine(dir, "envios.txt");
+            string towersPath = System.IO.Path.Combine(dir, "torres.txt");
+            // UTF-8 com BOM: ver CatalogLoader — protege os acentos de editor que assume ANSI
+            var utf8Bom = new System.Text.UTF8Encoding(true);
+            System.IO.File.WriteAllText(sendsPath, CatalogJson.SerializeSends(), utf8Bom);
+            System.IO.File.WriteAllText(towersPath, CatalogJson.SerializeTowers(), utf8Bom);
+            Console.WriteLine($"escrito: {System.IO.Path.GetFullPath(sendsPath)}");
+            Console.WriteLine($"escrito: {System.IO.Path.GetFullPath(towersPath)}");
+            return 0;
+        }
+
         // `dotnet run -- replay <arquivo>` reproduz uma partida gravada no jogo (F9)
         // e imprime o que aconteceu. É como um "achei estranho" vira estado inspecionável.
         if (args.Length > 1 && args[0] == "replay")
@@ -133,34 +152,49 @@ class Program
 
     // ---- ajudantes dos testes de torre: mesmo cenário, só muda o tipo de torre ----
 
-    static LaneSim Duel(int sendId, int towerType, float seconds)
+    /// <param name="sends">
+    /// Quantas compras. Um só quando a pergunta é sobre ALVO ÚNICO — com vários, eles
+    /// se aglomeram e o dano em área acerta o grupo, o que mede outra coisa.
+    /// </param>
+    static LaneSim Duel(int sendId, int towerType, float seconds, int sends = 4)
     {
-        var lane = new LaneSim(24, 16);
-        var feeder = new LaneSim(24, 16);
-        lane.DebugGrantGold(5000);
-        // três torres na frente do caminho, para o alvo passar pelo alcance
-        lane.TryBuildTower(new Vector2Int(10, 8), towerType);
-        lane.TryBuildTower(new Vector2Int(12, 7), towerType);
-        lane.TryBuildTower(new Vector2Int(12, 9), towerType);
-        feeder.DebugGrantGold(5000);
-        for (int i = 0; i < 4; i++) feeder.TrySend(sendId, lane, new Random(77 + i));
-        Advance(lane, seconds);
-        return lane;
+        // Atrito desligado durante a medição: o raio de fronteira varia por TIPO de
+        // torre, então com atrito ligado esta comparação media território, não dano —
+        // e trocar o atrito de 0,16 para 0,19 chegou a inverter o resultado.
+        float savedAttrition = TowerWarsConfig.AttritionPctPerSecond;
+        TowerWarsConfig.AttritionPctPerSecond = 0f;
+        try
+        {
+            var lane = new LaneSim(24, 16);
+            var feeder = new LaneSim(24, 16);
+            lane.DebugGrantGold(5000);
+            // três torres na frente do caminho, para o alvo passar pelo alcance
+            lane.TryBuildTower(new Vector2Int(10, 8), towerType);
+            lane.TryBuildTower(new Vector2Int(12, 7), towerType);
+            lane.TryBuildTower(new Vector2Int(12, 9), towerType);
+            feeder.DebugGrantGold(5000);
+            for (int i = 0; i < sends; i++) feeder.TrySend(sendId, lane, new Random(77 + i));
+            Advance(lane, seconds);
+            return lane;
+        }
+        finally
+        {
+            TowerWarsConfig.AttritionPctPerSecond = savedAttrition;
+        }
     }
 
     static int KillsAgainst(int sendId, int towerType, float seconds) =>
         Duel(sendId, towerType, seconds).KilledByTower;
 
-    /// <summary>Dano entregue = vida que sumiu dos que morreram + a que falta nos vivos.</summary>
-    static float DamageDealt(int sendId, int towerType, float seconds)
+    /// <summary>Dano de TORRE entregue = o que falta nos vivos + a vida cheia de quem morreu.</summary>
+    static float DamageDealt(int sendId, int towerType, float seconds, int sends = 4)
     {
-        var lane = Duel(sendId, towerType, seconds);
+        var lane = Duel(sendId, towerType, seconds, sends);
         float dealt = 0f;
+        float maxHp = SendCatalog.Get(sendId).Hp; // escala ~1 nos primeiros segundos
         for (int s = 0; s < lane.EnemySlotCount; s++)
             if (lane.TryGetEnemy(s, out var e)) dealt += e.MaxHp - e.Hp;
-        // quem morreu contribuiu com a vida inteira
-        var u = SendCatalog.Get(sendId);
-        dealt += lane.KilledByTower * u.Hp;
+        dealt += lane.KilledByTower * maxHp;
         return dealt;
     }
 
@@ -379,6 +413,71 @@ class Program
         }
         Check(posInBounds, "Eventos: posição reportada cai dentro do mapa (a vista desenha ali)");
 
+        // ---------- catálogo em arquivo: balancear sem recompilar ----------
+        {
+            // Testes anteriores já criaram lanes, o que TRANCA os catálogos.
+            // Destrancar aqui é legítimo: é o teste da trava, não uso de produção.
+            SendCatalog.ResetToDefaults();
+            TowerCatalog.ResetToDefaults();
+
+            string sendsText = CatalogJson.SerializeSends();
+            string towersText = CatalogJson.SerializeTowers();
+
+            Check(CatalogJson.TryParseSends(sendsText, out var roundSends, out string se),
+                $"Catálogo: envios sobrevivem à ida e volta ({se})");
+            Check(roundSends.Length == SendCatalog.Count, "Catálogo: nenhum envio se perde no arquivo");
+            Check(roundSends[1].Count == SendCatalog.Get(1).Count
+                  && Math.Abs(roundSends[1].AttritionScale - SendCatalog.Get(1).AttritionScale) < 0.001f
+                  && roundSends[4].IgnoresTerritory == SendCatalog.Get(4).IgnoresTerritory,
+                "Catálogo: envios preservam quantidade, atrito e a flag de voador");
+
+            Check(CatalogJson.TryParseTowers(towersText, out var roundTowers, out string te),
+                $"Catálogo: torres sobrevivem à ida e volta ({te})");
+            Check(roundTowers.Length == TowerCatalog.Count, "Catálogo: nenhuma torre se perde no arquivo");
+            Check(Math.Abs(roundTowers[2].SlowFactor - TowerCatalog.Get(2).SlowFactor) < 0.001f
+                  && Math.Abs(roundTowers[1].SplashRadius - TowerCatalog.Get(1).SplashRadius) < 0.001f
+                  && Math.Abs(roundTowers[3].VsFlyingMultiplier - TowerCatalog.Get(3).VsFlyingMultiplier) < 0.001f,
+                "Catálogo: torres preservam lentidão, área e bônus anti-aéreo");
+
+            // decimal com PONTO sempre: numa máquina com vírgula, "2.75" viraria 275
+            Check(CatalogJson.TryParseTowers(
+                    "name=Teste;cost=30;range=2.5;cooldown=0.5;damage=7.25;slow=1;border=1.5",
+                    out var dec, out _)
+                  && Math.Abs(dec[0].Damage - 7.25f) < 0.001f && Math.Abs(dec[0].Range - 2.5f) < 0.001f,
+                "Catálogo: decimal com ponto é lido igual em qualquer idioma da máquina");
+
+            // campo ausente usa o padrão: adicionar campo novo não invalida arquivo antigo
+            Check(CatalogJson.TryParseSends("name=Simples;cost=12;hp=50", out var partial, out _)
+                  && partial[0].Count == 1 && Math.Abs(partial[0].AttritionScale - 1f) < 0.001f,
+                "Catálogo: campo ausente cai no padrão");
+
+            // comentário e linha em branco são ignorados
+            Check(CatalogJson.TryParseSends("# comentário\n\nname=X;cost=5;hp=9\n", out var cmt, out _)
+                  && cmt.Length == 1, "Catálogo: comentário e linha vazia são ignorados");
+
+            // recusas: sem elas, um arquivo torto viraria jogo quebrado em silêncio
+            Check(!CatalogJson.TryParseSends("", out _, out _), "Catálogo: arquivo vazio é recusado");
+            Check(!CatalogJson.TryParseSends("name=X;cost=0;hp=9", out _, out _),
+                "Catálogo: custo zero é recusado");
+            Check(!CatalogJson.TryParseTowers("name=T;cost=10;cooldown=0", out _, out _),
+                "Catálogo: cadência zero é recusada (divisão por zero no DPS)");
+            Check(!CatalogJson.TryParseTowers("name=T;cost=10;slow=0", out _, out _),
+                "Catálogo: slow=0 é recusado (pararia o inimigo para sempre)");
+            Check(!CatalogJson.TryParseTowers("name=T;cost=10;slow=1.5", out _, out _),
+                "Catálogo: slow>1 é recusado (aceleraria o inimigo)");
+
+            // carregar de verdade, e a trava proteger depois que a partida começa
+            Check(SendCatalog.LoadFrom(sendsText, out _), "Catálogo: LoadFrom aceita antes da 1ª partida");
+            var locker = new LaneSim(24, 16); // nascer uma lane tranca os catálogos
+            Check(SendCatalog.Locked && TowerCatalog.Locked, "Catálogo: primeira partida tranca");
+            Check(!SendCatalog.LoadFrom(sendsText, out string lockErr) && lockErr.Length > 0,
+                "Catálogo: LoadFrom recusado com partida em andamento (evita índice fora do vetor)");
+            Check(locker.TowerCount == 0, "Catálogo: a lane de teste segue utilizável");
+
+            SendCatalog.ResetToDefaults();
+            TowerCatalog.ResetToDefaults();
+        }
+
         // ---------- morte súbita: a partida SEMPRE termina ----------
         // É garantia estrutural, não ajuste: se a defesa ficar mais forte no futuro, a
         // escalada quadrática ainda a ultrapassa em tempo finito.
@@ -428,10 +527,11 @@ class Program
         Check(mortarSwarmKills > cannonSwarmKills,
             $"Torres: Morteiro mata mais Enxame que o Canhão ({mortarSwarmKills} vs {cannonSwarmKills})");
 
-        // ...e contra ALVO ÚNICO (Colosso) o Canhão tem que ser melhor, senão o Morteiro
-        // seria simplesmente superior e a escolha não existiria
-        float cannonSolo = DamageDealt(5, towerType: 0, seconds: 12f);
-        float mortarSolo = DamageDealt(5, towerType: 1, seconds: 12f);
+        // ...e contra ALVO ÚNICO (um Colosso só) o Canhão tem que ser melhor, senão o
+        // Morteiro seria simplesmente superior e a escolha não existiria.
+        // sends:1 é essencial — com vários, eles se aglomeram e a área acerta o grupo.
+        float cannonSolo = DamageDealt(5, towerType: 0, seconds: 12f, sends: 1);
+        float mortarSolo = DamageDealt(5, towerType: 1, seconds: 12f, sends: 1);
         Check(cannonSolo > mortarSolo,
             $"Torres: Canhão bate mais forte no alvo único que o Morteiro ({cannonSolo:0} vs {mortarSolo:0})");
 

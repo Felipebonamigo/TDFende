@@ -39,7 +39,26 @@ namespace TDFende
                 LaunchWars(TowerWarsAi.Personality.Normal);
             if (GUI.Button(new Rect(x + (bw + 8f) * 2f, y, bw, h), "Difícil", _button))
                 LaunchWars(TowerWarsAi.Personality.Hard);
+
+            // Atalho para quem quer mexer nos números: gera os arquivos de balanceamento
+            // já preenchidos com os valores atuais, prontos para editar.
+            y += h + 30f;
+            if (GUI.Button(new Rect(x + bw + 8f, y, bw, 30f), "Exportar balanceamento", _button))
+            {
+                try
+                {
+                    _exportMessage = "arquivos em: " + CatalogLoader.ExportDefaults();
+                }
+                catch (System.Exception e)
+                {
+                    _exportMessage = "falhou: " + e.Message;
+                }
+            }
+            if (_exportMessage != null)
+                GUI.Label(new Rect(0, y + 34f, Screen.width, 22f), _exportMessage, _sub);
         }
+
+        string _exportMessage;
 
         void Launch<T>() where T : MonoBehaviour
         {

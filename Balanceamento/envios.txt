@@ -1,0 +1,9 @@
+﻿# TDFende — envios. Uma linha por tipo; campo ausente usa o padrão.
+# custo/renda/quantidade são inteiros; o resto é decimal com PONTO.
+# attrition=0 significa VOADOR: ignora a fronteira e o atrito.
+name=Recruta;cost=10;income=1;hp=40;speed=2.2;count=1;bounty=4;attrition=1
+name=Enxame;cost=24;income=2;hp=22;speed=2.6;count=3;bounty=3;attrition=1.35
+name=Corredor;cost=35;income=3;hp=70;speed=4;count=1;bounty=10;attrition=1
+name=Couraçado;cost=40;income=4;hp=180;speed=1.6;count=1;bounty=14;attrition=1
+name=Planador;cost=55;income=5;hp=120;speed=2.8;count=1;bounty=20;attrition=0
+name=Colosso;cost=90;income=8;hp=450;speed=1.3;count=1;bounty=34;attrition=1
