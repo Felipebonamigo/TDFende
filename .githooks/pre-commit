@@ -1,0 +1,29 @@
+#!/bin/sh
+# Portão local: nada entra no histórico com teste vermelho ou sem compilar no Unity.
+#
+# As duas verificações existem porque pegam coisas diferentes:
+#   - FlowSim testa a lógica pura (regras, economia, determinismo, replay);
+#   - CompileCheck compila os scripts do Unity contra as DLLs REAIS do editor, e é
+#     a única rede que pega erro que só existe com a API completa (um `Random` sem
+#     qualificação, por exemplo, compila no harness e é ambíguo no Unity).
+#
+# Pular de propósito:  git commit --no-verify
+
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+
+echo "[pre-commit] compilando scripts do Unity..."
+if ! dotnet build "$ROOT/Tools/CompileCheck" -v quiet --nologo > /tmp/tdfende-cc.log 2>&1; then
+    echo "[pre-commit] FALHOU a compilação do lado Unity:"
+    grep -E "error CS" /tmp/tdfende-cc.log | sort -u | head -20
+    exit 1
+fi
+
+echo "[pre-commit] rodando testes headless (leva ~3 min)..."
+if ! dotnet run --project "$ROOT/Tools/FlowSim" -v quiet --nologo > /tmp/tdfende-tests.log 2>&1; then
+    echo "[pre-commit] TESTES VERMELHOS:"
+    grep -E "FALHOU" /tmp/tdfende-tests.log | head -20
+    exit 1
+fi
+
+echo "[pre-commit] tudo verde."

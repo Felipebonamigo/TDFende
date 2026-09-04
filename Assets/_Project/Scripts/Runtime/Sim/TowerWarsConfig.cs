@@ -16,10 +16,8 @@ namespace TDFende
         public const float IncomeTickSeconds = 10f;
 
         // Torre (mesma torre do TD, repetida aqui para balancear o modo isoladamente)
-        public const int TowerCost = 25;
-        public const float TowerRange = 3.5f;
-        public const float TowerCooldown = 0.65f;
-        public const float TowerDamage = 12f;
+        // Custo, alcance, cadência e dano da torre agora vivem no TowerCatalog, por tipo.
+        // Só o que é comum a TODAS as torres continua aqui.
         public const float ProjectileSpeed = 14f;
 
         /// <summary>
@@ -30,13 +28,7 @@ namespace TDFende
         /// competindo entre si a partida inteira.
         /// </summary>
         public const int MaxTowerLevel = 6;
-        public const int TowerUpgradeBaseCost = 20;
         public const float TowerDamagePerLevel = 0.85f; // +85% do dano-base por nível
-
-        public static int UpgradeCost(int currentLevel) => TowerUpgradeBaseCost * currentLevel;
-
-        public static float DamageAtLevel(int level) =>
-            TowerDamage * (1f + (level - 1) * TowerDamagePerLevel);
 
         // Fronteira + atrito
         public const float BorderRadius = 2.75f;

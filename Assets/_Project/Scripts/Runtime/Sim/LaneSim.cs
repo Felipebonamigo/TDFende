@@ -341,7 +341,7 @@ namespace TDFende
                 if (_towers.Count == 0) return 0f;
                 float sum = 0f;
                 for (int i = 0; i < _towers.Count; i++)
-                    sum += TowerWarsConfig.DamageAtLevel(_towers[i].Level);
+                    sum += TowerCatalog.DamageAtLevel(_towers[i].TypeId, _towers[i].Level);
                 return sum / _towers.Count;
             }
         }

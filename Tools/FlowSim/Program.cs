@@ -531,12 +531,12 @@ class Program
         pick2.TryBuildTower(cellB);
 
         Check(pick2.UpgradeCostAt(new Vector2Int(3, 3)) == -1, "Upgrade do jogador: célula vazia devolve -1");
-        Check(pick2.UpgradeCostAt(cellA) == TowerWarsConfig.UpgradeCost(1),
+        Check(pick2.UpgradeCostAt(cellA) == TowerCatalog.UpgradeCost(0, 1),
             "Upgrade do jogador: custo da célula é o do nível atual");
 
         int goldPre2 = pick2.Gold;
         Check(pick2.TryUpgradeTowerAt(cellA), "Upgrade do jogador: aceito na torre escolhida");
-        Check(pick2.Gold == goldPre2 - TowerWarsConfig.UpgradeCost(1), "Upgrade do jogador: cobra o custo certo");
+        Check(pick2.Gold == goldPre2 - TowerCatalog.UpgradeCost(0, 1), "Upgrade do jogador: cobra o custo certo");
         Check(pick2.TowerLevel(pick2.TowerIndexAt(cellA)) == 2
               && pick2.TowerLevel(pick2.TowerIndexAt(cellB)) == 1,
             "Upgrade do jogador: sobe SÓ a torre escolhida");
@@ -663,10 +663,10 @@ class Program
         float dpsB4 = up.TowerDps;
         Check(up.TryUpgradeCheapestTower(), "Upgrade: aceito com ouro");
         Check(up.TotalTowerLevels == 2, "Upgrade: sobe o nível");
-        Check(up.Gold == goldB4 - TowerWarsConfig.UpgradeCost(1), "Upgrade: cobra o custo do nível atual");
+        Check(up.Gold == goldB4 - TowerCatalog.UpgradeCost(0, 1), "Upgrade: cobra o custo do nível atual");
         Check(up.TowerDps > dpsB4, "Upgrade: aumenta o DPS da defesa");
 
-        Check(TowerWarsConfig.UpgradeCost(3) > TowerWarsConfig.UpgradeCost(1),
+        Check(TowerCatalog.UpgradeCost(0, 3) > TowerCatalog.UpgradeCost(0, 1),
             "Upgrade: custo cresce com o nível (torre nova segue competindo)");
 
         while (up.TryUpgradeCheapestTower()) { }
@@ -678,7 +678,7 @@ class Program
         // do nível 1 seria laço infinito — quem decide é a própria chamada.
         while (broke.TryUpgradeCheapestTower()) { }
         int lvlBefore = broke.TotalTowerLevels;
-        Check(broke.Gold < TowerWarsConfig.UpgradeCost(broke.TotalTowerLevels),
+        Check(broke.Gold < TowerCatalog.UpgradeCost(0, broke.TotalTowerLevels),
             "Upgrade: sobrou ouro, mas menos que o próximo nível custa");
         Check(!broke.TryUpgradeCheapestTower() && broke.TotalTowerLevels == lvlBefore,
             "Upgrade: recusado sem ouro");
