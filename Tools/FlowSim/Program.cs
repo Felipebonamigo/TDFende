@@ -33,6 +33,11 @@ class Program
             return 0;
         }
 
+        // `dotnet run -- replay <arquivo>` reproduz uma partida gravada no jogo (F9)
+        // e imprime o que aconteceu. É como um "achei estranho" vira estado inspecionável.
+        if (args.Length > 1 && args[0] == "replay")
+            return RunReplay(args[1]);
+
         const int W = 24, H = 16;
 
         // ---------- GridMap: conversões ----------
@@ -124,6 +129,53 @@ class Program
         Console.WriteLine();
         Console.WriteLine(_failed == 0 ? ">>> TODOS OS TESTES PASSARAM" : $">>> {_failed} TESTE(S) FALHARAM");
         return _failed;
+    }
+
+    static int RunReplay(string path)
+    {
+        if (!System.IO.File.Exists(path))
+        {
+            Console.WriteLine($"arquivo não encontrado: {path}");
+            return 2;
+        }
+        if (!Replay.TryParse(System.IO.File.ReadAllText(path), out var replay, out string err))
+        {
+            Console.WriteLine($"replay inválido: {err}");
+            return 2;
+        }
+
+        Console.WriteLine($"Replay {path}");
+        Console.WriteLine($"  semente {replay.Seed} | dificuldade {replay.Difficulty} | " +
+                          $"grid {replay.Width}x{replay.Height} | {replay.Ticks} tiques " +
+                          $"({replay.Ticks * TowerWarsConfig.FixedStep:0.0}s) | {replay.Commands.Count} comandos");
+
+        // resumo do que o jogador fez, para ver a estratégia sem assistir
+        int builds = 0, upgrades = 0;
+        var sends = new int[SendCatalog.Count];
+        foreach (var (_, c) in replay.Commands)
+        {
+            if (c.Kind == CommandKind.Build) builds++;
+            else if (c.Kind == CommandKind.Upgrade) upgrades++;
+            else if (c.SendId >= 0 && c.SendId < sends.Length) sends[c.SendId]++;
+        }
+        Console.WriteLine($"  jogador: {builds} torres, {upgrades} upgrades");
+        for (int i = 0; i < sends.Length; i++)
+            if (sends[i] > 0) Console.WriteLine($"    {SendCatalog.Get(i).Name,-10} x{sends[i]}");
+
+        var r = replay.Run();
+        Console.WriteLine();
+        Console.WriteLine($"  VOCÊ  vidas {r.Player.Lives,3} | ouro {r.Player.Gold,5} | renda {r.Player.Income,4} | " +
+                          $"torres {r.Player.TowerCount,3} (nv {r.Player.TotalTowerLevels})");
+        Console.WriteLine($"  IA    vidas {r.Foe.Lives,3} | ouro {r.Foe.Gold,5} | renda {r.Foe.Income,4} | " +
+                          $"torres {r.Foe.TowerCount,3} (nv {r.Foe.TotalTowerLevels})");
+        Console.WriteLine($"  mortes na SUA lane: {r.Player.KilledByTower} por tiro, " +
+                          $"{r.Player.KilledByAttrition} por atrito, {r.Player.TotalLeaked} vazaram");
+        Console.WriteLine($"  mortes na lane da IA: {r.Foe.KilledByTower} por tiro, " +
+                          $"{r.Foe.KilledByAttrition} por atrito, {r.Foe.TotalLeaked} vazaram");
+        Console.WriteLine();
+        Console.WriteLine($"  {(r.Over ? (r.Player.Dead ? "derrota" : "vitória") : "partida não terminou na gravação")}");
+        Console.WriteLine($"  fingerprint: {r.StateFingerprint()}");
+        return 0;
     }
 
     // Roda a lane por N segundos de tempo simulado, em passo fixo.
@@ -276,6 +328,50 @@ class Program
             if (!evLane.Map.InBounds(evCell.x, evCell.y)) posInBounds = false;
         }
         Check(posInBounds, "Eventos: posição reportada cai dentro do mapa (a vista desenha ali)");
+
+        // ---------- replay: a partida reproduz byte a byte ----------
+        // É o que transforma "achei estranho no editor" num arquivo que eu reproduzo
+        // aqui e leio o estado exato. Se este teste cair, o replay virou ficção.
+        var recRng = new Random(9182);
+        var live = new MatchRunner(777, TowerWarsAi.Personality.Normal, 24, 16);
+        var rec = new Replay { Seed = 777, Difficulty = TowerWarsAi.Personality.Normal.Name };
+        live.CommandApplied += rec.Record;
+
+        for (int t = 0; t < 9000 && !live.Over; t++)
+        {
+            // jogador sintético: constrói, sobe e envia em momentos irregulares
+            if (t % 47 == 0)
+                live.Enqueue(MatchCommand.Build(4 + recRng.Next(14), 2 + recRng.Next(12)));
+            if (t % 131 == 0)
+                live.Enqueue(MatchCommand.Upgrade(4 + recRng.Next(14), 2 + recRng.Next(12)));
+            if (t % 89 == 0)
+                live.Enqueue(MatchCommand.Send(recRng.Next(SendCatalog.Count)));
+            live.Step();
+        }
+        rec.Ticks = live.TickCount; // a gravação cobre exatamente o que foi jogado
+
+        Check(rec.Commands.Count > 20, $"Replay: gravou comandos aceitos ({rec.Commands.Count})");
+
+        var again = rec.Run();
+        Check(again.StateFingerprint() == live.StateFingerprint(),
+            "Replay: reprodução bate com a partida original");
+
+        // e tem que sobreviver ao formato de texto, que é como ele chega até mim
+        string text = rec.Serialize();
+        Check(Replay.TryParse(text, out var parsed, out string perr), $"Replay: arquivo lê de volta ({perr})");
+        Check(parsed.Commands.Count == rec.Commands.Count && parsed.Seed == rec.Seed
+              && parsed.Difficulty == rec.Difficulty, "Replay: arquivo preserva semente, dificuldade e comandos");
+        Check(parsed.Run().StateFingerprint() == live.StateFingerprint(),
+            "Replay: partida lida do ARQUIVO reproduz o mesmo estado");
+
+        Check(!Replay.TryParse("lixo\nqualquer", out _, out _), "Replay: cabeçalho errado é recusado");
+        Check(!Replay.TryParse(Replay.Header + "\n12 voar 3", out _, out _),
+            "Replay: comando desconhecido é recusado");
+
+        // comando aplicado em fronteira de TIQUE: mesma lista, mesmo resultado, sempre
+        var r1 = rec.Run().StateFingerprint();
+        var r2 = rec.Run().StateFingerprint();
+        Check(r1 == r2, "Replay: reproduzir duas vezes dá o mesmo estado");
 
         // ---------- upgrade pelo jogador (célula escolhida) ----------
         // A IA usa TryUpgradeCheapestTower; o jogador precisa escolher QUAL torre sobe,

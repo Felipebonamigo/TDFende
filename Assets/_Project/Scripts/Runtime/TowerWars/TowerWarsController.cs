@@ -1,5 +1,4 @@
 using UnityEngine;
-using Random = System.Random;
 
 namespace TDFende
 {
@@ -9,21 +8,22 @@ namespace TDFende
     ///
     /// Este script é só ORQUESTRAÇÃO e ENTRADA — nenhuma regra de jogo mora aqui.
     /// As regras estão no LaneSim, que é lógica pura testada headless; trocar a IA
-    /// por um adversário de rede depois é substituir quem chama TrySend.
+    /// por um adversário de rede depois é substituir quem enfileira os comandos.
     /// </summary>
     public class TowerWarsController : MonoBehaviour
     {
         const float LaneGap = 6f;      // espaço entre as duas lanes, em unidades de mundo
-        const int Seed = 20260828;
 
-        public LaneSim Player { get; private set; }
-        public LaneSim Foe { get; private set; }
+        public LaneSim Player => _runner?.Player;
+        public LaneSim Foe => _runner?.Foe;
 
+        MatchRunner _runner;
+        Replay _replay;
         LaneView _playerView;
         LaneView _foeView;
-        TowerWarsAi _foeAi;
         FloatingText _floatingText;
-        Random _rng;
+        string _lastSaveMessage;
+        float _saveMessageTimer;
 
         IGameInput _input;
         CameraRigDriver _cameraRig;
@@ -117,16 +117,19 @@ namespace TDFende
             Juice.Reset();
             _floatingText?.Clear();
 
-            _rng = new Random(Seed);
-            Player = new LaneSim(GameConfig.GridWidth, GameConfig.GridHeight);
-            Foe = new LaneSim(GameConfig.GridWidth, GameConfig.GridHeight);
+            // semente diferente a cada partida: repetir a mesma partida-relógio a cada
+            // R tornaria o teste enganoso. Fica gravada no replay, então continua reprodutível.
+            int seed = System.Environment.TickCount;
+            _runner = new MatchRunner(seed, Difficulty, GameConfig.GridWidth, GameConfig.GridHeight);
+
+            _replay = new Replay { Seed = seed, Difficulty = Difficulty.Name };
+            _runner.CommandApplied += _replay.Record;
 
             float off = (Player.Map.WorldSize.z + LaneGap) * 0.5f;
             _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador", Color.white, true);
             _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario",
                 new Color(0.82f, 0.82f, 0.9f), false);
 
-            _foeAi = new TowerWarsAi(Foe, Player, Difficulty, _rng);
             _accumulator = 0f;
             _selectedSend = 0;
             // sem isto, o custo de upgrade da partida ANTERIOR sobrevive e o HUD
@@ -158,6 +161,8 @@ namespace TDFende
                 NewMatch();
                 return;
             }
+            if (Input.GetKeyDown(KeyCode.F9)) SaveReplay();
+            if (_saveMessageTimer > 0f) _saveMessageTimer -= Time.unscaledDeltaTime;
 
             bool over = Player.Dead || Foe.Dead;
             if (!over)
@@ -172,9 +177,7 @@ namespace TDFende
                 while (_accumulator >= TowerWarsConfig.FixedStep && guard++ < 8)
                 {
                     _accumulator -= TowerWarsConfig.FixedStep;
-                    _foeAi.Tick(TowerWarsConfig.FixedStep);
-                    Player.Tick(TowerWarsConfig.FixedStep);
-                    Foe.Tick(TowerWarsConfig.FixedStep);
+                    _runner.Step(); // comandos enfileirados valem AQUI, na fronteira do tique
                 }
             }
             else
@@ -233,12 +236,12 @@ namespace TDFende
                 // Sem texto flutuante aqui: TryUpgradeTowerAt levanta TowerChanged e a
                 // LaneView já mostra "nv N" nesta mesma célula. Dois rótulos na mesma
                 // posição e na mesma cor viravam um borrão ilegível.
-                Player.TryUpgradeTowerAt(cell);
+                _runner.Enqueue(MatchCommand.Upgrade(cell.x, cell.y));
                 return;
             }
 
-            if (canBuild && _input.PlacePressed && Player.TryBuildTower(cell))
-                Vfx.Instance?.Build(_ghost.position);
+            if (canBuild && _input.PlacePressed)
+                _runner.Enqueue(MatchCommand.Build(cell.x, cell.y));
         }
 
         void HandleSendInput()
@@ -257,12 +260,37 @@ namespace TDFende
         {
             // Guarda na origem: com a partida decidida, nenhum caminho deve conseguir
             // comprar envio — nem o teclado, nem um botão que continue clicável.
-            if (Player.Dead || Foe.Dead) return;
-            if (!Player.TrySend(_selectedSend, Foe, _rng)) return;
-            Vfx.Instance?.Muzzle(_foeView.CellToWorld(Foe.SpawnCells[0]) + Vector3.up * 0.5f);
-            FloatingText.Instance?.Show(
-                _playerView.CellToWorld(Player.GoalCell) + Vector3.up * 1.5f,
-                $"+{SendCatalog.Get(_selectedSend).IncomeBonus} renda", Palette.TextGold);
+            if (_runner.Over) return;
+            // Só enfileira; quem paga e cobra é o tique. O feedback visual sai do evento
+            // TowerFired/EnemyDespawned da lane, não daqui — assim o replay reproduz a
+            // partida sem precisar reproduzir a interface.
+            _runner.Enqueue(MatchCommand.Send(_selectedSend));
+        }
+
+        /// <summary>
+        /// Grava a partida em disco. É o que transforma "achei estranho" num arquivo que
+        /// eu reproduzo headless e leio o estado exato, em vez de depender da descrição.
+        /// </summary>
+        void SaveReplay()
+        {
+            try
+            {
+                string dir = System.IO.Path.Combine(Application.persistentDataPath, "replays");
+                System.IO.Directory.CreateDirectory(dir);
+                string file = System.IO.Path.Combine(dir,
+                    $"tdfende-{System.DateTime.Now:yyyyMMdd-HHmmss}.txt");
+                _replay.Ticks = _runner.TickCount;
+                System.IO.File.WriteAllText(file, _replay.Serialize());
+                _lastSaveMessage = $"replay salvo: {file}";
+                Debug.Log($"[TDFende] {_lastSaveMessage}");
+            }
+            catch (System.Exception e)
+            {
+                // salvar replay nunca pode derrubar a partida
+                _lastSaveMessage = $"falha ao salvar replay: {e.Message}";
+                Debug.LogWarning($"[TDFende] {_lastSaveMessage}");
+            }
+            _saveMessageTimer = 6f;
         }
 
         void OnGUI()
@@ -313,7 +341,11 @@ namespace TDFende
             GUI.Box(HelpBoxRect,
                 $"Clique na SUA lane (a de baixo): torre nova {TowerWarsConfig.TowerCost} ouro" +
                 $"  |  clique numa torre sua: subir de nível{hover}\n" +
-                "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar", _box);
+                "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", _box);
+
+            if (_saveMessageTimer > 0f && _lastSaveMessage != null)
+                GUI.Label(new Rect(HudMargin, 92f, Screen.width - HudMargin * 2f, 22f),
+                    _lastSaveMessage, _label);
 
             if (over)
             {
