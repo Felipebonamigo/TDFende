@@ -5,8 +5,9 @@ namespace TDFende
     /// <summary>
     /// Luz e atmosfera. Usa só RenderSettings e Light, que funcionam igual em
     /// URP e Built-in — nenhuma dependência de pacote.
-    /// É o item que mais transforma o visual por R$ 0: sol quente + luz de
-    /// preenchimento fria + névoa dá volume a um mundo feito de cubos.
+    /// Cartoon colorido: névoa fraca e clara (o mundo some no CÉU, não no preto),
+    /// sombra suave mas rasa (cartoon ainda projeta sombra, só não é dramática),
+    /// sol quente + preenchimento frio pra faces em sombra nunca ficarem cinza morto.
     /// </summary>
     public static class SceneAmbience
     {
@@ -21,12 +22,13 @@ namespace TDFende
             RenderSettings.ambientLight = Palette.Ambient;
             RenderSettings.skybox = null;
 
-            // névoa: escurece o fundo do mapa e cria profundidade
+            // névoa clara e distante: dá profundidade sem escurecer o horizonte
+            // (névoa escura era o item que mais gritava "sci-fi noir" no visual antigo)
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = Palette.Background;
-            RenderSettings.fogStartDistance = 22f;
-            RenderSettings.fogEndDistance = 65f;
+            RenderSettings.fogStartDistance = 34f;
+            RenderSettings.fogEndDistance = 85f;
 
             if (cam != null)
             {
@@ -34,12 +36,12 @@ namespace TDFende
                 cam.backgroundColor = Palette.Background;
             }
 
-            var sun = CreateLight("Sol", Palette.SunColor, 1.15f, new Vector3(52f, -38f, 0f));
+            var sun = CreateLight("Sol", Palette.SunColor, 1.25f, new Vector3(50f, -38f, 0f));
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.55f;
+            sun.shadowStrength = 0.4f; // sombra de cartoon é presente, não dramática
 
             // preenchimento frio no lado oposto: tira o preto chapado das faces em sombra
-            CreateLight("LuzPreenchimento", Palette.FillLight, 0.42f, new Vector3(28f, 150f, 0f))
+            CreateLight("LuzPreenchimento", Palette.FillLight, 0.55f, new Vector3(28f, 150f, 0f))
                 .shadows = LightShadows.None;
         }
 

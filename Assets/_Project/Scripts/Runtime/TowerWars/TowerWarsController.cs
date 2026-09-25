@@ -232,13 +232,37 @@ namespace TDFende
             bool canBuild = Player.CanBuild(cell, _selectedTower);
             bool canUpgrade = _hoverUpgradeCost > 0 && Player.Gold >= _hoverUpgradeCost;
 
-            _ghost.gameObject.SetActive(true);
-            _ghost.position = _playerView.CellToWorld(cell) + Vector3.up * 0.05f;
-            var c = onOwnTower
-                ? (canUpgrade ? Palette.TextGold : Palette.GhostInvalid)
-                : (canBuild ? Palette.GhostValid : Palette.GhostInvalid);
-            _mpb.SetColor(MaterialFactory.ColorProperty, c * (0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f)));
-            _ghostRenderer.SetPropertyBlock(_mpb);
+            // DIAGNÓSTICO TEMPORÁRIO: NullReferenceException repetindo todo frame nesta
+            // região, e a análise do código não achou candidato — cada passo isolado
+            // em try/catch próprio pra apontar a linha exata na próxima rodada.
+            try { _ghost.gameObject.SetActive(true); }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-1 SetActive] {e}"); return; }
+
+            try { _ghost.position = _playerView.CellToWorld(cell) + Vector3.up * 0.05f; }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-2 position] {e}"); return; }
+
+            Color c;
+            try
+            {
+                c = onOwnTower
+                    ? (canUpgrade ? Palette.TextGold : Palette.GhostInvalid)
+                    : (canBuild ? Palette.GhostValid : Palette.GhostInvalid);
+            }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-3 ternario-cor] {e}"); return; }
+
+            int colorProp;
+            try { colorProp = MaterialFactory.ColorProperty; }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-4 ColorProperty] {e}"); return; }
+
+            Color pulsedColor;
+            try { pulsedColor = c * (0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f)); }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-5 pulso] {e}"); return; }
+
+            try { _mpb.SetColor(colorProp, pulsedColor); }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-6 mpb.SetColor] {e}"); return; }
+
+            try { _ghostRenderer.SetPropertyBlock(_mpb); }
+            catch (System.Exception e) { Debug.LogError($"[DIAG-7 SetPropertyBlock] {e}"); return; }
 
             // clique esquerdo em torre própria também sobe: quem já está com o cursor
             // ali não devia precisar lembrar de trocar de botão
