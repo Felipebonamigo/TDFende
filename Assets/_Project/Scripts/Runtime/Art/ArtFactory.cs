@@ -20,6 +20,9 @@ namespace TDFende
     {
         static readonly Dictionary<ArtMat, Texture2D> Albedo = new Dictionary<ArtMat, Texture2D>();
         static readonly Dictionary<ArtMat, Texture2D> Normal = new Dictionary<ArtMat, Texture2D>();
+        /// <summary>Materiais que acharam textura fotográfica em Resources (escala própria).</summary>
+        static readonly Dictionary<ArtMat, float> ExternalTile = new Dictionary<ArtMat, float>();
+        const string TexturePath = "TDFende/Textures/";
         static readonly Dictionary<(ArtMat, Color), Material> Mats = new Dictionary<(ArtMat, Color), Material>();
         static readonly Dictionary<string, Mesh> Meshes = new Dictionary<string, Mesh>();
 
@@ -58,16 +61,21 @@ namespace TDFende
         public static void Preload()
         {
             var all = (ArtMat[])System.Enum.GetValues(typeof(ArtMat));
+            var t0 = Time.realtimeSinceStartup;
+            // foto primeiro (Resources só roda na thread principal); o que faltar é gerado
+            int photos = 0;
+            foreach (var m in all)
+                if (!Albedo.ContainsKey(m) && TryLoadExternal(m)) photos++;
+
             var pending = new List<ArtMat>();
             foreach (var m in all)
                 if (!Albedo.ContainsKey(m)) pending.Add(m);
-            if (pending.Count == 0) return;
+            if (photos == 0 && pending.Count == 0) return; // já carregado (segunda partida)
 
-            var t0 = Time.realtimeSinceStartup;
             var data = new TexData[pending.Count];
             System.Threading.Tasks.Parallel.For(0, pending.Count, i => data[i] = ProcTex.Generate(pending[i]));
             for (int i = 0; i < pending.Count; i++) Upload(pending[i], data[i]);
-            Debug.Log($"[TDFende] {pending.Count} texturas procedurais em " +
+            Debug.Log($"[TDFende] {photos} texturas fotográficas + {pending.Count} procedurais em " +
                       $"{(Time.realtimeSinceStartup - t0) * 1000f:0} ms");
         }
 
@@ -75,7 +83,42 @@ namespace TDFende
         {
             // o time só muda a cor; a textura de pano é uma só
             if (Albedo.ContainsKey(m)) return;
+            if (TryLoadExternal(m)) return;
             Upload(m, ProcTex.Generate(m));
+        }
+
+        /// <summary>
+        /// Carrega a foto do material (JPG guardado como .bytes, para o importador do Unity
+        /// não mexer nele). A normal entra como textura LINEAR e já na convenção do Unity
+        /// (OpenGL, Y para cima) — o script que preparou os arquivos virou o verde das que
+        /// vieram no padrão DirectX. JPG não tem alfa (= 1), o que serve tanto para o
+        /// caminho RGB quanto para o "AG" do UnpackNormal, igual às normais procedurais.
+        /// </summary>
+        static bool TryLoadExternal(ArtMat m)
+        {
+            var ext = MatSpec.External(m);
+            if (ext == null) return false;
+            var albedoBytes = Resources.Load<TextAsset>(TexturePath + ext.Value.albedo);
+            var normalBytes = Resources.Load<TextAsset>(TexturePath + ext.Value.normal);
+            if (albedoBytes == null || normalBytes == null) return false;
+
+            var albedo = new Texture2D(2, 2, TextureFormat.RGBA32, true, false) { name = $"{m}_Albedo" };
+            var normal = new Texture2D(2, 2, TextureFormat.RGBA32, true, true) { name = $"{m}_Normal" };
+            if (!albedo.LoadImage(albedoBytes.bytes, true) || !normal.LoadImage(normalBytes.bytes, true))
+            {
+                Debug.LogWarning($"[TDFende] textura de {m} não abriu; usando a procedural");
+                return false;
+            }
+            foreach (var t in new[] { albedo, normal })
+            {
+                t.wrapMode = TextureWrapMode.Repeat;
+                t.filterMode = FilterMode.Trilinear;
+                t.anisoLevel = 8;
+            }
+            Albedo[m] = albedo;
+            Normal[m] = normal;
+            ExternalTile[m] = ext.Value.unitsPerTile;
+            return true;
         }
 
         static void Upload(ArtMat m, TexData data)
@@ -112,7 +155,8 @@ namespace TDFende
             var spec = MatSpec.Of(m);
             mat = new Material(_lit) { name = m.ToString(), enableInstancing = true };
             mat.SetTexture(_baseMap, Albedo[m]);
-            mat.mainTextureScale = Vector2.one / spec.UnitsPerTile;
+            float tile = ExternalTile.TryGetValue(m, out var et) ? et : spec.UnitsPerTile;
+            mat.mainTextureScale = Vector2.one / tile;
             mat.SetColor(_baseColor, m == ArtMat.ClothTeam ? team : Color.white);
             mat.SetTexture("_BumpMap", Normal[m]);
             mat.SetFloat("_BumpScale", 1f);

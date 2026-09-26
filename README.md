@@ -51,8 +51,10 @@ de cada torre se lê nela mesma: a torre cresce e ganha o estandarte do time a p
 
 ## Direção de arte: realista, fim da Idade Média (R$ 0, tudo em código)
 
-Decidida em 26/09/2026, trocando o "cartoon colorido". Continua **sem asset comprado nem
-baixado**: modelo, textura e luz são gerados em código na hora que o jogo abre.
+Decidida em 26/09/2026, trocando o "cartoon colorido". Continua **sem asset comprado**:
+modelo e luz são gerados em código; a textura é **foto de verdade** onde havia foto livre
+(pedra, madeira, ferro, couro, pano, casca, rocha, terra — CC0 e MIT, ver
+[`THIRD_PARTY.md`](THIRD_PARTY.md)) e procedural no resto (relva, telhado, pele, cavalo, gelo, água).
 
 - **Modelos** — [`Art/ModelLib.cs`](Assets/_Project/Scripts/Runtime/Art/ModelLib.cs): cada torre,
   inimigo, a fortaleza, o acampamento, os projéteis e o cenário são montados de peças
@@ -65,7 +67,10 @@ baixado**: modelo, textura e luz são gerados em código na hora que o jogo abre
   - Inimigos: **Recruta** (lanceiro com chapéu de ferro e broquel), **Enxame** (escaramuçador
     de couro e capuz), **Corredor** (cavaleiro de lança), **Couraçado** (cavaleiro de armadura
     e escudo de pipa), **Planador** (asa de morcego à Da Vinci), **Colosso** (torre de cerco com rodas)
-- **Texturas PBR** — [`Art/ProcTex.cs`](Assets/_Project/Scripts/Runtime/Art/ProcTex.cs): cantaria,
+- **Texturas fotográficas** — `Assets/Resources/TDFende/Textures`: cor + normal map, recoloridas
+  para a paleta. `MatSpec.External` diz qual material usa qual foto; se o arquivo faltar, o jogo
+  cai no procedural sozinho
+- **Texturas procedurais** — [`Art/ProcTex.cs`](Assets/_Project/Scripts/Runtime/Art/ProcTex.cs): cantaria,
   tábua, bronze com pátina, ferro com ferrugem, telha, ardósia, pano, couro, relva, terra,
   rocha, água... cor + normal map, tileáveis, geradas em paralelo no boot (`ArtFactory.Preload`)
 - **Animação** — [`Art/ModelRig.cs`](Assets/_Project/Scripts/Runtime/Art/ModelRig.cs): torreta

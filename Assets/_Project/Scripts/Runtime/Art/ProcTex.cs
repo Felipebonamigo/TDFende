@@ -59,6 +59,34 @@ namespace TDFende
             }
         }
 
+        /// <summary>
+        /// Textura fotográfica baixada (Assets/Resources/TDFende/Textures, ver THIRD_PARTY.md):
+        /// nome da cor, nome da normal e quantas unidades de mundo uma repetição cobre.
+        /// null = este material continua procedural (ProcTex). Se o arquivo sumir, o jogo
+        /// cai no procedural sozinho — nunca fica rosa.
+        /// </summary>
+        public static (string albedo, string normal, float unitsPerTile)? External(ArtMat m)
+        {
+            switch (m)
+            {
+                // castle_brick_02 (Poly Haven, CC0): ~22 fiadas por repetição
+                case ArtMat.Stone: return ("Stone_albedo", "Stone_normal", 1.4f);
+                case ArtMat.StoneDark: return ("StoneDark_albedo", "Stone_normal", 1.4f);
+                case ArtMat.StoneFrost: return ("StoneFrost_albedo", "Stone_normal", 1.4f);
+                // tábuas (O3DE, MIT): 5 tábuas por repetição
+                case ArtMat.Wood: return ("Wood_albedo", "Wood_normal", 0.4f);
+                case ArtMat.WoodDark: return ("WoodDark_albedo", "Wood_normal", 0.4f);
+                case ArtMat.Iron: return ("Iron_albedo", "Iron_normal", 0.5f);
+                case ArtMat.Leather: return ("Leather_albedo", "Leather_normal", 0.4f);
+                case ArtMat.Cloth: return ("Cloth_albedo", "Cloth_normal", 0.35f);
+                case ArtMat.ClothTeam: return ("ClothTeam_albedo", "Cloth_normal", 0.35f);
+                case ArtMat.Bark: return ("Bark_albedo", "Bark_normal", 0.6f);
+                case ArtMat.Rock: return ("Rock_albedo", "Rock_normal", 1.4f);
+                case ArtMat.Dirt: return ("Dirt_albedo", "Dirt_normal", 2.5f);
+                default: return null;
+            }
+        }
+
         static MatSpec S(string hex, float smooth, float metal, float unitsPerTile)
         {
             return new MatSpec { Base = ProcTex.Hex(hex), Smoothness = smooth, Metallic = metal, UnitsPerTile = unitsPerTile, Size = 256 };

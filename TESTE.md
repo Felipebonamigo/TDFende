@@ -15,8 +15,9 @@ Está em ordem de valor: se der errado no passo 0 ou 1, pare e me mande o erro.
 1. `git pull` (ou troque para o branch do visual) e abra o projeto. O Unity vai importar os
    arquivos novos (`Art/`, `SoftParticle.shader`) e recompilar.
 2. **Play** → **Tower Wars** → **Normal**. No Console deve aparecer
-   `[TDFende] 22 texturas procedurais em N ms`. **Me diga o N** — é o tempo de geração
-   no boot; acima de ~1500 ms eu passo a guardar as texturas em disco.
+   `[TDFende] 12 texturas fotográficas + 10 procedurais em N ms`. **Me diga o N** — é o
+   tempo de carga no boot. Se aparecer "0 texturas fotográficas", as fotos não foram achadas
+   (me avise: o jogo roda, mas com a textura procedural no lugar).
 3. O que olhar, uma frase por item:
    - Algum material **rosa/magenta**? (shader não achado — me diga em quê)
    - Algum modelo **de dentro para fora** ou escuro demais? (normal ou face invertida)

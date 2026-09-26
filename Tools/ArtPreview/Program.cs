@@ -92,13 +92,24 @@ static class Program
         {
             var spec = MatSpec.Of(mats[i]);
             var tex = ProcTex.Generate(mats[i]);
+            // mesma regra do ArtFactory: foto em Resources/TDFende/Textures vence o procedural
+            string albedoUri = "data:image/png;base64," + Convert.ToBase64String(Png(tex.Albedo, tex.Size));
+            string normalUri = "data:image/png;base64," + Convert.ToBase64String(Png(tex.Normal, tex.Size));
+            var ext = MatSpec.External(mats[i]);
+            const string photos = "../../Assets/Resources/TDFende/Textures/";
+            if (ext != null && File.Exists(photos + ext.Value.albedo + ".bytes") && File.Exists(photos + ext.Value.normal + ".bytes"))
+            {
+                albedoUri = "data:image/jpeg;base64," + Convert.ToBase64String(File.ReadAllBytes(photos + ext.Value.albedo + ".bytes"));
+                normalUri = "data:image/jpeg;base64," + Convert.ToBase64String(File.ReadAllBytes(photos + ext.Value.normal + ".bytes"));
+                spec.UnitsPerTile = ext.Value.unitsPerTile;
+            }
             if (i > 0) sb.Append(',');
             sb.Append('"').Append(mats[i]).Append("\":{\"base\":[").Append(F(spec.Base.r)).Append(',').Append(F(spec.Base.g)).Append(',').Append(F(spec.Base.b))
               .Append("],\"smooth\":").Append(F(spec.Smoothness)).Append(",\"metal\":").Append(F(spec.Metallic))
               .Append(",\"tile\":").Append(F(spec.UnitsPerTile))
               .Append(",\"emit\":[").Append(F(spec.Emission.r)).Append(',').Append(F(spec.Emission.g)).Append(',').Append(F(spec.Emission.b)).Append(']')
-              .Append(",\"albedo\":\"data:image/png;base64,").Append(Convert.ToBase64String(Png(tex.Albedo, tex.Size)))
-              .Append("\",\"normal\":\"data:image/png;base64,").Append(Convert.ToBase64String(Png(tex.Normal, tex.Size))).Append("\"}");
+              .Append(",\"albedo\":\"").Append(albedoUri)
+              .Append("\",\"normal\":\"").Append(normalUri).Append("\"}");
             File.WriteAllBytes(Path.Combine(outDir, mats[i] + ".png"), Png(tex.Albedo, tex.Size));
         }
         sb.Append("}}");
