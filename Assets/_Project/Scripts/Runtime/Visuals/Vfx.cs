@@ -97,6 +97,10 @@ namespace TDFende
             pr.renderMode = ParticleSystemRenderMode.Billboard;
             pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             pr.receiveShadows = false;
+            // o shader usa a cor de vértice crua; em espaço Linear quem converte a cor da
+            // partícula é o renderer, e só com isto ligado (não há garantia do padrão em
+            // renderer criado por código)
+            pr.applyActiveColorSpace = true;
             var shader = Shader.Find("TDFende/TerritoryOverlay");
             pr.sharedMaterial = shader != null
                 ? new Material(shader)

@@ -19,6 +19,14 @@ namespace TDFende
             return c;
         }
 
+        /// <summary>
+        /// Cor para gravar em vértice de malha (Mesh.SetColors). Material, luz e partícula
+        /// o Unity converte sozinho para o espaço Linear; cor de vértice de malha ele NÃO
+        /// converte — sem isto, toda sobreposição sai lavada, mais clara que a paleta.
+        /// </summary>
+        public static Color ForVertex(Color c) =>
+            QualitySettings.activeColorSpace == ColorSpace.Linear ? c.linear : c;
+
         // Cenário — céu e grama claros, tipo tabuleiro de brinquedo
         public static readonly Color GroundDark = Hex("#6BC94A");
         public static readonly Color GroundLight = Hex("#7ED957");

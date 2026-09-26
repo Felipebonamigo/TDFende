@@ -275,14 +275,26 @@ namespace TDFende
 
         void BuildWorld()
         {
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Chao";
-            Destroy(ground.GetComponent<Collider>());
             var size = Map.WorldSize;
-            ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
-            ground.transform.position = new Vector3(0f, -0.05f, 0f); // topo do cubo em Y=0
-            ground.GetComponent<Renderer>().sharedMaterial =
-                MaterialFactory.GetGround(Palette.GroundDark, Palette.GroundLight, Map.Width, Map.Height);
+
+            // chão de verdade (grama PBR + tufos) quando a arte existe; senão, o quadriculado
+            var area = new[] { new Rect(-size.x * 0.5f, -size.z * 0.5f, size.x, size.z) };
+            var terrain = GroundBuilder.Build(area);
+            if (terrain != null)
+            {
+                gameObject.AddComponent<GrassField>().Init(terrain, area);
+                GridOverlay.Build(Map, transform);
+            }
+            else
+            {
+                var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ground.name = "Chao";
+                Destroy(ground.GetComponent<Collider>());
+                ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
+                ground.transform.position = new Vector3(0f, -0.05f, 0f); // topo do cubo em Y=0
+                ground.GetComponent<Renderer>().sharedMaterial =
+                    MaterialFactory.GetGround(Palette.GroundDark, Palette.GroundLight, Map.Width, Map.Height);
+            }
 
             var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             baseGo.name = "Base";

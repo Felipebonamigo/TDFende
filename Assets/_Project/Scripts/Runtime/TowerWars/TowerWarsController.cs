@@ -99,6 +99,7 @@ namespace TDFende
             _floatingText = gameObject.AddComponent<FloatingText>();
             _floatingText.Init(cam);
 
+            BuildWorld();
             NewMatch();
 
             _input = new DesktopInput();
@@ -110,6 +111,30 @@ namespace TDFende
             float totalZ = Player.Map.WorldSize.z * 2f + LaneGap;
             _cameraRig = new CameraRigDriver(cam, Vector3.zero,
                 new Vector3(Player.Map.WorldSize.x, 0f, totalZ), totalZ * 0.95f);
+        }
+
+        Terrain _terrain;
+
+        /// <summary>
+        /// Chão de verdade: terreno com grama PBR e tufos 3D em volta das duas lanes.
+        /// Uma vez só, não por partida — reiniciar não troca o cenário. Sem a arte em
+        /// Resources, _terrain fica null e as lanes voltam ao chão quadriculado.
+        /// </summary>
+        void BuildWorld()
+        {
+            float w = GameConfig.GridWidth * GameConfig.CellSize;
+            float h = GameConfig.GridHeight * GameConfig.CellSize;
+            float off = (h + LaneGap) * 0.5f;
+            // Rect.y guarda o Z do mundo
+            var areas = new[]
+            {
+                new Rect(-w * 0.5f, -off - h * 0.5f, w, h), // sua lane
+                new Rect(-w * 0.5f, off - h * 0.5f, w, h)   // lane da IA
+            };
+
+            _terrain = GroundBuilder.Build(areas);
+            if (_terrain != null)
+                gameObject.AddComponent<GrassField>().Init(_terrain, areas);
         }
 
         void NewMatch()
@@ -136,9 +161,9 @@ namespace TDFende
             _runner.CommandApplied += _replay.Record;
 
             float off = (Player.Map.WorldSize.z + LaneGap) * 0.5f;
-            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador", Color.white, true);
+            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador", Color.white, true, _terrain != null);
             _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario",
-                new Color(0.82f, 0.82f, 0.9f), false);
+                new Color(0.82f, 0.82f, 0.9f), false, _terrain != null);
 
             _accumulator = 0f;
             _selectedSend = 0;

@@ -35,14 +35,19 @@ namespace TDFende
 
         readonly bool _isPlayer;
 
-        public LaneView(LaneSim sim, Vector3 offset, string name, Color groundTint, bool isPlayer)
+        /// <param name="realisticGround">
+        /// Há terreno de verdade por baixo (GroundBuilder): em vez do chão quadriculado, a lane
+        /// ganha só linhas de giz, e a grama do terreno aparece através dela.
+        /// </param>
+        public LaneView(LaneSim sim, Vector3 offset, string name, Color groundTint, bool isPlayer,
+            bool realisticGround = false)
         {
             _sim = sim;
             _isPlayer = isPlayer;
             _root = new GameObject(name).transform;
             _root.position = offset;
 
-            BuildGround(groundTint);
+            BuildGround(groundTint, realisticGround);
             _enemyRoot = new GameObject("Inimigos").transform;
             _enemyRoot.SetParent(_root, false);
             _towerRoot = new GameObject("Torres").transform;
@@ -91,18 +96,25 @@ namespace TDFende
                 FloatingText.Instance?.Show(world + Vector3.up * 1.6f, $"nível {level}", Palette.TextGold);
         }
 
-        void BuildGround(Color tint)
+        void BuildGround(Color tint, bool realisticGround)
         {
             var size = _sim.Map.WorldSize;
 
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Chao";
-            Object.Destroy(ground.GetComponent<Collider>());
-            ground.transform.SetParent(_root, false);
-            ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
-            ground.transform.localPosition = new Vector3(0f, -0.05f, 0f);
-            ground.GetComponent<Renderer>().sharedMaterial = MaterialFactory.GetGround(
-                Palette.GroundDark * tint, Palette.GroundLight * tint, _sim.Map.Width, _sim.Map.Height);
+            if (realisticGround)
+            {
+                GridOverlay.Build(_sim.Map, _root);
+            }
+            else
+            {
+                var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ground.name = "Chao";
+                Object.Destroy(ground.GetComponent<Collider>());
+                ground.transform.SetParent(_root, false);
+                ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
+                ground.transform.localPosition = new Vector3(0f, -0.05f, 0f);
+                ground.GetComponent<Renderer>().sharedMaterial = MaterialFactory.GetGround(
+                    Palette.GroundDark * tint, Palette.GroundLight * tint, _sim.Map.Width, _sim.Map.Height);
+            }
 
             var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             baseGo.name = "Base";

@@ -1,0 +1,109 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verificação de compilação do lado Unity SEM abrir o Unity.
+
+    Compila TODOS os scripts de Assets/_Project/Scripts/Runtime contra as DLLs
+    REAIS do editor instalado. Referenciar assembly não exige licença — só abrir
+    o editor exige. Isso pega a classe de defeito que o Tools/FlowSim é cego para
+    ver: o FlowSim usa stubs mínimos de UnityEngine, então erros que só existem na
+    presença da API completa (o caso real: `Random` ambíguo entre System.Random e
+    UnityEngine.Random, CS0104) passavam batido e só apareceriam quando o Felipe
+    abrisse o projeto.
+
+    Assinaturas vêm das DLLs de verdade, então não há risco de "corrigir" código
+    certo para agradar um stub errado.
+
+    O que NÃO cobre: comportamento em runtime, importação de assets, shaders, e a
+    assembly opcional Runtime/Urp (que só compila com o define TDFENDE_URP e
+    depende do pacote URP, ausente até a primeira abertura do editor).
+
+    Sobre o Runtime/Urp: compilá-lo aqui exigiria arrastar ~1.180 arquivos-fonte de
+    com.unity.render-pipelines.universal + .core, e AINDA não fecharia o risco real,
+    que é o asmdef resolver defineConstraints/versionDefines — comportamento do
+    pipeline de assets do Unity, não do compilador C#. Em vez disso foi verificado
+    à mão, contra a fonte do pacote embutido nesta versão do editor, que todos os
+    nomes de API usados pelo PostFx.cs existem: VolumeProfile.Add&lt;T&gt;(bool),
+    Tonemapping/TonemappingMode.ACES, Bloom.intensity/threshold/scatter,
+    Vignette.intensity/smoothness, ColorAdjustments.postExposure/contrast/saturation,
+    Volume.isGlobal/priority/profile, GetUniversalAdditionalCameraData() e
+    UniversalAdditionalCameraData.renderPostProcessing. Ou seja: se aquele arquivo
+    quebrar na primeira abertura, é o padrão de asmdef, não um nome de API errado.
+
+    Uso:  cd Tools/CompileCheck && dotnet build
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- as DLLs do Unity não são reference assemblies formais; silencia só isso -->
+    <NoWarn>$(NoWarn);CS1701;CS1702;CS0436</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <!--
+    Acha o editor sozinho, para não quebrar quando a versão do Unity mudar.
+    Prefere a versão de ProjectSettings/ProjectVersion.txt; se ela não estiver
+    instalada, cai em qualquer editor encontrado (para checagem de assinatura,
+    qualquer Unity 6 serve).
+  -->
+  <PropertyGroup>
+    <UnityHubRoot Condition="'$(UnityHubRoot)' == ''">C:\Program Files\Unity\Hub\Editor</UnityHubRoot>
+    <ProjectVersionFile>$(MSBuildThisFileDirectory)..\..\ProjectSettings\ProjectVersion.txt</ProjectVersionFile>
+    <ProjectUnityVersion Condition="Exists('$(ProjectVersionFile)')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(ProjectVersionFile)')), 'm_EditorVersion: (\S+)').Groups[1].Value)</ProjectUnityVersion>
+    <PreferredManaged>$(UnityHubRoot)\$(ProjectUnityVersion)\Editor\Data\Managed\UnityEngine</PreferredManaged>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- UnityManaged pode ser passado direto: dotnet build -p:UnityManaged="..." -->
+    <UnityManaged Condition="'$(UnityManaged)' == ''">$(PreferredManaged)</UnityManaged>
+  </PropertyGroup>
+
+  <Target Name="VerificaUnity" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('$(UnityManaged)')"
+           Text="Não achei as DLLs do Unity em '$(UnityManaged)' (versão $(ProjectUnityVersion), de ProjectVersion.txt). Instale essa versão pelo Hub, ou aponte o caminho: dotnet build -p:UnityManaged=&quot;C:\Program Files\Unity\Hub\Editor\SUA_VERSAO\Editor\Data\Managed\UnityEngine&quot;" />
+    <Message Importance="high" Text="CompileCheck: Unity $(ProjectUnityVersion) em $(UnityManaged)" />
+  </Target>
+
+  <ItemGroup>
+    <!-- todo o runtime, menos a assembly opcional de URP -->
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\**\*.cs"
+             Exclude="..\..\Assets\_Project\Scripts\Runtime\Urp\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(UnityManaged)\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UnityManaged)\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(UnityManaged)\UnityEngine.ParticleSystemModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(UnityManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(UnityManaged)\UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(UnityManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(UnityManaged)\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(UnityManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TerrainModule">
+      <HintPath>$(UnityManaged)\UnityEngine.TerrainModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TerrainPhysicsModule">
+      <HintPath>$(UnityManaged)\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

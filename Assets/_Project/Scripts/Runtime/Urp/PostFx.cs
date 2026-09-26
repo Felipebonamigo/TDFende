@@ -5,15 +5,17 @@ using UnityEngine.Rendering.Universal;
 namespace TDFende.Urp
 {
     /// <summary>
-    /// Bloom, vinheta e color grading — o acabamento que faz primitivas
-    /// parecerem estilo, não protótipo.
+    /// Pós-processamento — direção REALISTA (decidida 25/09/2026).
     ///
-    /// Cartoon colorido: ACES é tonemap FÍLMICO — ele estoura o vermelho e desatura
-    /// realces, exatamente o oposto do "cor de brinquedo, sempre pura" que cartoon
-    /// pede. Vinheta forte é escolha de clima sombrio/terror, não de brinquedo.
-    /// Bloom pesado empurra pra sci-fi neon. Trocados os três; saturação sobe MUITO
-    /// (cartoon vive de cor saturada), contraste desce um pouco (o visual antigo
-    /// "escuro com acento neon" tinha alto contraste; cartoon é mais chapado/direto).
+    /// Inverte a escolha feita para o cartoon um dia antes: lá o ACES saiu porque, sendo
+    /// fílmico, desatura realces e o brinquedo precisava de cor pura. No realista é
+    /// exatamente isso que se quer — o ACES é a curva de câmera de cinema, e é a diferença
+    /// entre "renderizado" e "fotografado". Saturação volta para quase neutra, vinheta
+    /// discreta de lente, bloom só no que é realmente claro.
+    ///
+    /// Antisserrilhado SMAA na câmera: sem ele, borda de cubo e folha de grama cintilam ao
+    /// mover a câmera. MSAA não resolveria a grama (recorte por alfa não é borda de
+    /// polígono), e TAA deixaria rastro nos inimigos em movimento.
     ///
     /// Esta assembly INTEIRA só compila se o URP estiver instalado
     /// (defineConstraints no asmdef). Sem URP, ela simplesmente não existe e o
@@ -30,21 +32,21 @@ namespace TDFende.Urp
             var profile = ScriptableObject.CreateInstance<VolumeProfile>();
 
             var tone = profile.Add<Tonemapping>(true);
-            tone.mode.Override(TonemappingMode.Neutral); // preserva cor saturada, sem rolloff fílmico
+            tone.mode.Override(TonemappingMode.ACES);
 
             var bloom = profile.Add<Bloom>(true);
-            bloom.intensity.Override(0.35f);
-            bloom.threshold.Override(1.1f); // só o que é bem claro brilha (projétil), não tudo
-            bloom.scatter.Override(0.5f);
+            bloom.intensity.Override(0.25f);
+            bloom.threshold.Override(1.0f);
+            bloom.scatter.Override(0.65f);
 
             var vignette = profile.Add<Vignette>(true);
-            vignette.intensity.Override(0.10f); // quase nada: vinheta forte é clima sombrio
-            vignette.smoothness.Override(0.6f);
+            vignette.intensity.Override(0.18f);
+            vignette.smoothness.Override(0.4f);
 
             var grade = profile.Add<ColorAdjustments>(true);
-            grade.postExposure.Override(0.2f);
-            grade.contrast.Override(4f);
-            grade.saturation.Override(28f);
+            grade.postExposure.Override(0.1f);
+            grade.contrast.Override(6f);
+            grade.saturation.Override(4f);
 
             var go = new GameObject("PostFX");
             var volume = go.AddComponent<Volume>();
@@ -56,7 +58,13 @@ namespace TDFende.Urp
             if (cam != null)
             {
                 var data = cam.GetUniversalAdditionalCameraData();
-                if (data != null) data.renderPostProcessing = true;
+                if (data != null)
+                {
+                    data.renderPostProcessing = true;
+                    data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                    data.antialiasingQuality = AntialiasingQuality.High;
+                    data.renderShadows = true;
+                }
             }
         }
     }
