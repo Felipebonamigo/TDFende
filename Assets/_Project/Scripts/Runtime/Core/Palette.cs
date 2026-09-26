@@ -3,51 +3,66 @@ using UnityEngine;
 namespace TDFende
 {
     /// <summary>
-    /// Paleta única do jogo — fonte da verdade para TODA cor.
-    /// Estilo "cartoon colorido" (decidido 25/09/2026, trocando o anterior "minimalista
-    /// escuro"): céu e chão claros, cores primárias/secundárias saturadas, sem preto
-    /// puro em lugar nenhum — sombra de cartoon é cor escura, nunca cinza morto.
-    /// Ainda R$0: só paleta + luz + juice, sem asset comprado. Mudar uma cor aqui muda
-    /// o jogo inteiro, porque quase tudo (torres, inimigos, partículas, fronteira,
-    /// ghost) lê só daqui.
+    /// Cores do jogo que NÃO vêm de material: time, fronteira, efeitos, interface.
+    ///
+    /// Direção de arte realista (decidida 26/09/2026, trocando o "cartoon colorido"):
+    /// a cor das coisas agora mora nas texturas PBR (ArtMat/ProcTex) — pedra, madeira,
+    /// bronze, relva. Aqui ficam só as cores de LEITURA de jogo: de quem é cada coisa
+    /// (azul você, vermelho a IA, como estandarte medieval) e o que está acontecendo
+    /// (fronteira, atrito, dano). Saturação contida: realista não é cinza, mas também
+    /// não é brinquedo.
     /// </summary>
     public static class Palette
     {
-        static Color Hex(string hex)
+        static Color Hex(string hex, float a = 1f)
         {
             ColorUtility.TryParseHtmlString(hex, out var c);
+            c.a = a;
             return c;
         }
 
-        // Cenário — céu e grama claros, tipo tabuleiro de brinquedo
-        public static readonly Color GroundDark = Hex("#6BC94A");
-        public static readonly Color GroundLight = Hex("#7ED957");
-        public static readonly Color Background = Hex("#8ED2FF"); // céu
-        public static readonly Color Ambient = Hex("#BFE8FF");    // preenchimento frio claro, nunca escuro
-        public static readonly Color SunColor = Hex("#FFE38A");
-        public static readonly Color FillLight = Hex("#8FD6FF");
+        // Times — tingem estandarte, tabardo, xairel e a linha de fronteira
+        public static readonly Color TeamPlayer = Hex("#2F5FA8");
+        public static readonly Color TeamFoe = Hex("#A8322F");
 
-        // Entidades — cores de brinquedo, saturadas
-        public static readonly Color BaseGold = Hex("#FFC93C");
-        public static readonly Color SpawnMagenta = Hex("#FF6FB0");
-        public static readonly Color TowerBody = Hex("#3D8BFF");
-        public static readonly Color TowerHead = Hex("#FFD23F"); // acento amarelo: "boca" do canhão salta contra o corpo
-        public static readonly Color Projectile = Hex("#FFEA70");
+        // Território (estilo RoN: preenchimento quase invisível, linha de fronteira firme)
+        public static Color TerritoryFill(Color team) => new Color(team.r, team.g, team.b, 0.10f);
+        public static Color TerritoryEdge(Color team) =>
+            new Color(Mathf.Lerp(team.r, 1f, 0.25f), Mathf.Lerp(team.g, 1f, 0.25f), Mathf.Lerp(team.b, 1f, 0.25f), 0.85f);
 
-        // Inimigos — cor vai de EnemyFull a EnemyHurt conforme perde vida
-        public static readonly Color EnemyFull = Hex("#FF5A3C");
-        public static readonly Color EnemyHurt = Hex("#8A2A2A"); // machucado = vinho escuro, não cinza morto
-        public static readonly Color EnemyDrained = Hex("#4FD6E8"); // tingimento sob atrito
+        /// <summary>Atrito: o inimigo drenado ganha um brilho gelado (emissão).</summary>
+        public static readonly Color AttritionGlow = new Color(0.18f, 0.42f, 0.55f);
+        /// <summary>Clarão do impacto no inimigo (emissão).</summary>
+        public static readonly Color HitGlow = new Color(0.55f, 0.5f, 0.42f);
 
-        // Território / fronteira — mesmo ciano do atrito, mais vívido
-        public static readonly Color TerritoryFill = new Color(0.31f, 0.87f, 0.91f, 0.16f);
-        public static readonly Color TerritoryEdge = new Color(0.24f, 0.88f, 1f, 0.78f);
+        // Construção
+        public static readonly Color GhostValid = Hex("#6FCF7A", 0.45f);
+        public static readonly Color GhostInvalid = Hex("#E0523C", 0.45f);
+        public static readonly Color GhostUpgrade = Hex("#E8C15A", 0.45f);
+        public static readonly Color RangeRing = Hex("#F4EBD0", 0.55f);
+        public static readonly Color GridLine = new Color(0f, 0f, 0f, 0.09f);
 
-        // Feedback
-        public static readonly Color GhostValid = Hex("#4FD98A");
-        public static readonly Color GhostInvalid = Hex("#FF5A3C");
-        public static readonly Color TextGold = Hex("#FFC93C");
-        public static readonly Color TextDanger = Hex("#FF4C4C");
-        public static readonly Color HitFlash = Color.white;
+        // Efeitos
+        public static readonly Color MuzzleFlash = Hex("#FFD48A");
+        public static readonly Color LeakFlash = Hex("#FF8A4C");
+        public static readonly Color Smoke = Hex("#9A958D", 0.5f);
+        public static readonly Color DarkSmoke = Hex("#3E3A36", 0.6f);
+        public static readonly Color Dust = Hex("#8C7A5E", 0.55f);
+        public static readonly Color Debris = Hex("#3B332B", 0.95f);
+        public static readonly Color Spark = Hex("#FFB050");
+        public static readonly Color Frost = Hex("#A8E4FF");
+        public static readonly Color FrostMist = Hex("#D8F1FF", 0.35f);
+
+        // Texto flutuante e interface
+        public static readonly Color TextGold = Hex("#E8C15A");
+        public static readonly Color TextDanger = Hex("#E0523C");
+        public static readonly Color TextFrost = Hex("#8FD3F0");
+        public static readonly Color UiInk = Hex("#EDE3CF");
+        public static readonly Color UiInkDim = Hex("#B9AE98");
+        public static readonly Color UiPanel = Hex("#17130F", 0.78f);
+        public static readonly Color UiButton = Hex("#3A2C20", 0.92f);
+        public static readonly Color UiButtonHover = Hex("#54402C", 0.95f);
+        public static readonly Color UiButtonSelected = Hex("#7A5A2E", 0.97f);
+        public static readonly Color UiAccent = Hex("#C9A24A");
     }
 }

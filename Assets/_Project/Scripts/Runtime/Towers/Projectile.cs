@@ -25,11 +25,12 @@ namespace TDFende
                 return;
             }
 
-            var to = _target.transform.position - transform.position;
+            // mira no peito, não no pé: o modelo tem altura
+            var to = _target.transform.position + Vector3.up * 0.28f - transform.position;
             float step = GameConfig.ProjectileSpeed * Time.deltaTime;
             if (to.magnitude <= step + 0.25f)
             {
-                Vfx.Instance?.Impact(_target.transform.position);
+                Vfx.Instance?.Impact(transform.position);
                 _target.TakeDamage(_damage, DespawnReason.KilledByTower);
                 _release(this);
                 return;

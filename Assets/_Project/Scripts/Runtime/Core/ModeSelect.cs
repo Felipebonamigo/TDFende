@@ -9,41 +9,42 @@ namespace TDFende
     /// </summary>
     public class ModeSelect : MonoBehaviour
     {
-        GUIStyle _title, _sub, _button;
         bool _started;
 
         void OnGUI()
         {
             if (_started) return;
-            EnsureStyles();
+            UiSkin.Ensure();
 
             float w = 460f, h = 44f;
             float x = (Screen.width - w) * 0.5f;
             float y = Screen.height * 0.22f;
 
-            GUI.Label(new Rect(0, y - 90f, Screen.width, 46f), "TDFende", _title);
-            GUI.Label(new Rect(0, y - 46f, Screen.width, 30f),
-                "tower defense com fronteira territorial e atrito", _sub);
+            // o menu é um painel escuro por cima do céu, não texto solto na tela
+            GUI.Box(new Rect(x - 30f, y - 110f, w + 60f, 330f), GUIContent.none, UiSkin.Panel);
+            UiSkin.Shadowed(new Rect(0, y - 96f, Screen.width, 50f), "TDFende", UiSkin.Title, Palette.UiAccent);
+            UiSkin.Shadowed(new Rect(0, y - 46f, Screen.width, 30f),
+                "tower defense com fronteira territorial e atrito", UiSkin.Subtitle, Palette.UiInkDim);
 
-            if (GUI.Button(new Rect(x, y, w, h), "TD clássico — uma lane, ondas infinitas", _button))
+            if (GUI.Button(new Rect(x, y, w, h), "TD clássico — uma lane, ondas infinitas", UiSkin.Button))
                 Launch<GameController>();
 
-            y += h + 22f;
-            GUI.Label(new Rect(x, y - 20f, w, 20f),
-                "Tower Wars — defenda a sua lane e envie inimigos na do adversário", _sub);
+            y += h + 26f;
+            UiSkin.Shadowed(new Rect(x, y - 22f, w, 20f),
+                "Tower Wars — defenda a sua lane e envie inimigos na do adversário", UiSkin.Subtitle, Palette.UiInk);
 
             float bw = (w - 16f) / 3f;
-            if (GUI.Button(new Rect(x, y, bw, h), "Fácil", _button))
+            if (GUI.Button(new Rect(x, y, bw, h), "Fácil", UiSkin.Button))
                 LaunchWars(TowerWarsAi.Personality.Easy);
-            if (GUI.Button(new Rect(x + bw + 8f, y, bw, h), "Normal", _button))
+            if (GUI.Button(new Rect(x + bw + 8f, y, bw, h), "Normal", UiSkin.Button))
                 LaunchWars(TowerWarsAi.Personality.Normal);
-            if (GUI.Button(new Rect(x + (bw + 8f) * 2f, y, bw, h), "Difícil", _button))
+            if (GUI.Button(new Rect(x + (bw + 8f) * 2f, y, bw, h), "Difícil", UiSkin.Button))
                 LaunchWars(TowerWarsAi.Personality.Hard);
 
             // Atalho para quem quer mexer nos números: gera os arquivos de balanceamento
             // já preenchidos com os valores atuais, prontos para editar.
             y += h + 30f;
-            if (GUI.Button(new Rect(x + bw + 8f, y, bw, 30f), "Exportar balanceamento", _button))
+            if (GUI.Button(new Rect(x + bw + 8f, y, bw, 30f), "Exportar balanceamento", UiSkin.Button))
             {
                 try
                 {
@@ -55,7 +56,7 @@ namespace TDFende
                 }
             }
             if (_exportMessage != null)
-                GUI.Label(new Rect(0, y + 34f, Screen.width, 22f), _exportMessage, _sub);
+                UiSkin.Shadowed(new Rect(0, y + 34f, Screen.width, 22f), _exportMessage, UiSkin.Subtitle, Palette.UiInk);
         }
 
         string _exportMessage;
@@ -74,15 +75,6 @@ namespace TDFende
             // dificuldade definida ANTES do Start do controlador rodar
             go.AddComponent<TowerWarsController>().Difficulty = difficulty;
             Destroy(gameObject);
-        }
-
-        void EnsureStyles()
-        {
-            if (_title != null) return;
-            _title = new GUIStyle(GUI.skin.label)
-            { fontSize = 38, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            _sub = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.MiddleCenter };
-            _button = new GUIStyle(GUI.skin.button) { fontSize = 15 };
         }
     }
 }

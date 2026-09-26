@@ -11,6 +11,10 @@ namespace TDFende
     ///
     /// Tudo vive sob um pai deslocado e usa coordenadas LOCAIS do grid, para as
     /// duas lanes não se desenharem uma em cima da outra.
+    ///
+    /// Inimigo e tiro são desenhados POR SLOT da simulação, não por ordem de chegada:
+    /// o mesmo boneco segue o mesmo inimigo do nascimento à morte, então a perna anda
+    /// pelo chão percorrido e o corpo vira para onde de fato caminha.
     /// </summary>
     public class LaneView
     {
@@ -18,38 +22,47 @@ namespace TDFende
         readonly Transform _root;
         readonly Transform _enemyRoot;
         readonly Transform _towerRoot;
+        readonly Transform _projectileRoot;
         readonly TerritoryRenderer _territory;
+        readonly Color _owner;    // quem defende esta lane
+        readonly Color _attacker; // quem manda os inimigos para cá
+        readonly bool _isPlayer;
+        Camera _cam;
 
-        readonly List<Transform> _enemyPool = new List<Transform>(64);
-        readonly List<Renderer> _enemyRenderers = new List<Renderer>(64);
-        readonly List<Transform> _towerObjects = new List<Transform>(32);
-        readonly List<Transform> _projectilePool = new List<Transform>(64);
-        Transform _projectileRoot;
-        readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
+        // inimigos: um rig por slot, com pool por tipo (cada tipo é um modelo diferente)
+        ModelRig[] _enemyBySlot = new ModelRig[0];
+        int[] _enemyGen = new int[0];
+        readonly Dictionary<ModelDef, Stack<ModelRig>> _pool = new Dictionary<ModelDef, Stack<ModelRig>>();
 
+        // tiros: idem, por tipo de torre (bala, bomba, estilhaço de gelo, virote)
+        ModelRig[] _shotBySlot = new ModelRig[0];
+
+        readonly List<ModelRig> _towers = new List<ModelRig>(32);
+        ModelRig _keep;
+        Transform _keepFlag;
         int _drawnTowers;
         int _lastTerritoryStamp = -1;
 
         public Transform Root => _root;
         public LaneSim Sim => _sim;
 
-        readonly bool _isPlayer;
-
-        public LaneView(LaneSim sim, Vector3 offset, string name, Color groundTint, bool isPlayer)
+        public LaneView(LaneSim sim, Vector3 offset, string name, Color owner, Color attacker, bool isPlayer)
         {
             _sim = sim;
+            _owner = owner;
+            _attacker = attacker;
             _isPlayer = isPlayer;
             _root = new GameObject(name).transform;
             _root.position = offset;
 
-            BuildGround(groundTint);
+            BuildGround();
             _enemyRoot = new GameObject("Inimigos").transform;
             _enemyRoot.SetParent(_root, false);
             _towerRoot = new GameObject("Torres").transform;
             _towerRoot.SetParent(_root, false);
             _projectileRoot = new GameObject("Projeteis").transform;
             _projectileRoot.SetParent(_root, false);
-            _territory = new TerritoryRenderer(_root);
+            _territory = new TerritoryRenderer(owner, _root);
 
             // existe uma vista: vale pagar a busca de alvo por tique para o cano acompanhar
             _sim.TrackAim = true;
@@ -58,14 +71,25 @@ namespace TDFende
             _sim.TowerFired += OnTowerFired;
         }
 
-        void OnTowerFired(Vector3 localMuzzle) => Vfx.Instance?.Muzzle(_root.TransformPoint(localMuzzle));
-
         /// <summary>Solta os eventos. Sem isso, uma lane descartada continuaria desenhando.</summary>
         public void Dispose()
         {
             _sim.EnemyDespawned -= OnEnemyDespawned;
             _sim.TowerChanged -= OnTowerChanged;
             _sim.TowerFired -= OnTowerFired;
+        }
+
+        void OnTowerFired(Vector3 localMuzzle)
+        {
+            // o evento traz a boca "da simulação"; o clarão sai da boca do cano de verdade
+            int idx = _sim.TowerIndexAt(_sim.Map.WorldToCell(localMuzzle));
+            if (idx >= 0 && idx < _towers.Count)
+            {
+                _towers[idx].Kick();
+                Vfx.Instance?.Muzzle(_towers[idx].MuzzleWorld);
+                return;
+            }
+            Vfx.Instance?.Muzzle(_root.TransformPoint(localMuzzle));
         }
 
         void OnEnemyDespawned(Vector3 localPos, DespawnReason reason)
@@ -79,7 +103,7 @@ namespace TDFende
                 FloatingText.Instance?.Show(world + Vector3.up, "-1", Palette.TextDanger);
                 return;
             }
-            Vfx.Instance?.KillBurst(world, reason == DespawnReason.KilledByAttrition);
+            Vfx.Instance?.KillBurst(world + Vector3.up * 0.25f, reason == DespawnReason.KilledByAttrition);
         }
 
         void OnTowerChanged(Vector3 localPos, int level)
@@ -91,100 +115,76 @@ namespace TDFende
                 FloatingText.Instance?.Show(world + Vector3.up * 1.6f, $"nível {level}", Palette.TextGold);
         }
 
-        void BuildGround(Color tint)
+        void BuildGround()
         {
-            var size = _sim.Map.WorldSize;
+            // o chão é o terreno do mundo (WorldView); a lane só desenha o que é dela
+            Overlays.Grid(_sim.Map, _root);
 
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Chao";
-            Object.Destroy(ground.GetComponent<Collider>());
-            ground.transform.SetParent(_root, false);
-            ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
-            ground.transform.localPosition = new Vector3(0f, -0.05f, 0f);
-            ground.GetComponent<Renderer>().sharedMaterial = MaterialFactory.GetGround(
-                Palette.GroundDark * tint, Palette.GroundLight * tint, _sim.Map.Width, _sim.Map.Height);
-
-            var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            baseGo.name = "Base";
-            Object.Destroy(baseGo.GetComponent<Collider>());
-            baseGo.transform.SetParent(_root, false);
-            baseGo.transform.localPosition = _sim.Map.CellToWorld(_sim.GoalCell) + Vector3.up * 0.6f;
-            baseGo.transform.localScale = new Vector3(1.1f, 1.2f, 1.1f);
-            baseGo.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.BaseGold);
+            // fortaleza de quem defende, com o portão virado para o acampamento inimigo
+            _keep = ArtFactory.Spawn(ModelLib.Keep(), _owner, _root, "Base");
+            _keep.transform.localPosition = _sim.Map.CellToWorld(_sim.GoalCell);
+            _keep.transform.localRotation = Quaternion.LookRotation(DirToSpawn());
+            _keepFlag = _keep.transform.Find(ModelLib.Body + "/" + ModelLib.Flag);
 
             foreach (var s in _sim.SpawnCells)
             {
-                var m = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                m.name = "Spawn";
-                Object.Destroy(m.GetComponent<Collider>());
-                m.transform.SetParent(_root, false);
-                m.transform.localPosition = _sim.Map.CellToWorld(s) + Vector3.up * 0.05f;
-                m.transform.localScale = new Vector3(0.9f, 0.1f, 0.9f);
-                m.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.SpawnMagenta);
+                var camp = ArtFactory.Spawn(ModelLib.Camp(), _attacker, _root, "Spawn");
+                camp.transform.localPosition = _sim.Map.CellToWorld(s);
+                camp.transform.localRotation = Quaternion.Euler(0f, 90f, 0f); // portal atravessado no sentido da marcha
             }
+        }
+
+        Vector3 DirToSpawn()
+        {
+            if (_sim.SpawnCells.Count == 0) return Vector3.back;
+            var d = _sim.Map.CellToWorld(_sim.SpawnCells[0]) - _sim.Map.CellToWorld(_sim.GoalCell);
+            d.y = 0f;
+            return d.sqrMagnitude > 0.001f ? d.normalized : Vector3.back;
         }
 
         /// <summary>Espelha o estado da simulação. Chamar uma vez por frame, depois do Tick.</summary>
         public void Sync()
         {
-            SyncTowers();
-            SyncEnemies();
+            if (_cam == null) _cam = Camera.main;
+            float dt = Time.deltaTime;
+            SyncTowers(dt);
+            SyncEnemies(dt);
             SyncProjectiles();
+            AnimateKeep();
         }
 
-        void SyncProjectiles()
+        void AnimateKeep()
         {
-            int used = 0;
-            for (int s = 0; s < _sim.ProjectileSlotCount; s++)
-            {
-                if (!_sim.TryGetProjectile(s, out var p)) continue;
-                RentProjectile(used++).localPosition = p;
-            }
-            for (int i = used; i < _projectilePool.Count; i++)
-                if (_projectilePool[i].gameObject.activeSelf)
-                    _projectilePool[i].gameObject.SetActive(false);
+            // estandarte ao vento: balanço lento, nunca parado
+            if (_keepFlag != null) _keepFlag.localRotation = Quaternion.Euler(0f, Mathf.Sin(Time.time * 1.3f) * 12f, 0f);
         }
 
-        Transform RentProjectile(int index)
-        {
-            while (_projectilePool.Count <= index)
-            {
-                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                go.name = "Projetil";
-                Object.Destroy(go.GetComponent<Collider>());
-                go.transform.SetParent(_projectileRoot, false);
-                go.transform.localScale = Vector3.one * 0.22f;
-                go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.Projectile);
-                _projectilePool.Add(go.transform);
-            }
-            var t = _projectilePool[index];
-            if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
-            return t;
-        }
+        // ------------------------------------------------------------------ torres
 
-        void SyncTowers()
+        void SyncTowers(float dt)
         {
             // torres só nascem, nunca somem: basta criar as que faltam
             for (int i = _drawnTowers; i < _sim.TowerCount; i++)
-                _towerObjects.Add(CreateTower(_sim.TowerCell(i), _sim.TowerTypeId(i)));
+            {
+                int type = _sim.TowerTypeId(i);
+                var rig = ArtFactory.Spawn(ModelLib.Tower(type), _owner, _towerRoot,
+                    $"Torre_{TowerCatalog.Get(type).Name}");
+                rig.transform.localPosition = _sim.Map.CellToWorld(_sim.TowerCell(i));
+                // torreta nasce virada para o acampamento: é de lá que o inimigo vem
+                rig.AimAt(_root.TransformPoint(_sim.Map.CellToWorld(_sim.SpawnCells.Count > 0 ? _sim.SpawnCells[0] : _sim.GoalCell)), 1f, 1f);
+                _towers.Add(rig);
+            }
             _drawnTowers = _sim.TowerCount;
 
-            // altura do canhão mostra o nível — leitura de força sem número na tela
-            for (int i = 0; i < _towerObjects.Count; i++)
+            for (int i = 0; i < _towers.Count; i++)
             {
-                int level = _sim.TowerLevel(i);
-                var head = _towerObjects[i].GetChild(1);
-                head.localPosition = new Vector3(0f, 0.95f + 0.10f * (level - 1), 0f);
-                head.localScale = new Vector3(0.35f, 0.25f, 0.6f + 0.08f * (level - 1));
-
-                // canhão acompanha o alvo. Sem isto todos apontam para +Z para sempre,
-                // e a torre parece desligada mesmo enquanto mata.
-                if (!_sim.TryGetTowerAim(i, out var aim)) continue;
-                var look = aim - _towerObjects[i].localPosition;
-                look.y = 0f;
-                if (look.sqrMagnitude <= 0.0001f) continue;
-                head.localRotation = Quaternion.Slerp(
-                    head.localRotation, Quaternion.LookRotation(look), 10f * Time.deltaTime);
+                var rig = _towers[i];
+                // o nível se lê na própria torre: ela cresce e ganha estandarte
+                rig.SetLevel(_sim.TowerLevel(i));
+                rig.TickTower(dt);
+                // canhão acompanha o alvo. Sem isto todos apontam para o mesmo lado para
+                // sempre, e a torre parece desligada mesmo enquanto mata.
+                if (_sim.TryGetTowerAim(i, out var aim)) rig.AimAt(_root.TransformPoint(aim), dt);
             }
 
             // o território muda junto com as torres; reconstruir só quando isso acontece
@@ -195,124 +195,132 @@ namespace TDFende
             }
         }
 
-        // Cada tipo tem corpo e cor próprios: no zoom do jogo é a SILHUETA que diz o que
-        // é a torre, não um rótulo. Cubo=Canhão, cilindro largo=Morteiro,
-        // cápsula=Gelo, cilindro fino e alto=Sentinela.
-        static PrimitiveType BodyShape(int typeId) => typeId switch
+        // ---------------------------------------------------------------- inimigos
+
+        void SyncEnemies(float dt)
         {
-            1 => PrimitiveType.Cylinder,
-            2 => PrimitiveType.Capsule,
-            3 => PrimitiveType.Cylinder,
-            _ => PrimitiveType.Cube
-        };
-
-        static Vector3 BodyScale(int typeId) => typeId switch
-        {
-            1 => new Vector3(0.85f, 0.30f, 0.85f), // Morteiro: baixo e gordo
-            2 => new Vector3(0.55f, 0.40f, 0.55f), // Gelo: arredondado
-            3 => new Vector3(0.42f, 0.62f, 0.42f), // Sentinela: fina e alta
-            _ => new Vector3(0.80f, 0.80f, 0.80f)
-        };
-
-        static Color BodyColor(int typeId) => typeId switch
-        {
-            1 => Palette.TextDanger,      // Morteiro
-            2 => Palette.EnemyDrained,    // Gelo: o mesmo ciano do atrito, e não é coincidência
-            3 => Palette.GhostValid,      // Sentinela
-            _ => Palette.TowerBody
-        };
-
-        Transform CreateTower(Vector2Int cell, int typeId)
-        {
-            var root = new GameObject($"Torre_{TowerCatalog.Get(typeId).Name}").transform;
-            root.SetParent(_towerRoot, false);
-            root.localPosition = _sim.Map.CellToWorld(cell);
-
-            var body = GameObject.CreatePrimitive(BodyShape(typeId));
-            Object.Destroy(body.GetComponent<Collider>());
-            body.transform.SetParent(root, false);
-            body.transform.localPosition = new Vector3(0f, 0.4f, 0f);
-            body.transform.localScale = BodyScale(typeId);
-            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(BodyColor(typeId));
-
-            var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Object.Destroy(head.GetComponent<Collider>());
-            head.transform.SetParent(root, false);
-            head.transform.localPosition = new Vector3(0f, 0.95f, 0f);
-            head.transform.localScale = new Vector3(0.35f, 0.25f, 0.6f);
-            head.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.TowerHead);
-
-            return root;
-        }
-
-        void SyncEnemies()
-        {
-            int used = 0;
             int slots = _sim.EnemySlotCount;
+            if (_enemyBySlot.Length != slots)
+            {
+                System.Array.Resize(ref _enemyBySlot, slots);
+                System.Array.Resize(ref _enemyGen, slots);
+            }
 
             for (int s = 0; s < slots; s++)
             {
-                if (!_sim.TryGetEnemy(s, out var e)) continue;
+                if (!_sim.TryGetEnemy(s, out var e))
+                {
+                    ReleaseEnemy(s);
+                    continue;
+                }
 
-                var t = RentEnemy(used);
+                // slot reciclado (outro inimigo, talvez outro tipo): boneco novo do tipo certo
+                var rig = _enemyBySlot[s];
+                bool fresh = rig == null || _enemyGen[s] != e.Generation || rig.Def != ModelLib.Enemy(e.TypeId);
+                if (fresh)
+                {
+                    ReleaseEnemy(s);
+                    rig = _enemyBySlot[s] = RentEnemy(e.TypeId);
+                    _enemyGen[s] = e.Generation;
+                    // nasce olhando para a base: sem isto o primeiro passo gira o corpo no lugar
+                    rig.transform.localRotation = Quaternion.LookRotation(-DirToSpawn());
+                }
 
-                // A cápsula primitiva do Unity tem 2 unidades de altura, então escala
-                // uniforme afunda o boneco no chão — e quanto maior o inimigo, mais
-                // enterrado. Escala (d, h/2, d) e o centro na metade da altura fazem
-                // o pé encostar exatamente no piso, em qualquer tamanho.
-                float scale = 0.45f + 0.25f * SizeOf(e.TypeId);
-                t.localScale = new Vector3(0.55f * scale, 0.5f * scale, 0.55f * scale);
-                t.localPosition = new Vector3(e.Pos.x, 0.5f * scale, e.Pos.z);
+                rig.Follow(new Vector3(e.Pos.x, 0f, e.Pos.z), dt, snap: fresh);
 
-                var c = Color.Lerp(Palette.EnemyHurt, TypeColor(e.TypeId), e.MaxHp > 0f ? e.Hp / e.MaxHp : 1f);
-                // dentro do território, puxa pro ciano: dá pra VER o atrito agindo
-                if (e.AttritionScale > 0f && _sim.Territory.Contains(e.Pos))
-                    c = Color.Lerp(c, Palette.EnemyDrained, 0.5f);
-                _mpb.SetColor(MaterialFactory.ColorProperty, c);
-                _enemyRenderers[used].SetPropertyBlock(_mpb);
-
-                used++;
+                // dano se lê na barra; atrito, no brilho gelado que pulsa sobre a armadura
+                float frac = e.MaxHp > 0f ? e.Hp / e.MaxHp : 1f;
+                rig.SetHealth(frac, _cam);
+                bool drained = e.AttritionScale > 0f && _sim.Territory.Contains(e.Pos);
+                rig.SetGlow(drained
+                    ? Palette.AttritionGlow * (0.75f + 0.25f * Mathf.Sin(Time.time * 6f + s))
+                    : Color.black);
             }
-
-            for (int i = used; i < _enemyPool.Count; i++)
-                if (_enemyPool[i].gameObject.activeSelf)
-                    _enemyPool[i].gameObject.SetActive(false);
         }
 
-        // silhueta por tipo: gordo, enxame, veloz — legível sem modelo 3D
-        static float SizeOf(int typeId)
+        ModelRig RentEnemy(int type) =>
+            Rent(ModelLib.Enemy(type)) ?? ArtFactory.Spawn(ModelLib.Enemy(type), _attacker, _enemyRoot,
+                $"Inimigo_{SendCatalog.Get(type).Name}");
+
+        void ReleaseEnemy(int slot)
         {
-            var u = SendCatalog.Get(typeId);
-            if (u.Count > 1) return 0.25f;
-            if (u.Hp >= 400f) return 1.6f;
-            if (u.Hp >= 150f) return 1.15f;
-            return 0.7f;
+            Return(_enemyBySlot[slot]);
+            _enemyBySlot[slot] = null;
         }
 
-        static Color TypeColor(int typeId)
+        // pool por MODELO: um catálogo carregado de arquivo pode ter mais tipos que
+        // modelos, e tipos sem modelo próprio dividem o boneco padrão sem confusão
+        ModelRig Rent(ModelDef def)
         {
-            var u = SendCatalog.Get(typeId);
-            if (u.IgnoresTerritory) return Palette.TowerHead; // voador: azul claro, destoa do chão
-            if (u.Hp >= 400f) return Palette.TextDanger;
-            return Palette.EnemyFull;
+            if (!_pool.TryGetValue(def, out var stack) || stack.Count == 0) return null;
+            var r = stack.Pop();
+            r.gameObject.SetActive(true);
+            return r;
         }
 
-        Transform RentEnemy(int index)
+        void Return(ModelRig rig)
         {
-            while (_enemyPool.Count <= index)
+            if (rig == null) return;
+            rig.ResetState();
+            rig.gameObject.SetActive(false);
+            if (!_pool.TryGetValue(rig.Def, out var stack)) _pool[rig.Def] = stack = new Stack<ModelRig>();
+            stack.Push(rig);
+        }
+
+        // ------------------------------------------------------------------ tiros
+
+        void SyncProjectiles()
+        {
+            int slots = _sim.ProjectileSlotCount;
+            if (_shotBySlot.Length != slots) System.Array.Resize(ref _shotBySlot, slots);
+
+            for (int s = 0; s < slots; s++)
             {
-                var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                go.name = "Inimigo";
-                Object.Destroy(go.GetComponent<Collider>());
-                go.transform.SetParent(_enemyRoot, false);
-                go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.EnemyFull);
-                _enemyPool.Add(go.transform);
-                _enemyRenderers.Add(go.GetComponent<Renderer>());
-            }
+                if (!_sim.TryGetProjectile(s, out var p, out float t, out int towerType, out bool flies))
+                {
+                    ReleaseShot(s);
+                    continue;
+                }
 
-            var t = _enemyPool[index];
-            if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
-            return t;
+                var rig = _shotBySlot[s];
+                bool fresh = rig == null || rig.Def != ModelLib.Projectile(towerType);
+                if (fresh)
+                {
+                    ReleaseShot(s);
+                    rig = _shotBySlot[s] = RentShot(towerType);
+                }
+
+                // a simulação voa em linha reta da altura 0,95 ao pé do alvo; a vista sai
+                // da boca do cano de verdade e chega no peito (ou no planador lá em cima)
+                float muzzleY = ModelLib.Tower(towerType).Muzzle.y;
+                float targetY = flies ? 1.1f : 0.28f;
+                float y = Mathf.Lerp(muzzleY, targetY, t);
+                // bomba de morteiro sobe em arco — é o que faz o morteiro parecer morteiro
+                if (towerType == 1) y += 4f * t * (1f - t) * 1.3f;
+                var pos = new Vector3(p.x, y, p.z);
+
+                // virote e estilhaço apontam para onde voam; no primeiro frame não há
+                // "de onde veio" (a posição antiga é de outro tiro, do pool)
+                var d = pos - rig.transform.localPosition;
+                rig.transform.localPosition = pos;
+                if (!fresh && d.sqrMagnitude > 1e-6f) rig.transform.localRotation = Quaternion.LookRotation(d);
+            }
+        }
+
+        ModelRig RentShot(int towerType)
+        {
+            var pooled = Rent(ModelLib.Projectile(towerType));
+            if (pooled != null) return pooled;
+            var rig = ArtFactory.Spawn(ModelLib.Projectile(towerType), _owner, _projectileRoot, "Projetil");
+            foreach (var mr in rig.GetComponentsInChildren<MeshRenderer>())
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return rig;
+        }
+
+        void ReleaseShot(int slot)
+        {
+            Return(_shotBySlot[slot]);
+            _shotBySlot[slot] = null;
         }
 
         /// <summary>Converte ponto do mundo para célula desta lane (desfaz o deslocamento do pai).</summary>

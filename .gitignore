@@ -10,6 +10,7 @@ MemoryCaptures/
 
 # .NET (Tools/)
 [Bb]in/
+Tools/ArtPreview/out/
 
 # IDE
 .vs/

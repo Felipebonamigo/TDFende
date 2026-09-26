@@ -7,13 +7,14 @@ namespace TDFende
     /// Desenha o território como um mesh único gerado em código:
     /// preenchimento translúcido + linha de fronteira mais forte nas bordas (estilo RoN).
     /// Reconstruído só quando uma torre entra/sai — custo zero por frame.
+    /// A cor é a do dono: fronteira azul é sua, vermelha é da IA.
     /// </summary>
     public class TerritoryRenderer
     {
-        static readonly Color Fill = Palette.TerritoryFill;
-        static readonly Color EdgeLine = Palette.TerritoryEdge;
+        readonly Color _fill;
+        readonly Color _edge;
         const float Y = 0.02f;         // um tiquinho acima do chão, sem z-fighting
-        const float EdgeWidth = 0.13f; // largura da linha de fronteira
+        const float EdgeWidth = 0.09f; // largura da linha de fronteira
 
         readonly Mesh _mesh;
         readonly List<Vector3> _verts = new List<Vector3>();
@@ -25,8 +26,10 @@ namespace TDFende
         /// construído em coordenadas locais do grid — sem isso as duas lanes se
         /// desenhariam uma em cima da outra.
         /// </param>
-        public TerritoryRenderer(Transform parent = null)
+        public TerritoryRenderer(Color team, Transform parent = null)
         {
+            _fill = Palette.TerritoryFill(team);
+            _edge = Palette.TerritoryEdge(team);
             var go = new GameObject("Fronteira");
             if (parent != null) go.transform.SetParent(parent, false);
             _mesh = new Mesh { name = "TerritoryMesh" };
@@ -45,7 +48,7 @@ namespace TDFende
             else
             {
                 Debug.LogWarning("[TDFende] Shader da fronteira não encontrado; usando material opaco.");
-                mr.sharedMaterial = MaterialFactory.Get(Palette.TerritoryEdge);
+                mr.sharedMaterial = MaterialFactory.Get(_edge);
             }
         }
 
@@ -63,17 +66,17 @@ namespace TDFende
                 if (!territory.Contains(x, y)) continue;
                 var center = map.CellToWorld(x, y) + Vector3.up * Y;
 
-                AddQuad(center, half, half, Fill);
+                AddQuad(center, half, half, _fill);
 
                 // linha de fronteira: tira fina em cada lado que faz divisa com o "fora"
                 if (!territory.Contains(x + 1, y))
-                    AddQuad(center + new Vector3(half - EdgeWidth * 0.5f, 0f, 0f), EdgeWidth * 0.5f, half, EdgeLine);
+                    AddQuad(center + new Vector3(half - EdgeWidth * 0.5f, 0f, 0f), EdgeWidth * 0.5f, half, _edge);
                 if (!territory.Contains(x - 1, y))
-                    AddQuad(center + new Vector3(-half + EdgeWidth * 0.5f, 0f, 0f), EdgeWidth * 0.5f, half, EdgeLine);
+                    AddQuad(center + new Vector3(-half + EdgeWidth * 0.5f, 0f, 0f), EdgeWidth * 0.5f, half, _edge);
                 if (!territory.Contains(x, y + 1))
-                    AddQuad(center + new Vector3(0f, 0f, half - EdgeWidth * 0.5f), half, EdgeWidth * 0.5f, EdgeLine);
+                    AddQuad(center + new Vector3(0f, 0f, half - EdgeWidth * 0.5f), half, EdgeWidth * 0.5f, _edge);
                 if (!territory.Contains(x, y - 1))
-                    AddQuad(center + new Vector3(0f, 0f, -half + EdgeWidth * 0.5f), half, EdgeWidth * 0.5f, EdgeLine);
+                    AddQuad(center + new Vector3(0f, 0f, -half + EdgeWidth * 0.5f), half, EdgeWidth * 0.5f, _edge);
             }
 
             _mesh.Clear();

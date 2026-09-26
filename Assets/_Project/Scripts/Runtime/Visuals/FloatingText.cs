@@ -24,7 +24,6 @@ namespace TDFende
 
         readonly List<Entry> _entries = new List<Entry>(32);
         Camera _cam;
-        GUIStyle _style;
 
         void Awake() => Instance = this;
 
@@ -57,15 +56,8 @@ namespace TDFende
         void OnGUI()
         {
             if (_cam == null || _entries.Count == 0) return;
-            if (_style == null)
-                _style = new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 17,
-                    fontStyle = FontStyle.Bold,
-                    alignment = TextAnchor.MiddleCenter
-                };
+            UiSkin.Ensure();
 
-            var prev = GUI.color;
             for (int i = 0; i < _entries.Count; i++)
             {
                 var e = _entries[i];
@@ -75,12 +67,11 @@ namespace TDFende
                 float t = e.Age / Life;
                 var c = e.Color;
                 c.a = 1f - t * t; // segura opaco e some no fim
-                GUI.color = c;
                 // 300 de largura, não 120: a mensagem mais longa ("Onda N limpa!  +25")
                 // não cabia em 120 px a 17 bold e saía cortada com reticências.
-                GUI.Label(new Rect(sp.x - 150f, Screen.height - sp.y - 12f, 300f, 24f), e.Text, _style);
+                // Sombra: sem ela o número dourado some em cima da relva clara.
+                UiSkin.Shadowed(new Rect(sp.x - 150f, Screen.height - sp.y - 12f, 300f, 24f), e.Text, UiSkin.Floating, c);
             }
-            GUI.color = prev;
         }
     }
 }

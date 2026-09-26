@@ -27,9 +27,7 @@ namespace TDFende
 
         IGameInput _input;
         CameraRigDriver _cameraRig;
-        Transform _ghost;
-        Renderer _ghostRenderer;
-        readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
+        PlacementGhost _ghost;
 
         /// <summary>Definida pelo seletor de modo ANTES do Start.</summary>
         public TowerWarsAi.Personality Difficulty = TowerWarsAi.Personality.Normal;
@@ -39,7 +37,6 @@ namespace TDFende
         Vector2Int _hoverCell;
         int _hoverUpgradeCost = -1;    // -1 sem torre, 0 já no máximo, >0 custo
         float _accumulator;            // passo fixo: a simulação não depende do frame rate
-        GUIStyle _label, _big, _box, _button;
 
         static readonly Plane GroundPlane = new Plane(Vector3.up, Vector3.zero);
 
@@ -60,7 +57,7 @@ namespace TDFende
         Rect HelpBoxRect =>
             new Rect(HudMargin, Screen.height - SendButtonHeight - HudMargin - 58f, 640f, 50f);
 
-        Rect InfoRect => new Rect(HudMargin, 10f, 420f, 76f);
+        Rect InfoRect => new Rect(HudMargin, 10f, 470f, 82f);
 
         const float TowerButtonWidth = 132f;
         const float TowerButtonHeight = 54f;
@@ -93,6 +90,9 @@ namespace TDFende
                 go.AddComponent<AudioListener>();
             }
 
+            // texturas procedurais geradas de uma vez, em paralelo, antes de qualquer modelo
+            ArtFactory.Preload();
+
             // efeitos: sem estes dois, todo Vfx.Instance?. e FloatingText.Instance?.
             // deste modo vira no-op silencioso e o jogo fica sem nenhum feedback
             new Vfx();
@@ -103,7 +103,8 @@ namespace TDFende
 
             _input = new DesktopInput();
             SceneAmbience.Apply(cam);
-            BuildGhost();
+            BuildWorld();
+            _ghost = new PlacementGhost();
 
             // as duas lanes empilhadas ocupam bem mais em Z do que uma só; sem esta
             // folga a câmera nasceria enquadrando apenas a sua metade do tabuleiro
@@ -136,9 +137,12 @@ namespace TDFende
             _runner.CommandApplied += _replay.Record;
 
             float off = (Player.Map.WorldSize.z + LaneGap) * 0.5f;
-            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador", Color.white, true);
+            // cada lane tem dono (fortaleza, torres, fronteira) e atacante (acampamento,
+            // inimigos): azul é você, vermelho é a IA — como estandarte de batalha
+            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador",
+                Palette.TeamPlayer, Palette.TeamFoe, true);
             _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario",
-                new Color(0.82f, 0.82f, 0.9f), false);
+                Palette.TeamFoe, Palette.TeamPlayer, false);
 
             _accumulator = 0f;
             _selectedSend = 0;
@@ -147,16 +151,19 @@ namespace TDFende
             _hoverUpgradeCost = -1;
         }
 
-        void BuildGhost()
+        /// <summary>
+        /// Terreno, rio entre as lanes e mata em volta. Uma vez só: o R reinicia a
+        /// partida, não o mundo — e a sonda de reflexo é cara demais para refazer.
+        /// </summary>
+        void BuildWorld()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = "GhostTorre";
-            Destroy(go.GetComponent<Collider>());
-            go.transform.localScale = new Vector3(0.95f, 0.1f, 0.95f);
-            _ghost = go.transform;
-            _ghostRenderer = go.GetComponent<Renderer>();
-            _ghostRenderer.sharedMaterial = MaterialFactory.Get(Color.white);
-            go.SetActive(false);
+            var size = Player.Map.WorldSize;
+            float off = (size.z + LaneGap) * 0.5f;
+            var layout = new WorldLayout { River = true, RiverZ = 0f };
+            layout.AddPlayArea(new Vector3(0f, 0f, -off), size);
+            layout.AddPlayArea(new Vector3(0f, 0f, off), size);
+            WorldView.Build(layout);
+            SceneAmbience.CaptureReflections(Vector3.zero);
         }
 
         void Update()
@@ -193,7 +200,7 @@ namespace TDFende
             }
             else
             {
-                _ghost.gameObject.SetActive(false);
+                _ghost.Hide();
                 _hoverUpgradeCost = -1; // partida acabou: nada de dica de upgrade parada na tela
             }
 
@@ -205,7 +212,7 @@ namespace TDFende
         {
             if (PointerOverHud())
             {
-                _ghost.gameObject.SetActive(false);
+                _ghost.Hide();
                 _hoverUpgradeCost = -1;
                 return;
             }
@@ -213,7 +220,7 @@ namespace TDFende
             var ray = _cameraRig.Camera.ScreenPointToRay(_input.PointerPos);
             if (!GroundPlane.Raycast(ray, out float dist))
             {
-                _ghost.gameObject.SetActive(false);
+                _ghost.Hide();
                 return;
             }
 
@@ -221,7 +228,7 @@ namespace TDFende
             var cell = _playerView.WorldToCell(hit);
             if (!Player.Map.InBounds(cell.x, cell.y))
             {
-                _ghost.gameObject.SetActive(false);
+                _ghost.Hide();
                 _hoverUpgradeCost = -1;
                 return;
             }
@@ -232,37 +239,13 @@ namespace TDFende
             bool canBuild = Player.CanBuild(cell, _selectedTower);
             bool canUpgrade = _hoverUpgradeCost > 0 && Player.Gold >= _hoverUpgradeCost;
 
-            // DIAGNÓSTICO TEMPORÁRIO: NullReferenceException repetindo todo frame nesta
-            // região, e a análise do código não achou candidato — cada passo isolado
-            // em try/catch próprio pra apontar a linha exata na próxima rodada.
-            try { _ghost.gameObject.SetActive(true); }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-1 SetActive] {e}"); return; }
-
-            try { _ghost.position = _playerView.CellToWorld(cell) + Vector3.up * 0.05f; }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-2 position] {e}"); return; }
-
-            Color c;
-            try
-            {
-                c = onOwnTower
-                    ? (canUpgrade ? Palette.TextGold : Palette.GhostInvalid)
-                    : (canBuild ? Palette.GhostValid : Palette.GhostInvalid);
-            }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-3 ternario-cor] {e}"); return; }
-
-            int colorProp;
-            try { colorProp = MaterialFactory.ColorProperty; }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-4 ColorProperty] {e}"); return; }
-
-            Color pulsedColor;
-            try { pulsedColor = c * (0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f)); }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-5 pulso] {e}"); return; }
-
-            try { _mpb.SetColor(colorProp, pulsedColor); }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-6 mpb.SetColor] {e}"); return; }
-
-            try { _ghostRenderer.SetPropertyBlock(_mpb); }
-            catch (System.Exception e) { Debug.LogError($"[DIAG-7 SetPropertyBlock] {e}"); return; }
+            // sobre torre própria: dourado se dá para subir; em célula livre: verde/vermelho.
+            // O anel mostra o alcance de quem está (ou vai ficar) ali.
+            var color = onOwnTower
+                ? (canUpgrade ? Palette.GhostUpgrade : Palette.GhostInvalid)
+                : (canBuild ? Palette.GhostValid : Palette.GhostInvalid);
+            int rangeType = onOwnTower ? Player.TowerTypeAt(cell) : _selectedTower;
+            _ghost.Show(_playerView.CellToWorld(cell), color, TowerCatalog.Get(rangeType).Range * Player.Map.CellSize);
 
             // clique esquerdo em torre própria também sobe: quem já está com o cursor
             // ali não devia precisar lembrar de trocar de botão
@@ -345,14 +328,16 @@ namespace TDFende
             // Update, depois. Sem esta guarda, o primeiro clique no menu estoura
             // NullReference em Player.
             if (Player == null) return;
-            EnsureStyles();
+            UiSkin.Ensure();
             bool over = Player.Dead || Foe.Dead;
 
-            GUILayout.BeginArea(InfoRect);
-            GUILayout.Label($"VOCÊ   vidas {Player.Lives}   ouro {Player.Gold}   renda {Player.Income}", _label);
-            GUILayout.Label($"IA ({Difficulty.Name})   vidas {Foe.Lives}   renda {Foe.Income}", _label);
+            GUI.Box(InfoRect, GUIContent.none, UiSkin.Panel);
+            GUILayout.BeginArea(new Rect(InfoRect.x + 10f, InfoRect.y + 6f, InfoRect.width - 20f, InfoRect.height - 12f));
+            GUILayout.Label($"<color=#7FA8E8>VOCÊ</color>   vidas {Player.Lives}   ouro <color=#E8C15A>{Player.Gold}</color>" +
+                            $"   renda {Player.Income}", UiSkin.Label);
+            GUILayout.Label($"<color=#E07A72>IA ({Difficulty.Name})</color>   vidas {Foe.Lives}   renda {Foe.Income}", UiSkin.Label);
             GUILayout.Label($"tempo {Player.MatchTime:0}s   escala dos envios x{Player.SendScale:0.0}" +
-                            $"   torres {Player.TowerCount} (nv {Player.TotalTowerLevels})", _label);
+                            $"   torres {Player.TowerCount} (nv {Player.TotalTowerLevels})", UiSkin.LabelSmall);
             GUILayout.EndArea();
 
             // Barra de tipos de torre. A selecionada aparece marcada, porque o fantasma
@@ -366,7 +351,8 @@ namespace TDFende
                 bool selected = i == _selectedTower;
                 var prev = GUI.color;
                 if (!selected) GUI.color = new Color(1f, 1f, 1f, Player.Gold >= tt.Cost ? 0.65f : 0.35f);
-                if (GUI.Button(r, $"{(selected ? "▶ " : "")}{tt.Name}\n{tt.Cost} ouro", _button))
+                if (GUI.Button(r, $"{tt.Name}\n<color=#E8C15A>{tt.Cost} ouro</color>",
+                        selected ? UiSkin.ButtonSelected : UiSkin.Button))
                     _selectedTower = i;
                 GUI.color = prev;
             }
@@ -383,7 +369,8 @@ namespace TDFende
                 var prev = GUI.color;
                 GUI.color = afford ? Color.white : new Color(1f, 1f, 1f, 0.45f);
                 var r = new Rect(x0 + i * (w + SendButtonGap), y0, w, h);
-                if (GUI.Button(r, $"[{i + 1}] {u.Name}\n{u.Cost} ouro  +{u.IncomeBonus} renda", _button) && afford)
+                if (GUI.Button(r, $"[{i + 1}] {u.Name}\n<color=#E8C15A>{u.Cost} ouro</color>  +{u.IncomeBonus} renda",
+                        UiSkin.Button) && afford)
                 {
                     _selectedSend = i;
                     TrySelectedSend();
@@ -403,29 +390,21 @@ namespace TDFende
                 $"Clique na SUA lane (a de baixo): {TowerCatalog.Get(_selectedTower).Name} " +
                 $"({TowerCatalog.Get(_selectedTower).Cost} ouro)  |  Q/E troca a torre" +
                 $"  |  clique numa torre sua: subir de nível{hover}\n" +
-                "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", _box);
+                "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", UiSkin.Panel);
 
             if (_saveMessageTimer > 0f && _lastSaveMessage != null)
-                GUI.Label(new Rect(HudMargin, 92f, Screen.width - HudMargin * 2f, 22f),
-                    _lastSaveMessage, _label);
+                UiSkin.Shadowed(new Rect(HudMargin, 92f, Screen.width - HudMargin * 2f, 22f),
+                    _lastSaveMessage, UiSkin.Plain, Palette.UiInk);
 
             if (over)
             {
-                GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none);
-                GUI.Label(new Rect(0, Screen.height * 0.4f, Screen.width, 50),
-                    Foe.Dead && !Player.Dead ? "VOCÊ VENCEU" : "VOCÊ PERDEU", _big);
-                GUI.Label(new Rect(0, Screen.height * 0.4f + 52, Screen.width, 40), "R para jogar de novo", _big);
+                GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none, UiSkin.Panel);
+                bool won = Foe.Dead && !Player.Dead;
+                UiSkin.Shadowed(new Rect(0, Screen.height * 0.4f, Screen.width, 50),
+                    won ? "VITÓRIA" : "DERROTA", UiSkin.Title, won ? Palette.UiAccent : Palette.TextDanger);
+                UiSkin.Shadowed(new Rect(0, Screen.height * 0.4f + 56, Screen.width, 30), "R para jogar de novo",
+                    UiSkin.Subtitle, Palette.UiInk);
             }
-        }
-
-        void EnsureStyles()
-        {
-            if (_label != null) return;
-            _label = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
-            _big = new GUIStyle(GUI.skin.label)
-            { fontSize = 34, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            _box = new GUIStyle(GUI.skin.box) { fontSize = 13, alignment = TextAnchor.UpperLeft };
-            _button = new GUIStyle(GUI.skin.button) { fontSize = 12 };
         }
     }
 }

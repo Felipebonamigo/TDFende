@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>disable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../../Assets/_Project/Scripts/Runtime/Art/MeshBuilder.cs;../../Assets/_Project/Scripts/Runtime/Art/ProcTex.cs;../../Assets/_Project/Scripts/Runtime/Art/ModelLib.cs;../../Assets/_Project/Scripts/Runtime/Art/WorldLayout.cs" />
+  </ItemGroup>
+</Project>

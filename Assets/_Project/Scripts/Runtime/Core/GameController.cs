@@ -38,8 +38,7 @@ namespace TDFende
         TowerPlacer _placer;
         TerritoryRenderer _territoryRenderer;
         FloatingText _floatingText;
-        Transform _baseTransform;
-        Vector3 _baseScale;
+        Transform _baseFlag;
 
         SimplePool<Enemy> _enemyPool;
         SimplePool<Projectile> _projectilePool;
@@ -66,15 +65,18 @@ namespace TDFende
             _releaseProjectile = _projectilePool.Release; // delegates cacheados: nada de alocar por tiro
             _onEnemyDespawn = OnEnemyDespawn;
 
+            // texturas procedurais geradas de uma vez, em paralelo, antes de qualquer modelo
+            ArtFactory.Preload();
             var cam = FindOrCreateCamera();
             SceneAmbience.Apply(cam);
             BuildWorld();
+            SceneAmbience.CaptureReflections(Vector3.zero);
             new Vfx();
 
             _input = new DesktopInput();
             _cameraRig = new CameraRigDriver(cam, Vector3.zero, Map.WorldSize);
             _placer = new TowerPlacer(this);
-            _territoryRenderer = new TerritoryRenderer();
+            _territoryRenderer = new TerritoryRenderer(Palette.TeamPlayer);
             gameObject.AddComponent<DebugHud>().Init(this);
             _floatingText = gameObject.AddComponent<FloatingText>();
             _floatingText.Init(cam);
@@ -94,7 +96,7 @@ namespace TDFende
             float uiDt = Time.unscaledDeltaTime;
             Juice.Tick(uiDt);
             _cameraRig.Tick(_input, uiDt);
-            PulseBase();
+            WaveBanner();
 
             if (_input.RestartPressed)
             {
@@ -155,8 +157,12 @@ namespace TDFende
             var spawn = _spawnCells[Random.Range(0, _spawnCells.Count)];
             var pos = Map.CellToWorld(spawn)
                       + new Vector3(Random.Range(-0.3f, 0.3f), 0f, Random.Range(-0.3f, 0.3f));
-            pos.y = 0.5f;
+            pos.y = 0f;
             e.transform.position = pos;
+            // nasce olhando para a base: sem isto o primeiro passo gira o corpo no lugar
+            var toGoal = _goalWorld - pos;
+            toGoal.y = 0f;
+            if (toGoal.sqrMagnitude > 0.01f) e.transform.rotation = Quaternion.LookRotation(toGoal);
 
             float hp = GameConfig.EnemyBaseHp * Mathf.Pow(GameConfig.EnemyHpGrowth, Wave - 1);
             float speed = Mathf.Min(GameConfig.EnemyBaseSpeed + GameConfig.EnemySpeedPerWave * Wave, GameConfig.EnemyMaxSpeed)
@@ -196,10 +202,10 @@ namespace TDFende
 
             bool byAttrition = reason == DespawnReason.KilledByAttrition;
             State.AddGold(GameConfig.KillReward);
-            Vfx.Instance?.KillBurst(pos, byAttrition);
-            // cor do número diz o que matou: fronteira (ciano) ou torre (dourado)
-            _floatingText.Show(pos + Vector3.up * 0.6f, $"+{GameConfig.KillReward}",
-                byAttrition ? Palette.TerritoryEdge : Palette.TextGold);
+            Vfx.Instance?.KillBurst(pos + Vector3.up * 0.25f, byAttrition);
+            // cor do número diz o que matou: fronteira (azul-gelo) ou torre (dourado)
+            _floatingText.Show(pos + Vector3.up * 0.8f, $"+{GameConfig.KillReward}",
+                byAttrition ? Palette.TextFrost : Palette.TextGold);
         }
 
         public bool CanPlaceTower(Vector2Int cell)
@@ -263,108 +269,61 @@ namespace TDFende
             Time.timeScale = 1f; // sai do congelamento do fim de jogo
         }
 
-        // base "respira": mostra que está viva sem custar nada
-        void PulseBase()
+        // estandarte da fortaleza ao vento: mostra que a base está viva sem custar nada
+        void WaveBanner()
         {
-            if (_baseTransform == null) return;
-            float p = 1f + 0.045f * Mathf.Sin(Time.time * 2.1f);
-            _baseTransform.localScale = new Vector3(_baseScale.x, _baseScale.y * p, _baseScale.z);
+            if (_baseFlag == null) return;
+            _baseFlag.localRotation = Quaternion.Euler(0f, Mathf.Sin(Time.unscaledTime * 1.3f) * 12f, 0f);
         }
 
-        // ---------- construção do mundo (tudo primitivas, tudo em código) ----------
+        // ---------- construção do mundo (modelos procedurais, tudo em código) ----------
 
         void BuildWorld()
         {
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Chao";
-            Destroy(ground.GetComponent<Collider>());
-            var size = Map.WorldSize;
-            ground.transform.localScale = new Vector3(size.x, 0.1f, size.z);
-            ground.transform.position = new Vector3(0f, -0.05f, 0f); // topo do cubo em Y=0
-            ground.GetComponent<Renderer>().sharedMaterial =
-                MaterialFactory.GetGround(Palette.GroundDark, Palette.GroundLight, Map.Width, Map.Height);
+            var layout = new WorldLayout();
+            layout.AddPlayArea(Vector3.zero, Map.WorldSize);
+            WorldView.Build(layout);
+            Overlays.Grid(Map, null);
 
-            var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            baseGo.name = "Base";
-            Destroy(baseGo.GetComponent<Collider>());
-            baseGo.transform.position = _goalWorld + Vector3.up * 0.6f;
-            baseGo.transform.localScale = new Vector3(1.1f, 1.2f, 1.1f);
-            baseGo.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.BaseGold);
-            _baseTransform = baseGo.transform;
-            _baseScale = _baseTransform.localScale;
+            // fortaleza com o portão virado para o acampamento de onde o inimigo sai
+            var keep = ArtFactory.Spawn(ModelLib.Keep(), Palette.TeamPlayer, null, "Base");
+            keep.transform.position = _goalWorld;
+            var toSpawn = Map.CellToWorld(_spawnCells[0]) - _goalWorld;
+            toSpawn.y = 0f;
+            keep.transform.rotation = Quaternion.LookRotation(toSpawn.sqrMagnitude > 0.01f ? toSpawn : Vector3.back);
+            _baseFlag = keep.transform.Find(ModelLib.Body + "/" + ModelLib.Flag);
 
             foreach (var s in _spawnCells)
             {
-                var m = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                m.name = "Spawn";
-                Destroy(m.GetComponent<Collider>());
-                m.transform.position = Map.CellToWorld(s) + Vector3.up * 0.05f;
-                m.transform.localScale = new Vector3(0.9f, 0.1f, 0.9f);
-                m.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.SpawnMagenta);
+                var camp = ArtFactory.Spawn(ModelLib.Camp(), Palette.TeamFoe, null, "Spawn");
+                camp.transform.position = Map.CellToWorld(s);
+                camp.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // portal atravessado no sentido da marcha
             }
         }
 
         Enemy CreateEnemy()
         {
-            // raiz vazia: a animação de escala mexe na raiz sem deformar os filhos
-            var root = new GameObject("Inimigo");
-
-            var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            Destroy(body.GetComponent<Collider>());
-            body.transform.SetParent(root.transform, false);
-            body.transform.localScale = new Vector3(0.55f, 0.5f, 0.55f); // altura 1, centro em y=0
-            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.EnemyFull);
-
-            // "olho" na frente: dá silhueta e mostra pra onde está virado
-            var eye = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Destroy(eye.GetComponent<Collider>());
-            eye.transform.SetParent(root.transform, false);
-            eye.transform.localPosition = new Vector3(0f, 0.16f, 0.24f);
-            eye.transform.localScale = new Vector3(0.24f, 0.13f, 0.14f);
-            eye.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.Background);
-
-            return root.AddComponent<Enemy>();
+            // o modo clássico tem um inimigo só: o lanceiro, nas cores do atacante
+            var rig = ArtFactory.Spawn(ModelLib.Enemy(0), Palette.TeamFoe, null, "Inimigo");
+            return rig.gameObject.AddComponent<Enemy>();
         }
 
         Projectile CreateProjectile()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "Projetil";
-            Destroy(go.GetComponent<Collider>());
-            go.transform.localScale = Vector3.one * 0.22f;
-            go.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.Projectile);
-            return go.AddComponent<Projectile>();
+            var rig = ArtFactory.Spawn(ModelLib.Projectile(0), Palette.TeamPlayer, null, "Projetil");
+            foreach (var mr in rig.GetComponentsInChildren<MeshRenderer>())
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return rig.gameObject.AddComponent<Projectile>();
         }
 
         GameObject CreateTowerVisual(Vector2Int cell)
         {
-            var root = new GameObject("Torre");
-            root.transform.position = Map.CellToWorld(cell);
-
-            // plataforma: assenta a torre no chão em vez de flutuar
-            var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Destroy(plate.GetComponent<Collider>());
-            plate.transform.SetParent(root.transform, false);
-            plate.transform.localPosition = new Vector3(0f, 0.06f, 0f);
-            plate.transform.localScale = new Vector3(0.95f, 0.12f, 0.95f);
-            plate.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.GroundLight);
-
-            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Destroy(body.GetComponent<Collider>());
-            body.transform.SetParent(root.transform, false);
-            body.transform.localPosition = new Vector3(0f, 0.45f, 0f);
-            body.transform.localScale = new Vector3(0.72f, 0.72f, 0.72f);
-            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.TowerBody);
-
-            var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Destroy(head.GetComponent<Collider>());
-            head.transform.SetParent(root.transform, false);
-            head.transform.localPosition = new Vector3(0f, 0.95f, 0f);
-            head.transform.localScale = new Vector3(0.35f, 0.25f, 0.6f);
-            head.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Get(Palette.TowerHead);
-
-            root.AddComponent<Tower>().Init(head.transform, _projectilePool, _releaseProjectile);
-            return root;
+            var rig = ArtFactory.Spawn(ModelLib.Tower(0), Palette.TeamPlayer, null, "Torre");
+            rig.transform.position = Map.CellToWorld(cell);
+            // canhão nasce virado para o acampamento: é de lá que o inimigo vem
+            rig.AimAt(Map.CellToWorld(_spawnCells[0]), 1f, 1f);
+            rig.gameObject.AddComponent<Tower>().Init(rig, _projectilePool, _releaseProjectile);
+            return rig.gameObject;
         }
 
         Camera FindOrCreateCamera()

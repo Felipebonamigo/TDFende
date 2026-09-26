@@ -1,12 +1,35 @@
-# Roteiro do primeiro teste
+# Roteiro de teste
 
-Nada disto nunca rodou no editor. O código compila contra as DLLs reais do Unity e a
-lógica pura tem 91 verificações headless, mas **ninguém apertou Play uma vez sequer**.
+O jogo já abriu e rodou no editor (25/09). Desde então o visual inteiro foi trocado para
+**realista** (26/09): modelos, texturas, luz, efeitos e HUD, tudo gerado em código. Essa
+parte **nunca rodou no Unity** — compila contra a API do Unity e os modelos foram conferidos
+num preview fora do editor (`Tools/ArtPreview`), mas luz, sombra, pós-processamento e
+desempenho só se veem apertando Play. Por isso o passo 0 vem antes de tudo.
 
-Este roteiro existe para que 20 minutos seus rendam o máximo. Está em ordem de valor:
-se der errado no passo 1, pare e me mande o erro — o resto não importa ainda.
+Está em ordem de valor: se der errado no passo 0 ou 1, pare e me mande o erro.
 
 ---
+
+## 0. Visual realista (5 min)
+
+1. `git pull` (ou troque para o branch do visual) e abra o projeto. O Unity vai importar os
+   arquivos novos (`Art/`, `SoftParticle.shader`) e recompilar.
+2. **Play** → **Tower Wars** → **Normal**. No Console deve aparecer
+   `[TDFende] 22 texturas procedurais em N ms`. **Me diga o N** — é o tempo de geração
+   no boot; acima de ~1500 ms eu passo a guardar as texturas em disco.
+3. O que olhar, uma frase por item:
+   - Algum material **rosa/magenta**? (shader não achado — me diga em quê)
+   - Algum modelo **de dentro para fora** ou escuro demais? (normal ou face invertida)
+   - A pedra, a madeira e o bronze **parecem material** ou parecem tinta?
+   - Os inimigos **andam** (perna mexendo) e **viram** para onde vão? O Colosso rola?
+   - O céu aparece? Tem **sombra**? O bronze do canhão **brilha** um pouco?
+   - A barra de vida aparece em quem levou dano? O brilho gelado aparece em quem está
+     dentro da sua fronteira?
+   - **FPS** com as duas lanes cheias (o cenário em volta tem ~100 mil vértices)
+   - No geral: **parece realista**, ou parece maquete? Se for maquete, o que mais incomoda?
+
+Se algo parecer quebrado, um print ajuda mais que a descrição.
+
 
 ## 1. Abrir e compilar (5 min, quase tudo é espera)
 
@@ -40,7 +63,7 @@ uma revisão completa.
 
 Menu → **Tower Wars** → **Normal**. Sua lane é a **de baixo**, a da IA é a de cima.
 
-- Clique na sua lane: torre nova (25 ouro).
+- Clique na sua lane: torre nova (25 ouro). O anel claro no chão é o alcance dela.
 - Clique numa torre sua: sobe o nível dela (custo cresce a cada nível).
 - **1-6** ou os botões do rodapé: compra inimigo e manda na lane da IA.
 

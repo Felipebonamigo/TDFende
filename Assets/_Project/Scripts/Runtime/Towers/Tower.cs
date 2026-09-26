@@ -5,24 +5,25 @@ namespace TDFende
     /// <summary>Torre: mira no inimigo mais próximo dentro do alcance e atira projéteis do pool.</summary>
     public class Tower : MonoBehaviour
     {
-        Transform _head;
+        ModelRig _rig;
         SimplePool<Projectile> _projectiles;
         System.Action<Projectile> _release;
         float _cooldown;
-        float _recoil;
-        Vector3 _headRest;
 
-        public void Init(Transform head, SimplePool<Projectile> projectiles, System.Action<Projectile> release)
+        public void Init(ModelRig rig, SimplePool<Projectile> projectiles, System.Action<Projectile> release)
         {
-            _head = head;
+            _rig = rig;
             _projectiles = projectiles;
             _release = release;
-            _headRest = head.localPosition;
         }
 
         void Update()
         {
-            _cooldown -= Time.deltaTime;
+            float dt = Time.deltaTime;
+            _cooldown -= dt;
+            // O coice tem que voltar mesmo sem alvo: com o decaimento depois do early-return,
+            // o cano congelava recuado no último tiro da onda até o próximo inimigo aparecer.
+            _rig.TickTower(dt);
 
             // alvo: inimigo mais próximo dentro do alcance (varredura simples no registro global)
             Enemy target = null;
@@ -40,28 +41,19 @@ namespace TDFende
                     target = e;
                 }
             }
-            // O coice tem que voltar mesmo sem alvo: com este decaimento depois do
-            // early-return, a cabeça congelava recuada no último tiro da onda e ficava
-            // torta os 8 segundos inteiros até o próximo inimigo aparecer.
-            _recoil = Mathf.Max(0f, _recoil - 6f * Time.deltaTime);
-            _head.localPosition = _headRest - _head.localRotation * Vector3.forward * (_recoil * 0.12f);
-
             if (target == null) return;
 
-            var look = target.transform.position - _head.position;
-            look.y = 0f;
-            if (look.sqrMagnitude > 0.001f)
-                _head.rotation = Quaternion.Slerp(_head.rotation, Quaternion.LookRotation(look), 12f * Time.deltaTime);
+            _rig.AimAt(target.transform.position, dt, 12f);
 
             if (_cooldown <= 0f)
             {
                 _cooldown = GameConfig.TowerCooldown;
-                var muzzle = _head.position + _head.forward * 0.35f;
+                var muzzle = _rig.MuzzleWorld;
                 var p = _projectiles.Get();
                 p.transform.position = muzzle;
                 p.Init(target, GameConfig.TowerDamage, _release);
                 Vfx.Instance?.Muzzle(muzzle);
-                _recoil = 1f; // coice: a cabeça recua e volta — o tiro ganha peso
+                _rig.Kick(); // coice: o cano recua e volta — o tiro ganha peso
             }
         }
     }

@@ -9,7 +9,7 @@ namespace TDFende
     public class DebugHud : MonoBehaviour
     {
         // Medidas do HUD num lugar só, para o clique-no-mundo poder evitá-las.
-        static Rect InfoRect => new Rect(12f, 10f, 360f, 76f);
+        static Rect InfoRect => new Rect(12f, 10f, 380f, 84f);
         static Rect HelpRect => new Rect(12f, Screen.height - 128f, 500f, 116f);
 
         /// <summary>
@@ -25,9 +25,6 @@ namespace TDFende
         }
 
         GameController _gc;
-        GUIStyle _label;
-        GUIStyle _big;
-        GUIStyle _box;
         float _fps;
 
         public void Init(GameController gc) => _gc = gc;
@@ -38,36 +35,32 @@ namespace TDFende
         void OnGUI()
         {
             if (_gc == null || _gc.State == null) return;
-            if (_label == null)
-            {
-                _label = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
-                _big = new GUIStyle(GUI.skin.label) { fontSize = 32, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-                _box = new GUIStyle(GUI.skin.box) { fontSize = 13, alignment = TextAnchor.UpperLeft };
-            }
+            UiSkin.Ensure();
 
-            GUILayout.BeginArea(InfoRect);
-            GUILayout.Label($"Vidas: {_gc.State.Lives}    Ouro: {_gc.State.Gold}", _label);
-            GUILayout.Label($"Onda: {_gc.Wave}    Inimigos: {_gc.EnemiesAlive}    FPS: {_fps:0}", _label);
+            GUI.Box(InfoRect, GUIContent.none, UiSkin.Panel);
+            GUILayout.BeginArea(new Rect(InfoRect.x + 10f, InfoRect.y + 6f, InfoRect.width - 20f, InfoRect.height - 12f));
+            GUILayout.Label($"Vidas: {_gc.State.Lives}    Ouro: <color=#E8C15A>{_gc.State.Gold}</color>", UiSkin.Label);
+            GUILayout.Label($"Onda: {_gc.Wave}    Inimigos: {_gc.EnemiesAlive}    FPS: {_fps:0}", UiSkin.Label);
             if (_gc.Phase == WavePhase.Building)
-                GUILayout.Label($"Próxima onda em {_gc.PhaseTimer:0.0}s  (ESPAÇO adianta)", _label);
+                GUILayout.Label($"Próxima onda em {_gc.PhaseTimer:0.0}s  (ESPAÇO adianta)", UiSkin.LabelSmall);
             else if (_gc.Phase != WavePhase.GameOver)
-                GUILayout.Label("Onda em andamento!", _label);
+                GUILayout.Label("Onda em andamento!", UiSkin.LabelSmall);
             GUILayout.EndArea();
 
             GUI.Box(HelpRect,
                 $"Clique esquerdo: construir torre ({GameConfig.TowerCost} de ouro)\n" +
                 $"Torres projetam FRONTEIRA: inimigos dentro dela sofrem {GameConfig.AttritionDps:0} de dano/s\n" +
-                "Inimigo ficando AZUL = sendo drenado.  Número ciano = morreu de atrito, dourado = de tiro\n" +
+                "Inimigo com brilho GELADO = sendo drenado.  Número azul = morreu de atrito, dourado = de tiro\n" +
                 "WASD/setas: mover câmera  |  Scroll: zoom  |  Botão do meio: arrastar\n" +
-                "ESPAÇO: chamar próxima onda  |  R: reiniciar", _box);
+                "ESPAÇO: chamar próxima onda  |  R: reiniciar", UiSkin.Panel);
 
             if (_gc.Phase == WavePhase.GameOver)
             {
-                GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none);
-                GUI.Label(new Rect(0, Screen.height * 0.35f, Screen.width, 50),
-                    $"FIM DE JOGO — você chegou à onda {_gc.Wave}", _big);
-                GUI.Label(new Rect(0, Screen.height * 0.35f + 55, Screen.width, 40),
-                    "Aperte R para reiniciar", _big);
+                GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none, UiSkin.Panel);
+                UiSkin.Shadowed(new Rect(0, Screen.height * 0.35f, Screen.width, 50),
+                    $"A fortaleza caiu na onda {_gc.Wave}", UiSkin.Big, Palette.UiAccent);
+                UiSkin.Shadowed(new Rect(0, Screen.height * 0.35f + 55, Screen.width, 30),
+                    "Aperte R para reiniciar", UiSkin.Subtitle, Palette.UiInk);
             }
         }
     }

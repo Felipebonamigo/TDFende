@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TDFende — arte procedural</title>
+<style>
+  :root { --bg: #c9d6de; --ink: #1d232a; --panel: rgba(20, 24, 28, 0.72); --panel-ink: #f1ede4; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
+  #view { position: fixed; inset: 0; }
+  .label { color: #fff; font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px #000; white-space: nowrap; pointer-events: none; }
+  #bar { position: fixed; left: 16px; right: 16px; bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  #bar button { background: var(--panel); color: var(--panel-ink); border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 8px 12px; font: inherit; cursor: pointer; }
+  #bar button.on { background: #8a6a3a; }
+  #hint { position: fixed; top: 12px; left: 16px; right: 16px; color: #fff; text-shadow: 0 1px 3px #000; font-size: 13px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="view"></div>
+<div id="hint">Arraste para girar · roda do mouse para zoom · o mesmo código C# que o jogo roda, exportado pelo Tools/ArtPreview</div>
+<div id="bar"></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const ART = window.ART ?? await (await fetch('art.json')).json();
+const TEAM = { player: new THREE.Color('#2F5FA8'), foe: new THREE.Color('#A8322F') };
+
+const host = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+const labels = new CSS2DRenderer();
+labels.setSize(innerWidth, innerHeight);
+Object.assign(labels.domElement.style, { position: 'fixed', inset: '0', pointerEvents: 'none' });
+host.appendChild(labels.domElement);
+
+const scene = new THREE.Scene();
+const sky = new THREE.Color('#A9C4D8');
+scene.background = sky;
+scene.fog = new THREE.Fog(sky, 30, 90);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+scene.add(new THREE.HemisphereLight('#CFE0F0', '#5A5040', 0.7));
+const sun = new THREE.DirectionalLight('#FFF1DC', 2.6);
+sun.position.set(-8, 14, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
+scene.add(sun);
+
+// ---------- materiais: mesmos parâmetros do MatSpec do jogo
+const loader = new THREE.TextureLoader();
+const texCache = {};
+function tex(url, srgb, tile) {
+  const key = url.slice(-40) + srgb + tile;
+  if (texCache[key]) return texCache[key];
+  const t = loader.load(url);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(1 / tile, 1 / tile);
+  t.anisotropy = 8;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return (texCache[key] = t);
+}
+const matCache = {};
+function material(name, team) {
+  const key = name + team;
+  if (matCache[key]) return matCache[key];
+  const s = ART.materials[name];
+  const m = new THREE.MeshStandardMaterial({
+    map: tex(s.albedo, true, s.tile),
+    normalMap: tex(s.normal, false, s.tile),
+    roughness: 1 - s.smooth,
+    metalness: s.metal,
+    envMapIntensity: 0.6,
+  });
+  if (name === 'ClothTeam') m.color = TEAM[team].clone();
+  if (s.emit.some(v => v > 0)) m.emissive = new THREE.Color(...s.emit);
+  return (matCache[key] = m);
+}
+
+// ---------- modelos: Unity é mão esquerda. Espelhar Z converte o espaço, mas também vira a
+// frente dos triângulos — então cada triângulo troca b por c para continuar de frente para fora.
+function build(def, team, showFlag = true) {
+  const root = new THREE.Group();
+  const nodes = {};
+  for (const p of def.parts) {
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array(p.pos); const nrm = new Float32Array(p.nrm);
+    for (let i = 2; i < pos.length; i += 3) { pos[i] = -pos[i]; nrm[i] = -nrm[i]; }
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(p.uv), 2));
+    const idx = []; const mats = [];
+    p.groups.forEach((gr, i) => {
+      g.addGroup(idx.length, gr.idx.length, i);
+      for (let t = 0; t < gr.idx.length; t += 3) idx.push(gr.idx[t], gr.idx[t + 2], gr.idx[t + 1]);
+      mats.push(material(gr.mat, team));
+    });
+    g.setIndex(idx);
+    const mesh = new THREE.Mesh(g, mats);
+    mesh.castShadow = mesh.receiveShadow = true;
+    const node = new THREE.Group();
+    node.add(mesh);
+    node.userData = p;
+    nodes[p.name] = node;
+    if (p.hidden && !showFlag) node.visible = false;
+  }
+  for (const p of def.parts) {
+    const node = nodes[p.name];
+    const parent = p.parent ? nodes[p.parent] : null;
+    const pp = parent ? parent.userData.pivot : [0, 0, 0];
+    node.position.set(p.pivot[0] - pp[0], p.pivot[1] - pp[1], -(p.pivot[2] - pp[2]));
+    (parent ?? root).add(node);
+  }
+  root.userData.nodes = nodes;
+  return root;
+}
+const byName = Object.fromEntries(ART.models.map(m => [m.name, m]));
+
+function label(obj, text, h) {
+  const d = document.createElement('div'); d.className = 'label'; d.textContent = text;
+  const l = new CSS2DObject(d); l.position.set(0, h + 0.12, 0); obj.add(l);
+}
+function place(name, x, z, team, text, rotY = 0, scale = 1) {
+  const def = byName[name];
+  const o = build(def, team);
+  o.position.set(x, 0, z); o.rotation.y = rotY; o.scale.setScalar(scale);
+  scene.add(o);
+  if (text) label(o, text, def.height * scale);
+  return o;
+}
+
+const MODE = new URLSearchParams(location.search).get('scene') || 'lineup';
+
+// Unity (mão esquerda) -> three: z espelhado, então giro em Y troca de sinal
+const U = (x, z) => [x, -z];
+function placeU(name, ux, uz, team, uYawDeg = 0, text) {
+  const [x, z] = U(ux, uz);
+  return place(name, x, z, team, text, -uYawDeg * Math.PI / 180);
+}
+
+if (MODE === 'world') {
+  for (const n of ['Terreno', 'Rio', 'Mureta', 'Mata']) {
+    const o = build(byName[n], 'player'); scene.add(o);
+    if (n === 'Terreno' || n === 'Rio') o.traverse(c => { if (c.isMesh) c.castShadow = false; });
+  }
+  // mesma conta do GridMap: origem no canto (-12, -8) de cada lane, célula de 1
+  const cell = (laneZ, cx, cy) => [-12 + cx + 0.5, laneZ - 8 + cy + 0.5];
+  for (const [laneZ, owner, attacker] of [[-11, 'player', 'foe'], [11, 'foe', 'player']]) {
+    const [gx, gz] = cell(laneZ, 21, 8); placeU('Fortaleza', gx, gz, owner, -90);
+    const [sx, sz] = cell(laneZ, 2, 8); placeU('Acampamento', sx, sz, attacker, 90);
+    const grid = new THREE.GridHelper(24, 24, 0x000000, 0x000000);
+    grid.material.transparent = true; grid.material.opacity = 0.09; grid.position.set(0, 0.008, -laneZ); scene.add(grid);
+  }
+  const towersAt = [[7, 10, 0], [7, 6, 1], [11, 9, 2], [11, 5, 0], [14, 11, 3], [15, 7, 0], [18, 9, 1]];
+  for (const [cx, cy, t] of towersAt) { const [x, z] = cell(-11, cx, cy); placeU(['Torre_Canhao', 'Torre_Morteiro', 'Torre_Gelo', 'Torre_Sentinela'][t], x, z, 'player', 0); }
+  for (const [cx, cy, t] of [[9, 8, 0], [13, 9, 3], [16, 6, 1]]) { const [x, z] = cell(11, cx, cy); placeU(['Torre_Canhao', 'Torre_Morteiro', 'Torre_Gelo', 'Torre_Sentinela'][t], x, z, 'foe', 180); }
+  const march = [[4.2, 8.1, 0], [5, 7.6, 0], [5.6, 8.4, 1], [5.9, 8.0, 1], [6.3, 8.6, 1], [9.2, 8.4, 2], [12.5, 7.2, 3], [13.2, 8.8, 5], [16.5, 8.2, 4]];
+  const kinds = ['Inimigo_Recruta', 'Inimigo_Enxame', 'Inimigo_Corredor', 'Inimigo_Couracado', 'Inimigo_Planador', 'Inimigo_Colosso'];
+  for (const [cx, cy, k] of march) { const [x, z] = [-12 + cx, -11 - 8 + cy]; placeU(kinds[k], x, z, 'foe', 90); }
+  for (const [cx, cy, k] of [[6, 8.3, 0], [10, 7.5, 3], [14, 8.2, 5]]) { const [x, z] = [-12 + cx, 11 - 8 + cy]; placeU(kinds[k], x, z, 'player', 90); }
+  // sol na mesma direção do jogo (Euler 42, -38)
+  const f = new THREE.Vector3(Math.sin(-38 * Math.PI / 180) * Math.cos(42 * Math.PI / 180), -Math.sin(42 * Math.PI / 180),
+    Math.cos(-38 * Math.PI / 180) * Math.cos(42 * Math.PI / 180));
+  sun.position.set(-f.x * 40, -f.y * 40, f.z * 40);
+  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 100 });
+  sun.shadow.camera.updateProjectionMatrix();
+  scene.fog = new THREE.Fog('#B8C7D1', 45, 150);
+  scene.background = new THREE.Color('#9FB8CF');
+} else {
+  // chão
+  const gs = ART.materials.Grass;
+  const groundMat = new THREE.MeshStandardMaterial({ map: tex(gs.albedo, true, gs.tile), normalMap: tex(gs.normal, false, gs.tile), roughness: 1 - gs.smooth });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120).rotateX(-Math.PI / 2), groundMat);
+  { const uv = ground.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 120, uv.getY(i) * 120); }
+  ground.receiveShadow = true;
+  scene.add(ground);
+  
+  // fileira de torres (time azul), inimigos (time vermelho), base e cenário
+  const towers = [['Torre_Canhao', 'Canhão'], ['Torre_Morteiro', 'Morteiro'], ['Torre_Gelo', 'Gelo'], ['Torre_Sentinela', 'Sentinela']];
+  towers.forEach(([n, t], i) => place(n, -2.4 + i * 1.6, -2.2, 'player', t, 0.6));
+  const enemies = [['Inimigo_Recruta', 'Recruta'], ['Inimigo_Enxame', 'Enxame'], ['Inimigo_Corredor', 'Corredor'],
+    ['Inimigo_Couracado', 'Couraçado'], ['Inimigo_Planador', 'Planador'], ['Inimigo_Colosso', 'Colosso']];
+  enemies.forEach(([n, t], i) => place(n, -3.2 + i * 1.3, 0.4, 'foe', t, -Math.PI / 2 + 0.5));
+  place('Fortaleza', -2.2, 3.2, 'player', 'Fortaleza (base)', Math.PI / 2 + 0.4);
+  place('Acampamento', 0.2, 3.2, 'foe', 'Acampamento (origem)', 0.5);
+  place('Cenario', 3.2, 3.4, 'player', 'Cenário');
+  [['Tiro_Canhao', 'bala'], ['Tiro_Morteiro', 'bomba'], ['Tiro_Gelo', 'estilhaço'], ['Tiro_Sentinela', 'virote']]
+    .forEach(([n, t], i) => { const o = place(n, 4.1 + (i % 2) * 0.7, -2.6 + Math.floor(i / 2) * 0.8, 'player', t, 0.8, 3); o.position.y = 0.35; });
+}
+
+// ---------- câmera
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.05, 200);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+const shots = MODE === 'world' ? {
+  // câmera do jogo: pitch 55°, distância 36 (início do Tower Wars), fov 60
+  game: { pos: [0, 36 * Math.sin(55 * Math.PI / 180), 36 * Math.cos(55 * Math.PI / 180)], at: [0, 0, 0], fov: 60 },
+  mid: { pos: [-2, 14 * Math.sin(55 * Math.PI / 180), 11 + 14 * Math.cos(55 * Math.PI / 180)], at: [-2, 0, 11], fov: 60 },
+  close: { pos: [-1, 6.5, 15.8], at: [-1.5, 0.3, 11.2], fov: 60 },
+} : {
+  game: { pos: [0, 11.5, 8.5], at: [0.4, 0, 0.4] },
+  towers: { pos: [0.1, 2.3, 1.6], at: [0.1, 0.55, -2.2] },
+  enemies: { pos: [0, 1.9, 3.6], at: [0, 0.45, 0.4] },
+  base: { pos: [0.4, 2.6, 7.2], at: [0.4, 0.6, 3.2] },
+};
+function shot(name) {
+  const s = shots[name] ?? shots.game;
+  camera.fov = s.fov ?? 40; camera.updateProjectionMatrix();
+  camera.position.set(...s.pos); controls.target.set(...s.at); controls.update();
+  document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.cam === name));
+}
+const names = MODE === 'world' ? { game: 'Visão inicial', mid: 'Zoom médio', close: 'De perto' }
+  : { game: 'Visão do jogo', towers: 'Torres', enemies: 'Inimigos', base: 'Base e cenário' };
+for (const [k, v] of Object.entries(names)) {
+  const b = document.createElement('button'); b.dataset.cam = k; b.textContent = v; b.onclick = () => shot(k);
+  document.getElementById('bar').appendChild(b);
+}
+shot(location.hash.slice(1) || 'game');
+addEventListener('hashchange', () => shot(location.hash.slice(1)));
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); labels.setSize(innerWidth, innerHeight);
+});
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); labels.render(scene, camera); });
+window.__ready = true;
+</script>
+</body>
+</html>

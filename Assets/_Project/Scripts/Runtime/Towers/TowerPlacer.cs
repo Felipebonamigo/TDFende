@@ -3,32 +3,17 @@ using UnityEngine;
 namespace TDFende
 {
     /// <summary>
-    /// Preview (fantasma verde/vermelho) + colocação de torres.
+    /// Fantasma (célula verde/vermelha + anel de alcance) + colocação de torres.
     /// O clique vira célula via interseção raio-plano — sem physics, sem colliders.
     /// </summary>
     public class TowerPlacer
     {
-        static readonly Color ValidColor = Palette.GhostValid;
-        static readonly Color InvalidColor = Palette.GhostInvalid;
         static readonly Plane GroundPlane = new Plane(Vector3.up, Vector3.zero);
 
         readonly GameController _gc;
-        readonly Transform _ghost;
-        readonly Renderer _ghostRenderer;
-        readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
+        readonly PlacementGhost _ghost = new PlacementGhost();
 
-        public TowerPlacer(GameController gc)
-        {
-            _gc = gc;
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = "GhostTorre";
-            Object.Destroy(go.GetComponent<Collider>());
-            go.transform.localScale = new Vector3(0.95f, 0.1f, 0.95f);
-            _ghost = go.transform;
-            _ghostRenderer = go.GetComponent<Renderer>();
-            _ghostRenderer.sharedMaterial = MaterialFactory.Get(Color.white);
-            go.SetActive(false);
-        }
+        public TowerPlacer(GameController gc) => _gc = gc;
 
         public void Tick(IGameInput input, Camera cam)
         {
@@ -53,18 +38,13 @@ namespace TDFende
             }
 
             bool valid = _gc.CanPlaceTower(cell);
-            _ghost.gameObject.SetActive(true);
-            _ghost.position = _gc.Map.CellToWorld(cell) + Vector3.up * 0.05f;
-            // pulsa devagar: o fantasma não se confunde com o chão
-            var c = valid ? ValidColor : InvalidColor;
-            _mpb.SetColor(MaterialFactory.ColorProperty,
-                c * (0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f)));
-            _ghostRenderer.SetPropertyBlock(_mpb);
+            _ghost.Show(_gc.Map.CellToWorld(cell), valid ? Palette.GhostValid : Palette.GhostInvalid,
+                GameConfig.TowerRange);
 
             if (valid && input.PlacePressed)
                 _gc.PlaceTower(cell);
         }
 
-        public void Hide() => _ghost.gameObject.SetActive(false);
+        public void Hide() => _ghost.Hide();
     }
 }

@@ -23,8 +23,8 @@ namespace TDFende
         TerritoryField _territory;
         Vector3 _goal;
         System.Action<Enemy, DespawnReason> _onDespawn;
-        Renderer _renderer;
-        MaterialPropertyBlock _mpb;
+        ModelRig _rig;
+        Camera _cam;
         Vector3 _baseScale;
         float _spawnT;
         float _flashT;
@@ -43,14 +43,15 @@ namespace TDFende
             _flashT = 0f;
             _draining = false;
 
-            if (_renderer == null)
+            if (_rig == null)
             {
-                _renderer = GetComponentInChildren<Renderer>();
-                _mpb = new MaterialPropertyBlock();
+                _rig = GetComponent<ModelRig>();
                 _baseScale = transform.localScale;
             }
+            if (_cam == null) _cam = Camera.main;
+            _rig.ResetState();
             transform.localScale = Vector3.zero;
-            UpdateTint();
+            UpdateLook();
         }
 
         void OnEnable() => Alive.Add(this);
@@ -65,7 +66,7 @@ namespace TDFende
             {
                 _spawnT += dt;
                 float t = Mathf.Clamp01(_spawnT / SpawnPunch);
-                float s = 1f + 0.22f * Mathf.Sin(t * Mathf.PI); // passa de 1 e volta
+                float s = 1f + 0.06f * Mathf.Sin(t * Mathf.PI); // passa um tiquinho de 1 e volta
                 transform.localScale = _baseScale * (t * s);
             }
             else if (transform.localScale != _baseScale)
@@ -77,6 +78,8 @@ namespace TDFende
             transform.position += dir * (_speed * dt);
             if (dir.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 8f * dt);
+            // a perna anda pelo chão percorrido: lento anda devagar, parado não marcha
+            _rig.Animate(dir.magnitude * _speed * dt, dt);
 
             // atrito: dentro do território do jogador, perde vida sem ninguém atirar
             _draining = _territory.Contains(transform.position);
@@ -87,7 +90,7 @@ namespace TDFende
             }
 
             if (_flashT > 0f) _flashT -= dt;
-            UpdateTint();
+            UpdateLook();
 
             var flat = transform.position;
             flat.y = 0f;
@@ -105,20 +108,18 @@ namespace TDFende
                 _onDespawn(this, source);
                 return;
             }
-            UpdateTint();
+            UpdateLook();
         }
 
-        void UpdateTint()
+        void UpdateLook()
         {
-            // vermelho vivo -> escuro conforme perde vida
-            var c = Color.Lerp(Palette.EnemyHurt, Palette.EnemyFull, Hp / MaxHp);
-            // sob atrito, puxa pro ciano do território: dá pra VER quem está sendo drenado
-            if (_draining) c = Color.Lerp(c, Palette.EnemyDrained, 0.55f);
-            // flash branco no impacto do projétil
-            if (_flashT > 0f) c = Color.Lerp(c, Palette.HitFlash, _flashT / FlashTime);
-
-            _mpb.SetColor(MaterialFactory.ColorProperty, c);
-            _renderer.SetPropertyBlock(_mpb);
+            // vida se lê na barra; o modelo guarda as cores de verdade (tabardo do time)
+            _rig.SetHealth(MaxHp > 0f ? Hp / MaxHp : 1f, _cam);
+            // sob atrito, brilho gelado: dá pra VER quem está sendo drenado
+            var glow = _draining ? Palette.AttritionGlow : Color.black;
+            // clarão no impacto do projétil
+            if (_flashT > 0f) glow = Color.Lerp(glow, Palette.HitGlow, _flashT / FlashTime);
+            _rig.SetGlow(glow);
         }
     }
 }

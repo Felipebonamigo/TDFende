@@ -721,6 +721,27 @@ namespace TDFende
             return true;
         }
 
+        /// <summary>
+        /// Como <see cref="TryGetProjectile(int, out Vector3)"/>, mais o que só a vista usa:
+        /// quanto do voo já passou (0..1), qual torre atirou (bala, bomba, gelo, virote) e
+        /// se o alvo voa (o tiro sobe até o planador em vez de mirar o chão).
+        /// </summary>
+        public bool TryGetProjectile(int slot, out Vector3 pos, out float progress, out int towerType,
+            out bool targetFlies)
+        {
+            progress = 0f;
+            towerType = 0;
+            targetFlies = false;
+            if (!TryGetProjectile(slot, out pos)) return false;
+            var p = _projectiles[slot];
+            progress = p.TotalTime > 0f ? 1f - p.TimeLeft / p.TotalTime : 1f;
+            if (progress < 0f) progress = 0f;
+            else if (progress > 1f) progress = 1f;
+            towerType = p.TowerTypeId;
+            targetFlies = _enemies[p.TargetSlot].IgnoresTerritory;
+            return true;
+        }
+
         public Vector2Int GoalCell => _goalCell;
         public Vector3 GoalWorld => _goalWorld;
 

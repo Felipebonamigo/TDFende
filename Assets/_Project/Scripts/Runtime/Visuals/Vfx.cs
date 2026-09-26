@@ -1,43 +1,93 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace TDFende
 {
     /// <summary>
-    /// Efeitos de partícula construídos em código, um ParticleSystem por tipo.
-    /// Como os sistemas simulam em espaço de mundo, um único sistema atende
-    /// infinitas explosões simultâneas — basta mover e chamar Emit.
+    /// Efeitos de partícula construídos em código. Cada efeito do jogo é uma receita
+    /// de camadas (clarão + fumaça + faísca...), e cada camada é UM ParticleSystem em
+    /// espaço de mundo: um sistema atende infinitas explosões simultâneas — basta
+    /// mover e chamar Emit.
+    ///
+    /// Realista: pólvora solta clarão curto e fumaça cinza que sobe e se abre; impacto
+    /// levanta poeira; morte vira nuvem de poeira e lascas. A morte por atrito continua
+    /// com cor própria (geada azulada) — dá pra VER qual mecânica está matando.
     /// </summary>
     public class Vfx
     {
         public static Vfx Instance { get; private set; }
 
-        readonly ParticleSystem _killBurst;      // morte por tiro
-        readonly ParticleSystem _attritionBurst; // morte por atrito (cor diferente de propósito:
-                                                 // dá pra VER qual mecânica está matando)
-        readonly ParticleSystem _impact;
-        readonly ParticleSystem _muzzle;
-        readonly ParticleSystem _build;
-        readonly ParticleSystem _leak;
+        readonly ParticleSystem _flash, _bigFlash, _smoke, _darkSmoke, _dust, _debris, _sparks, _frost, _mist;
+
+        struct Recipe
+        {
+            public Color Color;
+            public float Life, Speed, Size, Grow, Gravity, Radius;
+            public bool Additive;
+            public float Softness;
+        }
 
         public Vfx()
         {
             Instance = this;
             var root = new GameObject("VFX").transform;
-            _killBurst = Create(root, "KillBurst", Palette.EnemyFull, 0.55f, 4.5f, 0.20f);
-            _attritionBurst = Create(root, "AttritionBurst", Palette.TerritoryEdge, 0.70f, 3.0f, 0.16f);
-            _impact = Create(root, "Impact", Palette.Projectile, 0.25f, 5.0f, 0.11f);
-            _muzzle = Create(root, "Muzzle", Palette.Projectile, 0.12f, 2.5f, 0.14f);
-            _build = Create(root, "Build", Palette.TowerHead, 0.60f, 2.2f, 0.18f);
-            _leak = Create(root, "Leak", Palette.TextDanger, 0.80f, 6.0f, 0.26f);
+            _flash = Create(root, "Clarao", new Recipe
+            { Color = Palette.MuzzleFlash, Life = 0.1f, Speed = 0.4f, Size = 0.32f, Grow = 1.3f, Radius = 0.03f, Additive = true, Softness = 2.2f });
+            _bigFlash = Create(root, "ClaraoGrande", new Recipe
+            { Color = Palette.LeakFlash, Life = 0.25f, Speed = 0.6f, Size = 0.9f, Grow = 1.6f, Radius = 0.1f, Additive = true, Softness = 2f });
+            _smoke = Create(root, "Fumaca", new Recipe
+            { Color = Palette.Smoke, Life = 1.5f, Speed = 0.45f, Size = 0.26f, Grow = 3f, Gravity = -0.06f, Radius = 0.06f, Softness = 1.4f });
+            _darkSmoke = Create(root, "FumacaEscura", new Recipe
+            { Color = Palette.DarkSmoke, Life = 1.8f, Speed = 0.7f, Size = 0.4f, Grow = 3f, Gravity = -0.08f, Radius = 0.15f, Softness = 1.4f });
+            _dust = Create(root, "Poeira", new Recipe
+            { Color = Palette.Dust, Life = 0.9f, Speed = 1.3f, Size = 0.2f, Grow = 2.4f, Gravity = 0.15f, Radius = 0.12f, Softness = 1.5f });
+            _debris = Create(root, "Lascas", new Recipe
+            { Color = Palette.Debris, Life = 0.75f, Speed = 2.6f, Size = 0.06f, Grow = 1f, Gravity = 1.4f, Radius = 0.1f, Softness = 0.6f });
+            _sparks = Create(root, "Faiscas", new Recipe
+            { Color = Palette.Spark, Life = 0.28f, Speed = 3f, Size = 0.045f, Grow = 0.6f, Gravity = 0.8f, Radius = 0.04f, Additive = true, Softness = 1.2f });
+            _frost = Create(root, "Geada", new Recipe
+            { Color = Palette.Frost, Life = 0.7f, Speed = 1.6f, Size = 0.09f, Grow = 0.7f, Gravity = 0.3f, Radius = 0.12f, Additive = true, Softness = 1.3f });
+            _mist = Create(root, "Nevoa", new Recipe
+            { Color = Palette.FrostMist, Life = 1.1f, Speed = 0.5f, Size = 0.3f, Grow = 2.2f, Gravity = -0.03f, Radius = 0.12f, Softness = 1.6f });
         }
 
-        public void KillBurst(Vector3 pos, bool byAttrition) =>
-            Emit(byAttrition ? _attritionBurst : _killBurst, pos, byAttrition ? 14 : 18);
+        public void KillBurst(Vector3 pos, bool byAttrition)
+        {
+            if (byAttrition)
+            {
+                Emit(_frost, pos, 16);
+                Emit(_mist, pos, 6);
+                return;
+            }
+            Emit(_dust, pos, 10);
+            Emit(_debris, pos, 9);
+        }
 
-        public void Impact(Vector3 pos) => Emit(_impact, pos, 6);
-        public void Muzzle(Vector3 pos) => Emit(_muzzle, pos, 3);
-        public void Build(Vector3 pos) => Emit(_build, pos, 20);
-        public void Leak(Vector3 pos) => Emit(_leak, pos, 28);
+        public void Impact(Vector3 pos)
+        {
+            Emit(_dust, pos, 4);
+            Emit(_sparks, pos, 4);
+        }
+
+        public void Muzzle(Vector3 pos)
+        {
+            Emit(_flash, pos, 2);
+            Emit(_smoke, pos, 3);
+            Emit(_sparks, pos, 2);
+        }
+
+        public void Build(Vector3 pos)
+        {
+            Emit(_dust, pos + Vector3.up * 0.05f, 22);
+            Emit(_debris, pos + Vector3.up * 0.1f, 6);
+        }
+
+        public void Leak(Vector3 pos)
+        {
+            Emit(_bigFlash, pos + Vector3.up * 0.4f, 3);
+            Emit(_darkSmoke, pos + Vector3.up * 0.3f, 12);
+            Emit(_debris, pos + Vector3.up * 0.3f, 10);
+        }
 
         static void Emit(ParticleSystem ps, Vector3 pos, int count)
         {
@@ -46,8 +96,20 @@ namespace TDFende
             ps.Emit(count);
         }
 
-        static ParticleSystem Create(Transform parent, string name, Color color,
-            float lifetime, float speed, float size)
+        static Material _alpha, _additive;
+
+        static Material Mat(bool additive)
+        {
+            ref var slot = ref additive ? ref _additive : ref _alpha;
+            if (slot != null) return slot;
+            var shader = Shader.Find("TDFende/SoftParticle") ?? Shader.Find("TDFende/TerritoryOverlay");
+            slot = shader != null ? new Material(shader) : MaterialFactory.Get(Color.white);
+            slot.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            slot.SetFloat("_DstBlend", (float)(additive ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
+            return slot;
+        }
+
+        static ParticleSystem Create(Transform parent, string name, Recipe r)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -63,12 +125,13 @@ namespace TDFende
             // caíam num sistema morto. Cíclico + emission desligada = fica vivo e ocioso.
             main.loop = true;
             main.playOnAwake = false;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime * 0.6f, lifetime);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(speed * 0.4f, speed);
-            main.startSize = new ParticleSystem.MinMaxCurve(size * 0.6f, size);
-            main.startColor = color;
-            main.gravityModifier = 0.35f;
-            main.maxParticles = 600;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(r.Life * 0.6f, r.Life);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(r.Speed * 0.4f, r.Speed);
+            main.startSize = new ParticleSystem.MinMaxCurve(r.Size * 0.6f, r.Size);
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            main.startColor = new ParticleSystem.MinMaxGradient(r.Color * 0.85f, r.Color);
+            main.gravityModifier = r.Gravity;
+            main.maxParticles = 800;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
 
             var emission = ps.emission;
@@ -76,7 +139,7 @@ namespace TDFende
 
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Sphere;
-            shape.radius = 0.18f;
+            shape.radius = r.Radius;
 
             // some suave em vez de piscar fora
             var col = ps.colorOverLifetime;
@@ -84,23 +147,30 @@ namespace TDFende
             var grad = new Gradient();
             grad.SetKeys(
                 new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 0.45f), new GradientAlphaKey(0f, 1f) });
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.8f, 0.4f), new GradientAlphaKey(0f, 1f) });
             col.color = new ParticleSystem.MinMaxGradient(grad);
 
+            // fumaça e poeira se abrem; faísca e lasca encolhem
             var sol = ps.sizeOverLifetime;
             sol.enabled = true;
-            sol.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0.25f));
+            float g = Mathf.Max(0.05f, r.Grow);
+            sol.size = g >= 1f
+                ? new ParticleSystem.MinMaxCurve(g, AnimationCurve.EaseInOut(0f, 1f / g, 1f, 1f))
+                : new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, g));
 
-            // mesmo shader do overlay de fronteira: unlit + cor por vértice,
-            // funciona em URP e Built-in sem variante nenhuma
+            // fumaça desacelera no ar em vez de voar reto para sempre
+            var limit = ps.limitVelocityOverLifetime;
+            limit.enabled = true;
+            limit.dampen = 0.08f;
+            limit.limit = r.Speed;
+
             var pr = go.GetComponent<ParticleSystemRenderer>();
             pr.renderMode = ParticleSystemRenderMode.Billboard;
-            pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            pr.shadowCastingMode = ShadowCastingMode.Off;
             pr.receiveShadows = false;
-            var shader = Shader.Find("TDFende/TerritoryOverlay");
-            pr.sharedMaterial = shader != null
-                ? new Material(shader)
-                : MaterialFactory.Get(color);
+            pr.sharedMaterial = new Material(Mat(r.Additive));
+            pr.sharedMaterial.SetFloat("_Softness", r.Softness);
+            pr.sortingFudge = r.Additive ? -1f : 0f;
 
             ps.Play(); // fica ligado e ocioso, esperando Emit
             return ps;

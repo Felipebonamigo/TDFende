@@ -31,13 +31,13 @@ Aparece um seletor com dois modos:
 O fantasma verde/vermelho mostra onde pode construir. Não dá para murar o caminho por
 completo — o jogo bloqueia a torre que fecharia a última passagem.
 
-No **Tower Wars**, a sua lane é a de baixo (mais perto da câmera) e a da IA é a de cima.
-As teclas **1-6** (ou os botões do rodapé) compram e enviam. A altura do canhão de cada
-torre mostra o nível dela.
+No **Tower Wars**, a sua lane é a de baixo (mais perto da câmera) e a da IA é a de cima,
+do outro lado do rio. As teclas **1-6** (ou os botões do rodapé) compram e enviam. O nível
+de cada torre se lê nela mesma: a torre cresce e ganha o estandarte do time a partir do nível 2.
 
 ## O que está implementado (fase 0)
 
-- Grid lógico + chão quadriculado gerado em código
+- Grid lógico (linhas finas sobre a relva, só para mirar a construção)
 - **Flow field pathfinding** (Dijkstra 8 direções, custo 10/14, sem cortar quinas) —
   todos os inimigos compartilham um único campo; é a técnica que o RTS usará depois
 - Ondas infinitas com HP escalando; economia (ouro por abate + bônus por onda)
@@ -46,23 +46,65 @@ torre mostra o nível dela.
 - **Camada de input abstrata** (`IGameInput`): o jogo consome intenções, não cliques —
   é o que torna o porte mobile um adaptador novo, não um retrofit
 - **Fronteira + atrito** — a mecânica-teste do projeto: cada torre projeta território
-  (overlay azul com linha de fronteira); inimigos dentro dele sofrem dano contínuo,
+  (linha de fronteira na cor do dono, estilo RoN); inimigos dentro dele sofrem dano contínuo,
   sem ninguém atirar. Vencer controlando território, não só matando.
 
-## Direção de arte: minimalista deliberado (plano barato, R$ 0)
+## Direção de arte: realista, fim da Idade Média (R$ 0, tudo em código)
 
-O visual não vem de asset comprado — vem de paleta coerente + luz + juice, tudo em código.
-É estilo, não protótipo (mesma linha de Thomas Was Alone / Mini Metro).
+Decidida em 26/09/2026, trocando o "cartoon colorido". Continua **sem asset comprado nem
+baixado**: modelo, textura e luz são gerados em código na hora que o jogo abre.
 
-- **[`Palette.cs`](Assets/_Project/Scripts/Runtime/Core/Palette.cs)** — fonte da verdade de TODA cor
-- **`SceneAmbience`** — sol quente + luz de preenchimento fria + névoa linear; roda igual em URP e Built-in
-- **`Vfx`** — partículas em código: tiro, impacto, construção, vazamento e duas mortes com
-  cores distintas (dourado = tiro, ciano = atrito). Dá para *ver* qual mecânica está matando
-- **`Juice`** — screen shake baseado em trauma, só em eventos que importam (inimigo vazando)
-- **`FloatingText`** — números de ouro e vida, com cor indicando a causa da morte
-- **`Urp/PostFx`** — bloom, vinheta, ACES e color grading. Assembly *opcional*: só compila
-  se o URP existir (`defineConstraints`), então o jogo nunca quebra por causa dela
-- Feedback nos inimigos: "pop" ao nascer, flash branco no impacto, **tingimento azul sob atrito**
+- **Modelos** — [`Art/ModelLib.cs`](Assets/_Project/Scripts/Runtime/Art/ModelLib.cs): cada torre,
+  inimigo, a fortaleza, o acampamento, os projéteis e o cenário são montados de peças
+  (caixa, cilindro, perfil torneado, esfera deformada) em escala de gente (~0,6 de altura
+  para um soldado). Silhueta própria por tipo, como pede o `SendCatalog`:
+  - Torres: **Canhão** (torre redonda de cantaria, canhão de bronze em reparo de madeira),
+    **Morteiro** (bastião octogonal baixo, morteiro apontado ao céu, barris de pólvora),
+    **Gelo** (torre de pedra clara, cristal de gelo sob telhado de ardósia),
+    **Sentinela** (torre de vigia de madeira com balista no alto)
+  - Inimigos: **Recruta** (lanceiro com chapéu de ferro e broquel), **Enxame** (escaramuçador
+    de couro e capuz), **Corredor** (cavaleiro de lança), **Couraçado** (cavaleiro de armadura
+    e escudo de pipa), **Planador** (asa de morcego à Da Vinci), **Colosso** (torre de cerco com rodas)
+- **Texturas PBR** — [`Art/ProcTex.cs`](Assets/_Project/Scripts/Runtime/Art/ProcTex.cs): cantaria,
+  tábua, bronze com pátina, ferro com ferrugem, telha, ardósia, pano, couro, relva, terra,
+  rocha, água... cor + normal map, tileáveis, geradas em paralelo no boot (`ArtFactory.Preload`)
+- **Animação** — [`Art/ModelRig.cs`](Assets/_Project/Scripts/Runtime/Art/ModelRig.cs): torreta
+  gira para o alvo, cano dá coice, soldado anda (a perna acompanha o chão percorrido), cavalo
+  galopa, torre de cerco rola, planador balança, estandarte da fortaleza tremula
+- **Mundo** — [`Art/WorldLayout.cs`](Assets/_Project/Scripts/Runtime/Art/WorldLayout.cs): relevo
+  que só começa longe do tabuleiro (o grid continua plano), rio entre as lanes no Tower Wars,
+  mureta de pedra seca em volta de cada lane, mata de pinheiros e carvalhos em volta
+- **Cor de time** — azul você, vermelho a IA: estandarte, tabardo, xairel, escudo e a linha
+  de fronteira. É a única cor de "jogo" que sobrou; o resto vem do material
+- **`SceneAmbience`** — um sol só, céu físico procedural, ambiente em três faixas, névoa de
+  horizonte e uma sonda de reflexo (metal só parece metal se tiver o que refletir)
+- **`Vfx`** — partículas macias (shader `SoftParticle`): clarão e fumaça de pólvora, poeira e
+  faísca no impacto, poeira e lascas na morte. Morte por **atrito** continua com cor própria
+  (geada azulada) — dá para *ver* qual mecânica está matando
+- **Feedback nos inimigos** — barra de vida sobre a cabeça, clarão no impacto e **brilho
+  gelado sob atrito** (emissão por cima do material, sem apagar a cor do time)
+- **`Urp/PostFx`** — tonemap ACES (fílmico), bloom contido, vinheta de lente, saturação um tico
+  abaixo do neutro. Assembly *opcional*: só compila se o URP existir (`defineConstraints`)
+- **HUD** — ainda OnGUI provisório, mas com pele própria (`UI/UiSkin.cs`): painel escuro,
+  texto cor de pergaminho, botão de madeira com acento dourado
+- **[`Palette.cs`](Assets/_Project/Scripts/Runtime/Core/Palette.cs)** — agora só as cores de
+  leitura (time, fronteira, efeitos, interface); a cor das coisas mora nos materiais
+
+**Trocar por asset de verdade depois, peça por peça:** um prefab em
+`Assets/Resources/TDFende/<nome>` (ex.: `Torre_Canhao`, `Inimigo_Corredor`, `Fortaleza`)
+substitui o modelo procedural daquele nome. Se os filhos tiverem os mesmos nomes de peça
+(`Turret`, `Barrel`, `Shaft`, `Top`, `Flag`, `LegL`, `LegR`...), a animação continua funcionando.
+
+### Ver a arte sem abrir o Unity
+
+```bash
+cd Tools/ArtPreview
+dotnet run                  # gera out/art.json + out/index.html
+npx http-server out         # http://localhost:8080  e  http://localhost:8080/?scene=world
+```
+
+Roda o **mesmo** `Art/*.cs` do jogo (com stubs de matemática do Unity) e desenha no navegador
+com three.js: os modelos lado a lado, ou o Tower Wars montado na câmera do jogo.
 
 ## Modo Tower Wars
 
@@ -149,5 +191,6 @@ Playtest do Felipe → tuning de `BorderRadius`/`AttritionDps` em `GameConfig.cs
 ## Arquitetura em uma linha
 
 Tudo nasce de `GameBootstrap` → `GameController` monta o mundo inteiro em código
-(primitivas + materiais gerados em runtime, sem prefabs e sem cena montada à mão) e
+(modelos, texturas e materiais procedurais gerados em runtime, sem prefabs e sem cena
+montada à mão) e
 dirige os sistemas por frame em ordem determinística. Balanceamento: `GameConfig.cs`.
