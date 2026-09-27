@@ -5,13 +5,17 @@ using UnityEngine.Rendering.Universal;
 namespace TDFende.Urp
 {
     /// <summary>
-    /// Tonemap, bloom, vinheta e color grading — o acabamento fotográfico.
+    /// Pós-processamento — direção REALISTA (decidida 25/09/2026).
     ///
-    /// Realista (26/09/2026): volta o ACES, o tonemap fílmico — ele comprime o
-    /// realce como filme e câmera de verdade, que é exatamente o que o cartoon não
-    /// queria e o realista quer. Bloom só no que é bem claro (clarão de pólvora,
-    /// cristal de gelo), vinheta leve de lente, saturação levemente abaixo do neutro
-    /// e balanço de branco um tico quente (luz de tarde).
+    /// Inverte a escolha feita para o cartoon um dia antes: lá o ACES saiu porque, sendo
+    /// fílmico, desatura realces e o brinquedo precisava de cor pura. No realista é
+    /// exatamente isso que se quer — o ACES é a curva de câmera de cinema, e é a diferença
+    /// entre "renderizado" e "fotografado". Saturação volta para quase neutra, vinheta
+    /// discreta de lente, bloom só no que é realmente claro.
+    ///
+    /// Antisserrilhado SMAA na câmera: sem ele, borda de cubo e folha de grama cintilam ao
+    /// mover a câmera. MSAA não resolveria a grama (recorte por alfa não é borda de
+    /// polígono), e TAA deixaria rastro nos inimigos em movimento.
     ///
     /// Esta assembly INTEIRA só compila se o URP estiver instalado
     /// (defineConstraints no asmdef). Sem URP, ela simplesmente não existe e o
@@ -31,21 +35,18 @@ namespace TDFende.Urp
             tone.mode.Override(TonemappingMode.ACES);
 
             var bloom = profile.Add<Bloom>(true);
-            bloom.intensity.Override(0.28f);
-            bloom.threshold.Override(1.05f); // só o que é bem claro brilha (clarão, cristal), não tudo
-            bloom.scatter.Override(0.6f);
+            bloom.intensity.Override(0.25f);
+            bloom.threshold.Override(1.0f);
+            bloom.scatter.Override(0.65f);
 
             var vignette = profile.Add<Vignette>(true);
-            vignette.intensity.Override(0.22f); // vinheta de lente, não de clima sombrio
-            vignette.smoothness.Override(0.45f);
+            vignette.intensity.Override(0.18f);
+            vignette.smoothness.Override(0.4f);
 
             var grade = profile.Add<ColorAdjustments>(true);
-            grade.postExposure.Override(0.35f); // ACES escurece; a exposição devolve o meio-tom
-            grade.contrast.Override(10f);
-            grade.saturation.Override(-6f);
-
-            var white = profile.Add<WhiteBalance>(true);
-            white.temperature.Override(6f);
+            grade.postExposure.Override(0.1f);
+            grade.contrast.Override(6f);
+            grade.saturation.Override(4f);
 
             var go = new GameObject("PostFX");
             var volume = go.AddComponent<Volume>();
@@ -57,7 +58,13 @@ namespace TDFende.Urp
             if (cam != null)
             {
                 var data = cam.GetUniversalAdditionalCameraData();
-                if (data != null) data.renderPostProcessing = true;
+                if (data != null)
+                {
+                    data.renderPostProcessing = true;
+                    data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                    data.antialiasingQuality = AntialiasingQuality.High;
+                    data.renderShadows = true;
+                }
             }
         }
     }

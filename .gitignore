@@ -17,6 +17,9 @@ Tools/ArtPreview/out/
 .vscode/
 .idea/
 *.csproj
+# ...menos os das ferramentas: esses são escritos à mão, não gerados pelo Unity, e sem
+# eles um clone não roda o pre-commit (FlowSim e CompileCheck somem)
+!Tools/**/*.csproj
 *.sln
 *.user
 *.suo

@@ -21,6 +21,18 @@ namespace TDFende
             return c;
         }
 
+        /// <summary>
+        /// Cor para gravar em vértice de malha (Mesh.SetColors). Material, luz e partícula
+        /// o Unity converte sozinho para o espaço Linear; cor de vértice de malha ele NÃO
+        /// converte — sem isto, toda sobreposição sai lavada, mais clara que a paleta.
+        /// </summary>
+        public static Color ForVertex(Color c) =>
+            QualitySettings.activeColorSpace == ColorSpace.Linear ? c.linear : c;
+
+        // Reserva de céu/ambiente, só usada se o HDRI não carregar (SceneAmbience)
+        public static readonly Color Background = Hex("#B4C6D4");
+        public static readonly Color Ambient = Hex("#9FB0BF");
+
         // Times — tingem estandarte, tabardo, xairel e a linha de fronteira
         public static readonly Color TeamPlayer = Hex("#2F5FA8");
         public static readonly Color TeamFoe = Hex("#A8322F");

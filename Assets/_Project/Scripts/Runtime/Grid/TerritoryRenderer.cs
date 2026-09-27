@@ -94,7 +94,8 @@ namespace TDFende
             _verts.Add(center + new Vector3(-hx, 0f, hz));
             _verts.Add(center + new Vector3(hx, 0f, hz));
             _verts.Add(center + new Vector3(hx, 0f, -hz));
-            for (int k = 0; k < 4; k++) _colors.Add(color);
+            var vc = Palette.ForVertex(color);
+            for (int k = 0; k < 4; k++) _colors.Add(vc);
             _tris.Add(i); _tris.Add(i + 1); _tris.Add(i + 2);
             _tris.Add(i); _tris.Add(i + 2); _tris.Add(i + 3);
         }

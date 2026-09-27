@@ -9,13 +9,27 @@ namespace TDFende
     /// </summary>
     public static class WorldView
     {
-        public static Transform Build(WorldLayout layout)
+        /// <param name="terrain">
+        /// Terreno de verdade do GroundBuilder (grama fotográfica + tufos 3D). Se existir, ele
+        /// é o chão: aqui entram só mureta e mata, assentadas na altura dele, e o rio sai
+        /// (o terreno é plano entre as lanes). Nulo = relevo, rio e chão procedurais.
+        /// </param>
+        public static Transform Build(WorldLayout layout, Terrain terrain = null)
         {
             var root = new GameObject("Mundo").transform;
             var neutral = Color.white;
 
-            var terrain = ArtFactory.Static("Terreno", layout.BuildTerrain(), root, neutral, castShadows: false);
-            terrain.GetComponent<MeshRenderer>().receiveShadows = true;
+            if (terrain != null)
+            {
+                layout.River = false;
+                float baseY = terrain.transform.position.y;
+                layout.GroundHeight = (x, z) => terrain.SampleHeight(new Vector3(x, 0f, z)) + baseY;
+            }
+            else
+            {
+                var ground = ArtFactory.Static("Terreno", layout.BuildTerrain(), root, neutral, castShadows: false);
+                ground.GetComponent<MeshRenderer>().receiveShadows = true;
+            }
 
             if (layout.River)
             {

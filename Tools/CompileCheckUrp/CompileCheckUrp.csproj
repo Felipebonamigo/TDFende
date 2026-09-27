@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Irmão do Tools/CompileCheck, para o que ele não alcança: os scripts de editor
+    (Scripts/Editor) e a assembly opcional de URP (Scripts/Runtime/Urp).
+
+    Os dois dependem do pacote URP, e as DLLs dele só existem em
+    Library/ScriptAssemblies DEPOIS que o Unity abriu o projeto uma vez (Library/ não
+    vai para o git). Por isso o pre-commit só roda este projeto quando elas existem;
+    num clone novo, sem Library/, ele avisa e pula.
+
+    Referência é UnityEditor.CoreModule, não o Managed/UnityEditor.dll monolítico: os
+    dois declaram os mesmos tipos e juntos dão CS0433 (tipo ambíguo).
+
+    Atalho deliberado: Editor e Urp compilam juntos, num assembly só, com UnityEditor
+    referenciado. Isso deixa passar um `using UnityEditor` esquecido dentro de
+    Runtime/Urp, que quebraria o build do jogo (o player não tem UnityEditor). Hoje
+    Runtime/Urp é um arquivo só; se crescer, separar em dois projetos.
+
+    Uso:  dotnet build Tools/CompileCheckUrp
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS1701;CS1702;CS0436</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- o que o versionDefines do asmdef liga quando o URP 17 está instalado -->
+    <DefineConstants>$(DefineConstants);TDFENDE_URP</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <UnityHubRoot Condition="'$(UnityHubRoot)' == ''">C:\Program Files\Unity\Hub\Editor</UnityHubRoot>
+    <ProjectRoot>$(MSBuildThisFileDirectory)..\..\</ProjectRoot>
+    <ProjectVersionFile>$(ProjectRoot)ProjectSettings\ProjectVersion.txt</ProjectVersionFile>
+    <ProjectUnityVersion Condition="Exists('$(ProjectVersionFile)')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(ProjectVersionFile)')), 'm_EditorVersion: (\S+)').Groups[1].Value)</ProjectUnityVersion>
+    <UnityManaged Condition="'$(UnityManaged)' == ''">$(UnityHubRoot)\$(ProjectUnityVersion)\Editor\Data\Managed\UnityEngine</UnityManaged>
+    <ScriptAssemblies>$(ProjectRoot)Library\ScriptAssemblies</ScriptAssemblies>
+  </PropertyGroup>
+
+  <Target Name="VerificaUnity" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('$(UnityManaged)')"
+           Text="Não achei as DLLs do Unity em '$(UnityManaged)' (versão $(ProjectUnityVersion))." />
+    <Error Condition="!Exists('$(ScriptAssemblies)\Unity.RenderPipelines.Universal.Runtime.dll')"
+           Text="Sem DLLs do URP em Library/ScriptAssemblies: abra o projeto no Unity uma vez." />
+    <Message Importance="high" Text="CompileCheckUrp: Unity $(ProjectUnityVersion) + URP de Library/" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="$(ProjectRoot)Assets\_Project\Scripts\Editor\**\*.cs" />
+    <Compile Include="$(ProjectRoot)Assets\_Project\Scripts\Runtime\Urp\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine"><HintPath>$(UnityManaged)\UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(UnityManaged)\UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="UnityEditor.CoreModule"><HintPath>$(UnityManaged)\UnityEditor.CoreModule.dll</HintPath></Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime"><HintPath>$(ScriptAssemblies)\Unity.RenderPipelines.Core.Runtime.dll</HintPath></Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime"><HintPath>$(ScriptAssemblies)\Unity.RenderPipelines.Universal.Runtime.dll</HintPath></Reference>
+  </ItemGroup>
+
+</Project>

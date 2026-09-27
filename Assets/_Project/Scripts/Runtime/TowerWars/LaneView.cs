@@ -46,7 +46,11 @@ namespace TDFende
         public Transform Root => _root;
         public LaneSim Sim => _sim;
 
-        public LaneView(LaneSim sim, Vector3 offset, string name, Color owner, Color attacker, bool isPlayer)
+        /// <param name="realisticGround">
+        /// Há terreno de verdade por baixo (GroundBuilder): a grade vira linhas de giz dele.
+        /// </param>
+        public LaneView(LaneSim sim, Vector3 offset, string name, Color owner, Color attacker, bool isPlayer,
+            bool realisticGround = false)
         {
             _sim = sim;
             _owner = owner;
@@ -55,7 +59,7 @@ namespace TDFende
             _root = new GameObject(name).transform;
             _root.position = offset;
 
-            BuildGround();
+            BuildGround(realisticGround);
             _enemyRoot = new GameObject("Inimigos").transform;
             _enemyRoot.SetParent(_root, false);
             _towerRoot = new GameObject("Torres").transform;
@@ -115,10 +119,11 @@ namespace TDFende
                 FloatingText.Instance?.Show(world + Vector3.up * 1.6f, $"nível {level}", Palette.TextGold);
         }
 
-        void BuildGround()
+        void BuildGround(bool realisticGround)
         {
-            // o chão é o terreno do mundo (WorldView); a lane só desenha o que é dela
-            Overlays.Grid(_sim.Map, _root);
+            // o chão é o terreno do mundo; a lane só desenha o que é dela
+            if (realisticGround) GridOverlay.Build(_sim.Map, _root);
+            else Overlays.Grid(_sim.Map, _root);
 
             // fortaleza de quem defende, com o portão virado para o acampamento inimigo
             _keep = ArtFactory.Spawn(ModelLib.Keep(), _owner, _root, "Base");

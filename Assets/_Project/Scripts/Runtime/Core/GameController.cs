@@ -70,7 +70,6 @@ namespace TDFende
             var cam = FindOrCreateCamera();
             SceneAmbience.Apply(cam);
             BuildWorld();
-            SceneAmbience.CaptureReflections(Vector3.zero);
             new Vfx();
 
             _input = new DesktopInput();
@@ -280,10 +279,21 @@ namespace TDFende
 
         void BuildWorld()
         {
+            // chão de verdade (grama fotográfica + tufos 3D) quando a arte existe;
+            // senão, relevo procedural
+            var size = Map.WorldSize;
+            var area = new[] { new Rect(-size.x * 0.5f, -size.z * 0.5f, size.x, size.z) };
+            var terrain = GroundBuilder.Build(area);
+            if (terrain != null)
+            {
+                gameObject.AddComponent<GrassField>().Init(terrain, area);
+                GridOverlay.Build(Map, transform);
+            }
+            else Overlays.Grid(Map, null);
+
             var layout = new WorldLayout();
-            layout.AddPlayArea(Vector3.zero, Map.WorldSize);
-            WorldView.Build(layout);
-            Overlays.Grid(Map, null);
+            layout.AddPlayArea(Vector3.zero, size);
+            WorldView.Build(layout, terrain);
 
             // fortaleza com o portão virado para o acampamento de onde o inimigo sai
             var keep = ArtFactory.Spawn(ModelLib.Keep(), Palette.TeamPlayer, null, "Base");

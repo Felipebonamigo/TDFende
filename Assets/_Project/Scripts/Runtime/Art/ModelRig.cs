@@ -300,6 +300,7 @@ namespace TDFende
             var m = new Mesh { name = "BarraVida" };
             m.SetVertices(new List<Vector3>
                 { new Vector3(x0, -hy, 0f), new Vector3(x0, hy, 0f), new Vector3(x1, hy, 0f), new Vector3(x1, -hy, 0f) });
+            c = Palette.ForVertex(c); // espaço Linear: cor de vértice não é convertida sozinha
             m.SetColors(new List<Color> { c, c, c, c });
             m.SetTriangles(new[] { 0, 1, 2, 0, 2, 3 }, 0);
             m.RecalculateBounds();

@@ -21,6 +21,14 @@ namespace TDFende
         public float RiverZ;
         public int Seed = 7;
 
+        /// <summary>
+        /// Altura do chão onde o cenário assenta. Nulo = o relevo deste layout; com o
+        /// terreno do GroundBuilder por baixo, é a altura DELE (Terrain.SampleHeight).
+        /// </summary>
+        public System.Func<float, float, float> GroundHeight;
+
+        float Ground(float x, float z) => GroundHeight != null ? GroundHeight(x, z) : Height(x, z);
+
         public const float WaterY = -0.16f;
         const float Extent = 80f;
 
@@ -148,7 +156,7 @@ namespace TDFende
                 float roll = ProcNoise.Hash(i, 2, Seed);
                 if (roll > chance) continue;
 
-                float y = Height(x, z) - 0.02f;
+                float y = Ground(x, z) - 0.02f;
                 float kind = ProcNoise.Hash(i, 3, Seed);
                 float size = 0.8f + 0.7f * ProcNoise.Hash(i, 4, Seed);
                 var at = new Vector3(x, y, z);
@@ -170,7 +178,7 @@ namespace TDFende
                     float side = ProcNoise.Hash(i, 11, Seed) < 0.5f ? -1f : 1f;
                     float z = RiverCenter(x) + side * (1.7f + 0.8f * ProcNoise.Hash(i, 12, Seed));
                     if (DistanceToPlay(x, z) < 0.6f) continue;
-                    ModelLib.Boulder(mb, new Vector3(x, Height(x, z) - 0.03f, z), 0.1f + 0.14f * ProcNoise.Hash(i, 13, Seed), i + 500);
+                    ModelLib.Boulder(mb, new Vector3(x, Ground(x, z) - 0.03f, z), 0.1f + 0.14f * ProcNoise.Hash(i, 13, Seed), i + 500);
                 }
             }
             return mb;

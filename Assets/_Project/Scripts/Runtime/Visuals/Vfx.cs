@@ -168,6 +168,10 @@ namespace TDFende
             pr.renderMode = ParticleSystemRenderMode.Billboard;
             pr.shadowCastingMode = ShadowCastingMode.Off;
             pr.receiveShadows = false;
+            // o shader usa a cor de vértice crua; em espaço Linear quem converte a cor da
+            // partícula é o renderer, e só com isto ligado (não há garantia do padrão em
+            // renderer criado por código)
+            pr.applyActiveColorSpace = true;
             pr.sharedMaterial = new Material(Mat(r.Additive));
             pr.sharedMaterial.SetFloat("_Softness", r.Softness);
             pr.sortingFudge = r.Additive ? -1f : 0f;

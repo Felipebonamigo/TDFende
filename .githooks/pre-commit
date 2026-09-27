@@ -19,6 +19,18 @@ if ! dotnet build "$ROOT/Tools/CompileCheck" -v quiet --nologo > /tmp/tdfende-cc
     exit 1
 fi
 
+# Editor + URP: as DLLs do URP só existem depois que o Unity abriu o projeto uma vez
+if [ -f "$ROOT/Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Runtime.dll" ]; then
+    echo "[pre-commit] compilando scripts de editor e URP..."
+    if ! dotnet build "$ROOT/Tools/CompileCheckUrp" -v quiet --nologo > /tmp/tdfende-ccu.log 2>&1; then
+        echo "[pre-commit] FALHOU a compilação de editor/URP:"
+        grep -E "error (CS|MSB)" /tmp/tdfende-ccu.log | sort -u | head -20
+        exit 1
+    fi
+else
+    echo "[pre-commit] sem Library/ do Unity: pulando checagem de editor/URP."
+fi
+
 echo "[pre-commit] rodando testes headless (leva ~3 min)..."
 if ! dotnet run --project "$ROOT/Tools/FlowSim" -v quiet --nologo > /tmp/tdfende-tests.log 2>&1; then
     echo "[pre-commit] TESTES VERMELHOS:"

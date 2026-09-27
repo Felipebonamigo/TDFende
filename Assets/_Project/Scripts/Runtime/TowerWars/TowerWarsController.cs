@@ -99,11 +99,11 @@ namespace TDFende
             _floatingText = gameObject.AddComponent<FloatingText>();
             _floatingText.Init(cam);
 
+            SceneAmbience.Apply(cam);
+            BuildWorld();
             NewMatch();
 
             _input = new DesktopInput();
-            SceneAmbience.Apply(cam);
-            BuildWorld();
             _ghost = new PlacementGhost();
 
             // as duas lanes empilhadas ocupam bem mais em Z do que uma só; sem esta
@@ -140,9 +140,9 @@ namespace TDFende
             // cada lane tem dono (fortaleza, torres, fronteira) e atacante (acampamento,
             // inimigos): azul é você, vermelho é a IA — como estandarte de batalha
             _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador",
-                Palette.TeamPlayer, Palette.TeamFoe, true);
+                Palette.TeamPlayer, Palette.TeamFoe, true, _terrain != null);
             _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario",
-                Palette.TeamFoe, Palette.TeamPlayer, false);
+                Palette.TeamFoe, Palette.TeamPlayer, false, _terrain != null);
 
             _accumulator = 0f;
             _selectedSend = 0;
@@ -151,19 +151,33 @@ namespace TDFende
             _hoverUpgradeCost = -1;
         }
 
+        Terrain _terrain;
+
         /// <summary>
-        /// Terreno, rio entre as lanes e mata em volta. Uma vez só: o R reinicia a
-        /// partida, não o mundo — e a sonda de reflexo é cara demais para refazer.
+        /// Chão de verdade (terreno com grama fotográfica e tufos 3D, GroundBuilder) e, por
+        /// cima, mureta e mata. Sem a arte do chão em Resources, _terrain fica null e o
+        /// mundo inteiro é procedural, com rio entre as lanes. Uma vez só: o R reinicia a
+        /// partida, não o cenário.
         /// </summary>
         void BuildWorld()
         {
-            var size = Player.Map.WorldSize;
-            float off = (size.z + LaneGap) * 0.5f;
+            float w = GameConfig.GridWidth * GameConfig.CellSize;
+            float h = GameConfig.GridHeight * GameConfig.CellSize;
+            float off = (h + LaneGap) * 0.5f;
+            // Rect.y guarda o Z do mundo
+            var areas = new[]
+            {
+                new Rect(-w * 0.5f, -off - h * 0.5f, w, h), // sua lane
+                new Rect(-w * 0.5f, off - h * 0.5f, w, h)   // lane da IA
+            };
+            _terrain = GroundBuilder.Build(areas);
+            if (_terrain != null)
+                gameObject.AddComponent<GrassField>().Init(_terrain, areas);
+
             var layout = new WorldLayout { River = true, RiverZ = 0f };
-            layout.AddPlayArea(new Vector3(0f, 0f, -off), size);
-            layout.AddPlayArea(new Vector3(0f, 0f, off), size);
-            WorldView.Build(layout);
-            SceneAmbience.CaptureReflections(Vector3.zero);
+            layout.AddPlayArea(new Vector3(0f, 0f, -off), new Vector3(w, 0f, h));
+            layout.AddPlayArea(new Vector3(0f, 0f, off), new Vector3(w, 0f, h));
+            WorldView.Build(layout, _terrain);
         }
 
         void Update()
