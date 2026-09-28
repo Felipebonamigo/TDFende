@@ -28,6 +28,12 @@ namespace TDFende
 
         /// <summary>Raio de território projetado. 0 = não projeta fronteira.</summary>
         public float BorderRadius;
+        /// <summary>Queima: fração da vida MÁXIMA perdida por segundo enquanto arde. 0 = não incendeia.</summary>
+        public float BurnPctPerSecond;
+        /// <summary>Quanto tempo o fogo dura. Acertar de novo renova, não soma.</summary>
+        public float BurnSeconds;
+        /// <summary>Empurrão para trás no caminho, em células. 0 = não empurra.</summary>
+        public float Knockback;
 
         public float Dps => Damage / Cooldown;
     }
@@ -71,6 +77,27 @@ namespace TDFende
                 SplashRadius = 0f, SlowFactor = 1f, SlowSeconds = 0f,
                 VsFlyingMultiplier = 2.6f, BorderRadius = 1.5f
             },
+            new TowerType
+            {
+                // Resposta ao GORDO: pouco dano direto, mas a chama come uma fração da vida
+                // MÁXIMA por segundo (acumula até 3 camadas) — quanto mais vida o alvo tem,
+                // mais o fogo rende.
+                // Alcance curto: tem que ficar perto do caminho para valer.
+                Name = "Fogo", Cost = 45, Range = 3.0f, Cooldown = 0.9f, Damage = 5f,
+                SplashRadius = 0.8f, SlowFactor = 1f, SlowSeconds = 0f,
+                VsFlyingMultiplier = 1f, BorderRadius = 2.0f,
+                BurnPctPerSecond = 0.05f, BurnSeconds = 3f
+            },
+            new TowerType
+            {
+                // Resposta ao que PASSA RÁPIDO pela fronteira: a rajada empurra o grupo
+                // de volta pelo caminho, e cada segundo a mais dentro do território é
+                // atrito de graça. Também derruba planador (vento contra asa).
+                Name = "Ar", Cost = 40, Range = 3.8f, Cooldown = 1.3f, Damage = 6f,
+                SplashRadius = 0.9f, SlowFactor = 1f, SlowSeconds = 0f,
+                VsFlyingMultiplier = 1.8f, BorderRadius = 2.25f,
+                Knockback = 0.7f
+            },
         };
 
         static readonly TowerType[] Defaults = (TowerType[])All.Clone();
@@ -90,7 +117,17 @@ namespace TDFende
                 return false;
             }
             if (!CatalogJson.TryParseTowers(text, out var parsed, out error)) return false;
-            All = parsed;
+            // Arquivo exportado antes de uma torre nova existir não pode fazê-la sumir do
+            // jogo: toda torre de fábrica que o arquivo não cita entra com o valor padrão.
+            var merged = new System.Collections.Generic.List<TowerType>(parsed);
+            foreach (var d in Defaults)
+            {
+                bool listed = false;
+                foreach (var p in parsed)
+                    if (p.Name == d.Name) { listed = true; break; }
+                if (!listed) merged.Add(d);
+            }
+            All = merged.ToArray();
             return true;
         }
 

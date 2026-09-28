@@ -32,6 +32,11 @@ namespace TDFende
             public bool IgnoresTerritory; // voador: alvo da Sentinela, imune ao atrito
             public float SlowFactor;      // 1 = velocidade cheia
             public float SlowLeft;        // segundos restantes de lentidão
+            public float BaseHp;          // vida do tipo SEM a escalada: a régua do fogo
+            public float BurnPct;         // fração da vida-base por segundo enquanto arde
+            public float BurnLeft;        // segundos restantes de fogo (a vista desenha chama)
+            public float KnockGuard;      // imune a novo empurrão enquanto > 0
+            public bool Burning => BurnLeft > 0f;
 
             public float CurrentSpeed => SlowLeft > 0f ? Speed * SlowFactor : Speed;
         }
@@ -455,12 +460,16 @@ namespace TDFende
             _enemies[slot].Generation++;
             _enemies[slot].Pos = pos;
             _enemies[slot].MaxHp = u.Hp * scale;
+            _enemies[slot].BaseHp = u.Hp;
             _enemies[slot].Hp = _enemies[slot].MaxHp;
             _enemies[slot].Speed = u.Speed;
             _enemies[slot].AttritionScale = u.AttritionScale;
             _enemies[slot].IgnoresTerritory = u.IgnoresTerritory;
             _enemies[slot].SlowFactor = 1f;
             _enemies[slot].SlowLeft = 0f;
+            _enemies[slot].BurnPct = 0f;
+            _enemies[slot].BurnLeft = 0f;
+            _enemies[slot].KnockGuard = 0f;
             // recompensa acompanha a vida, senão o defensor quebra no fim da partida
             _enemies[slot].Bounty = (int)(u.Bounty * scale);
             _enemies[slot].TypeId = sendId;
@@ -495,6 +504,25 @@ namespace TDFende
                 if (!_enemies[i].Active) continue;
 
                 if (_enemies[i].SlowLeft > 0f) _enemies[i].SlowLeft -= dt;
+                if (_enemies[i].KnockGuard > 0f) _enemies[i].KnockGuard -= dt;
+
+                // fogo: dano contínuo proporcional à vida-BASE do tipo, não à vida escalada.
+                // Proporcional à escalada, o fogo anularia a morte súbita (que existe
+                // justamente para a vida subir e a partida acabar) — medido: 0/20 decididas.
+                if (_enemies[i].BurnLeft > 0f)
+                {
+                    _enemies[i].BurnLeft -= dt;
+                    _enemies[i].Hp -= _enemies[i].BaseHp * _enemies[i].BurnPct * dt;
+                    if (_enemies[i].BurnLeft <= 0f) _enemies[i].BurnPct = 0f; // apagou: camadas zeram
+                    if (_enemies[i].Hp <= 0f)
+                    {
+                        Gold += _enemies[i].Bounty;
+                        KilledByTower++;
+                        EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.KilledByTower);
+                        Kill(i);
+                        continue;
+                    }
+                }
 
                 var dir = Flow.SampleDirection(_enemies[i].Pos);
                 _enemies[i].Pos += dir * (_enemies[i].CurrentSpeed * dt);
@@ -613,6 +641,19 @@ namespace TDFende
                 _enemies[slot].SlowLeft = type.SlowSeconds;
             }
 
+            // fogo acumula até 3 camadas: uma bateria de torres de Fogo queima de verdade,
+            // uma torre sozinha é pouco contra o miúdo. Cada acerto renova a duração.
+            if (type.BurnSeconds > 0f && type.BurnPctPerSecond > 0f)
+            {
+                _enemies[slot].BurnPct = Math.Min(_enemies[slot].BurnPct + type.BurnPctPerSecond,
+                    type.BurnPctPerSecond * TowerWarsConfig.MaxBurnStacks);
+                _enemies[slot].BurnLeft = type.BurnSeconds;
+            }
+
+            // Na morte súbita o vento não segura mais ninguém: a partida TEM que acabar.
+            if (type.Knockback > 0f && _enemies[slot].KnockGuard <= 0f && !InSuddenDeath)
+                Knock(slot, type.Knockback);
+
             _enemies[slot].Hp -= damage;
             if (_enemies[slot].Hp > 0f) return;
 
@@ -620,6 +661,29 @@ namespace TDFende
             KilledByTower++;
             EnemyDespawned?.Invoke(_enemies[slot].Pos, DespawnReason.KilledByTower);
             Kill(slot);
+        }
+
+        /// <summary>
+        /// Empurra o inimigo de volta pelo caminho: anda CONTRA o flow field em passos
+        /// curtos, parando antes de entrar em célula bloqueada ou sair do mapa. Depois
+        /// fica imune por um tempo — sem isso, três torres de Ar prenderiam o inimigo no
+        /// lugar para sempre e a partida não acabaria.
+        /// </summary>
+        void Knock(int slot, float distance)
+        {
+            const float step = 0.1f;
+            var pos = _enemies[slot].Pos;
+            for (float moved = 0f; moved < distance; moved += step)
+            {
+                var dir = Flow.SampleDirection(pos);
+                if (dir.sqrMagnitude < 0.0001f) break;
+                var next = pos - dir * step;
+                var cell = Map.WorldToCell(next);
+                if (!Map.IsWalkable(cell.x, cell.y)) break;
+                pos = next;
+            }
+            _enemies[slot].Pos = pos;
+            _enemies[slot].KnockGuard = 1.6f;
         }
 
         void TickProjectiles(float dt)

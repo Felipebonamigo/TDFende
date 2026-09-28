@@ -33,8 +33,10 @@ namespace TDFende
             // partidas, e adversário que nunca ganha não ensina o jogo a ninguém.
             public static Personality Easy => new Personality
             {
-                Name = "Fácil", DecisionInterval = 1.35f, SafetyMargin = 1.5f,
-                GreedBias = 0.85f, CounterStrength = 0.6f, PlacementSamples = 14
+                // CounterStrength 0,6 -> 0,5 com Fogo e Ar: com seis torres, ler a ameaça pela
+                // metade já chegava perto do Normal (medido: Normal só 57% contra o Fácil)
+                Name = "Fácil", DecisionInterval = 1.45f, SafetyMargin = 1.5f,
+                GreedBias = 0.85f, CounterStrength = 0.5f, PlacementSamples = 14
             };
 
             public static Personality Normal => new Personality
@@ -152,7 +154,7 @@ namespace TDFende
         /// </summary>
         int ChooseTowerType()
         {
-            float swarmHp = 0f, flyerHp = 0f, fastHp = 0f, totalHp = 0.001f;
+            float swarmHp = 0f, flyerHp = 0f, fastHp = 0f, heavyHp = 0f, totalHp = 0.001f;
             for (int s = 0; s < _me.EnemySlotCount; s++)
             {
                 if (!_me.TryGetEnemy(s, out var e)) continue;
@@ -161,6 +163,7 @@ namespace TDFende
                 if (u.Count > 1) swarmHp += e.Hp;
                 if (u.IgnoresTerritory) flyerHp += e.Hp;
                 if (u.Speed >= 3.5f) fastHp += e.Hp;
+                if (u.Hp >= 150f) heavyHp += e.Hp;
             }
 
             for (int id = 0; id < TowerCatalog.Count; id++)
@@ -169,12 +172,16 @@ namespace TDFende
                 if (_me.Gold < t.Cost) { _towerScores[id] = 0f; continue; }
 
                 // base: dano por ouro, com o território contando como valor
-                float score = t.Dps / t.Cost + t.BorderRadius * 0.02f;
+                // o fogo rende em função da vida do alvo: conta uma queima típica (120 de vida)
+                float burnDps = t.BurnPctPerSecond * t.BurnSeconds * 120f / t.Cooldown;
+                float score = (t.Dps + burnDps) / t.Cost + t.BorderRadius * 0.02f;
 
                 float cs = _p.CounterStrength;
                 if (t.SplashRadius > 0f) score *= 1f + 1.6f * cs * (swarmHp / totalHp);
                 if (t.VsFlyingMultiplier > 1f) score *= 1f + 2.2f * cs * (flyerHp / totalHp);
                 if (t.SlowFactor < 1f) score *= 1f + 1.4f * cs * (fastHp / totalHp);
+                if (t.BurnPctPerSecond > 0f) score *= 1f + 1.8f * cs * (heavyHp / totalHp);
+                if (t.Knockback > 0f) score *= 1f + 1.2f * cs * (fastHp / totalHp);
 
                 _towerScores[id] = score * score; // acentua o favorito sem zerar o resto
             }

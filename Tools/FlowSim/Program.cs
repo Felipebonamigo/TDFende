@@ -512,6 +512,18 @@ class Program
                   && Math.Abs(roundTowers[3].VsFlyingMultiplier - TowerCatalog.Get(3).VsFlyingMultiplier) < 0.001f,
                 "Catálogo: torres preservam lentidão, área e bônus anti-aéreo");
 
+            // arquivo exportado ANTES do Fogo e do Ar existirem (4 torres): carregar não
+            // pode fazê-las sumir — entram com o valor de fábrica, e o que o arquivo diz vale
+            TowerCatalog.ResetToDefaults();
+            int factory = TowerCatalog.Count;
+            Check(TowerCatalog.LoadFrom(
+                    "name=Canhão;cost=30;range=3.5;cooldown=0.65;damage=12\nname=Gelo;cost=40;range=3.2;cooldown=0.9;damage=4;slow=0.55;slowsecs=1.6",
+                    out string oldErr)
+                  && TowerCatalog.Count == factory
+                  && TowerCatalog.Get(0).Cost == 30,
+                $"Catálogo: arquivo antigo não apaga torre nova ({TowerCatalog.Count} de {factory}; {oldErr})");
+            TowerCatalog.ResetToDefaults();
+
             // decimal com PONTO sempre: numa máquina com vírgula, "2.75" viraria 275
             Check(CatalogJson.TryParseTowers(
                     "name=Teste;cost=30;range=2.5;cooldown=0.5;damage=7.25;slow=1;border=1.5",
@@ -626,6 +638,25 @@ class Program
         float cannonX = DeepestXWith(towerType: 0, cell: new Vector2Int(6, 8), seconds: 4f);
         Check(iceX < cannonX,
             $"Torres: Gelo atrasa mais que um Canhão na MESMA célula ({iceX:0.0} vs {cannonX:0.0})");
+
+        // Fogo contra o GORDO (Colosso sozinho): a queima por fração da vida tem que render
+        // mais que o Canhão — é a razão de o Fogo existir
+        float cannonHeavy = DamageDealt(5, towerType: 0, seconds: 12f, sends: 1);
+        float fireHeavy = DamageDealt(5, towerType: 4, seconds: 12f, sends: 1);
+        Check(fireHeavy > cannonHeavy,
+            $"Torres: Fogo machuca mais o Colosso que o Canhão ({fireHeavy:0} vs {cannonHeavy:0})");
+
+        // ...e contra o Recruta (vida baixa) o Canhão continua melhor: senão o Fogo seria
+        // simplesmente superior
+        float cannonLight = DamageDealt(0, towerType: 0, seconds: 12f, sends: 1);
+        float fireLight = DamageDealt(0, towerType: 4, seconds: 12f, sends: 1);
+        Check(cannonLight >= fireLight,
+            $"Torres: Canhão rende mais que o Fogo no Recruta ({cannonLight:0} vs {fireLight:0})");
+
+        // Ar tem que atrasar POR CAUSA DO EMPURRÃO: mesma célula, mesmo labirinto
+        float airX = DeepestXWith(towerType: 5, cell: new Vector2Int(6, 8), seconds: 4f);
+        Check(airX < cannonX,
+            $"Torres: Ar atrasa mais que um Canhão na MESMA célula ({airX:0.0} vs {cannonX:0.0})");
 
         // território varia por tipo: Gelo cobre mais chão que Sentinela
         var wideLane = new LaneSim(24, 16);

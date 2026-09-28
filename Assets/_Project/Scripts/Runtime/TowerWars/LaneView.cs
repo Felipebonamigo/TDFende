@@ -37,6 +37,17 @@ namespace TDFende
         // tiros: idem, por tipo de torre (bala, bomba, estilhaço de gelo, virote)
         ModelRig[] _shotBySlot = new ModelRig[0];
 
+        // Interpolação: a simulação anda a 30 tiques/s e a tela a centenas de quadros.
+        // Desenhar a posição crua fazia tudo andar em degraus (e a perna "parava" nos
+        // quadros sem tique). Guardamos o tique anterior e o atual e desenhamos entre eles.
+        Vector3[] _enemyPrev = new Vector3[0], _enemyCur = new Vector3[0];
+        float[] _burnFx = new float[0];
+        Vector3[] _shotPrev = new Vector3[0], _shotCur = new Vector3[0];
+        int[] _shotType = new int[0];
+        float _lastSimTime = -1f;
+        bool _ticked;
+        readonly List<float> _brazierFx = new List<float>();
+
         readonly List<ModelRig> _towers = new List<ModelRig>(32);
         ModelRig _keep;
         Transform _keepFlag;
@@ -90,7 +101,7 @@ namespace TDFende
             if (idx >= 0 && idx < _towers.Count)
             {
                 _towers[idx].Kick();
-                Vfx.Instance?.Muzzle(_towers[idx].MuzzleWorld);
+                Vfx.Instance?.Muzzle(_towers[idx].MuzzleWorld, _sim.TowerTypeId(idx));
                 return;
             }
             Vfx.Instance?.Muzzle(_root.TransformPoint(localMuzzle));
@@ -147,14 +158,21 @@ namespace TDFende
             return d.sqrMagnitude > 0.001f ? d.normalized : Vector3.back;
         }
 
-        /// <summary>Espelha o estado da simulação. Chamar uma vez por frame, depois do Tick.</summary>
-        public void Sync()
+        /// <summary>
+        /// Espelha o estado da simulação. Chamar uma vez por frame, depois do Tick.
+        /// <paramref name="alpha"/> = quanto do próximo tique já passou (acumulador / passo):
+        /// é o que deixa o movimento liso entre um tique e outro.
+        /// </summary>
+        public void Sync(float alpha = 1f)
         {
             if (_cam == null) _cam = Camera.main;
             float dt = Time.deltaTime;
+            _ticked = _sim.MatchTime != _lastSimTime;
+            _lastSimTime = _sim.MatchTime;
+            alpha = Mathf.Clamp01(alpha);
             SyncTowers(dt);
-            SyncEnemies(dt);
-            SyncProjectiles();
+            SyncEnemies(dt, alpha);
+            SyncProjectiles(alpha);
             AnimateKeep();
         }
 
@@ -190,6 +208,19 @@ namespace TDFende
                 // canhão acompanha o alvo. Sem isto todos apontam para o mesmo lado para
                 // sempre, e a torre parece desligada mesmo enquanto mata.
                 if (_sim.TryGetTowerAim(i, out var aim)) rig.AimAt(_root.TransformPoint(aim), dt);
+
+                // braseiro da torre de Fogo: chama viva o tempo todo
+                var brazier = rig.BrazierWorld;
+                if (brazier.HasValue)
+                {
+                    while (_brazierFx.Count <= i) _brazierFx.Add(0f);
+                    _brazierFx[i] -= dt;
+                    if (_brazierFx[i] <= 0f)
+                    {
+                        _brazierFx[i] = 0.09f;
+                        Vfx.Instance?.Brazier(brazier.Value);
+                    }
+                }
             }
 
             // o território muda junto com as torres; reconstruir só quando isso acontece
@@ -202,13 +233,16 @@ namespace TDFende
 
         // ---------------------------------------------------------------- inimigos
 
-        void SyncEnemies(float dt)
+        void SyncEnemies(float dt, float alpha)
         {
             int slots = _sim.EnemySlotCount;
             if (_enemyBySlot.Length != slots)
             {
                 System.Array.Resize(ref _enemyBySlot, slots);
                 System.Array.Resize(ref _enemyGen, slots);
+                System.Array.Resize(ref _enemyPrev, slots);
+                System.Array.Resize(ref _enemyCur, slots);
+                System.Array.Resize(ref _burnFx, slots);
             }
 
             for (int s = 0; s < slots; s++)
@@ -231,11 +265,31 @@ namespace TDFende
                     rig.transform.localRotation = Quaternion.LookRotation(-DirToSpawn());
                 }
 
-                rig.Follow(new Vector3(e.Pos.x, 0f, e.Pos.z), dt, snap: fresh);
+                var simPos = new Vector3(e.Pos.x, 0f, e.Pos.z);
+                if (fresh) _enemyPrev[s] = _enemyCur[s] = simPos;
+                else if (_ticked)
+                {
+                    _enemyPrev[s] = _enemyCur[s];
+                    _enemyCur[s] = simPos;
+                }
+                // empurrão da torre de Ar é um salto de verdade: não desenhar deslizando
+                if ((_enemyCur[s] - _enemyPrev[s]).sqrMagnitude > 0.5f * 0.5f) _enemyPrev[s] = _enemyCur[s];
+                rig.Follow(Vector3.Lerp(_enemyPrev[s], _enemyCur[s], alpha), dt, snap: fresh);
 
-                // dano se lê na barra; atrito, no brilho gelado que pulsa sobre a armadura
+                // dano se lê na barra; fogo, na chama e no brilho laranja; atrito, no gelado
                 float frac = e.MaxHp > 0f ? e.Hp / e.MaxHp : 1f;
                 rig.SetHealth(frac, _cam);
+                if (e.Burning)
+                {
+                    _burnFx[s] -= dt;
+                    if (_burnFx[s] <= 0f)
+                    {
+                        _burnFx[s] = 0.1f;
+                        Vfx.Instance?.Burn(rig.transform.position + Vector3.up * (rig.Def.Height * 0.45f));
+                    }
+                    rig.SetGlow(Palette.BurnGlow * (0.7f + 0.3f * Mathf.Sin(Time.time * 17f + s * 3f)));
+                    continue;
+                }
                 bool drained = e.AttritionScale > 0f && _sim.Territory.Contains(e.Pos);
                 rig.SetGlow(drained
                     ? Palette.AttritionGlow * (0.75f + 0.25f * Mathf.Sin(Time.time * 6f + s))
@@ -274,15 +328,24 @@ namespace TDFende
 
         // ------------------------------------------------------------------ tiros
 
-        void SyncProjectiles()
+        void SyncProjectiles(float alpha)
         {
             int slots = _sim.ProjectileSlotCount;
-            if (_shotBySlot.Length != slots) System.Array.Resize(ref _shotBySlot, slots);
+            if (_shotBySlot.Length != slots)
+            {
+                System.Array.Resize(ref _shotBySlot, slots);
+                System.Array.Resize(ref _shotPrev, slots);
+                System.Array.Resize(ref _shotCur, slots);
+                System.Array.Resize(ref _shotType, slots);
+            }
 
             for (int s = 0; s < slots; s++)
             {
                 if (!_sim.TryGetProjectile(s, out var p, out float t, out int towerType, out bool flies))
                 {
+                    // o tiro acabou de chegar: é aqui que o jogador tem que VER o acerto
+                    if (_shotBySlot[s] != null)
+                        Vfx.Instance?.Impact(_root.TransformPoint(_shotCur[s]), _shotType[s]);
                     ReleaseShot(s);
                     continue;
                 }
@@ -302,13 +365,27 @@ namespace TDFende
                 float y = Mathf.Lerp(muzzleY, targetY, t);
                 // bomba de morteiro sobe em arco — é o que faz o morteiro parecer morteiro
                 if (towerType == 1) y += 4f * t * (1f - t) * 1.3f;
-                var pos = new Vector3(p.x, y, p.z);
+                var target = new Vector3(p.x, y, p.z);
+                _shotType[s] = towerType;
+                if (fresh) _shotPrev[s] = _shotCur[s] = target;
+                else if (_ticked)
+                {
+                    _shotPrev[s] = _shotCur[s];
+                    _shotCur[s] = target;
+                }
+                var pos = Vector3.Lerp(_shotPrev[s], _shotCur[s], alpha);
 
                 // virote e estilhaço apontam para onde voam; no primeiro frame não há
                 // "de onde veio" (a posição antiga é de outro tiro, do pool)
                 var d = pos - rig.transform.localPosition;
                 rig.transform.localPosition = pos;
-                if (!fresh && d.sqrMagnitude > 1e-6f) rig.transform.localRotation = Quaternion.LookRotation(d);
+                if (fresh)
+                {
+                    // rastro de tiro reciclado riscaria da posição antiga até aqui
+                    var trail = rig.GetComponent<TrailRenderer>();
+                    if (trail != null) trail.Clear();
+                }
+                else if (d.sqrMagnitude > 1e-6f) rig.transform.localRotation = Quaternion.LookRotation(d);
             }
         }
 
@@ -319,6 +396,9 @@ namespace TDFende
             var rig = ArtFactory.Spawn(ModelLib.Projectile(towerType), _owner, _projectileRoot, "Projetil");
             foreach (var mr in rig.GetComponentsInChildren<MeshRenderer>())
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // tiro maior que a escala real: no zoom do jogo, bala de verdade some
+            rig.transform.localScale = Vector3.one * 1.5f;
+            Vfx.AddTrail(rig.gameObject, towerType);
             return rig;
         }
 

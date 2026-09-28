@@ -64,6 +64,10 @@ namespace TDFende
         public static readonly Color Spark = Hex("#FFB050");
         public static readonly Color Frost = Hex("#A8E4FF");
         public static readonly Color FrostMist = Hex("#D8F1FF", 0.35f);
+        public static readonly Color Flame = Hex("#FF8A2A");
+        public static readonly Color Wind = Hex("#EEF2F0", 0.32f);
+        /// <summary>Inimigo em chamas (emissão, pisca).</summary>
+        public static readonly Color BurnGlow = new Color(0.9f, 0.35f, 0.08f);
 
         // Texto flutuante e interface
         public static readonly Color TextGold = Hex("#E8C15A");

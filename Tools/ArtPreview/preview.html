@@ -194,8 +194,9 @@ if (MODE === 'world') {
   scene.add(ground);
   
   // fileira de torres (time azul), inimigos (time vermelho), base e cenário
-  const towers = [['Torre_Canhao', 'Canhão'], ['Torre_Morteiro', 'Morteiro'], ['Torre_Gelo', 'Gelo'], ['Torre_Sentinela', 'Sentinela']];
-  towers.forEach(([n, t], i) => place(n, -2.4 + i * 1.6, -2.2, 'player', t, 0.6));
+  const towers = [['Torre_Canhao', 'Canhão'], ['Torre_Morteiro', 'Morteiro'], ['Torre_Gelo', 'Gelo'],
+    ['Torre_Sentinela', 'Sentinela'], ['Torre_Fogo', 'Fogo'], ['Torre_Ar', 'Ar']];
+  towers.forEach(([n, t], i) => place(n, -4.0 + i * 1.6, -2.2, 'player', t, 0.6));
   const enemies = [['Inimigo_Recruta', 'Recruta'], ['Inimigo_Enxame', 'Enxame'], ['Inimigo_Corredor', 'Corredor'],
     ['Inimigo_Couracado', 'Couraçado'], ['Inimigo_Planador', 'Planador'], ['Inimigo_Colosso', 'Colosso']];
   enemies.forEach(([n, t], i) => place(n, -3.2 + i * 1.3, 0.4, 'foe', t, -Math.PI / 2 + 0.5));
@@ -218,6 +219,7 @@ const shots = MODE === 'world' ? {
 } : {
   game: { pos: [0, 11.5, 8.5], at: [0.4, 0, 0.4] },
   towers: { pos: [0.1, 2.3, 1.6], at: [0.1, 0.55, -2.2] },
+  novas: { pos: [3.2, 1.6, 0.2], at: [3.2, 0.55, -2.2] },
   enemies: { pos: [0, 1.9, 3.6], at: [0, 0.45, 0.4] },
   base: { pos: [0.4, 2.6, 7.2], at: [0.4, 0.6, 3.2] },
 };

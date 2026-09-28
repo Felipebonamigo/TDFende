@@ -167,6 +167,8 @@ namespace TDFende
             // fica gelado sob atrito, sem apagar a cor de time do tabardo
             mat.EnableKeyword("_EMISSION");
             mat.SetColor(_emission, spec.Emission);
+            // brasa: a emissão segue a própria cor (só a rachadura clara acende, o carvão não)
+            if (m == ArtMat.Ember) mat.SetTexture("_EmissionMap", Albedo[m]);
             mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             Mats[key] = mat;
             return mat;

@@ -68,6 +68,9 @@ namespace TDFende
         public const float SuddenDeathAccel = 1.6f;
 
         // Ritmo da partida
+        /// <summary>Camadas de fogo que um inimigo aguenta ao mesmo tempo (torre de Fogo).</summary>
+        public const int MaxBurnStacks = 3;
+
         public const float FixedStep = 1f / 30f;   // passo fixo da simulação headless
         public const float MatchTimeLimit = 900f;  // 15 min: empate técnico decide por vidas
     }

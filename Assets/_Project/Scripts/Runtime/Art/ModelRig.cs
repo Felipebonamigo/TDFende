@@ -12,7 +12,9 @@ namespace TDFende
     {
         public ModelDef Def { get; private set; }
 
-        Transform _shaft, _top, _turret, _barrel, _flag, _body, _wing;
+        Transform _shaft, _top, _turret, _barrel, _flag, _body, _wing, _rotor;
+        float _rotorAngle, _rotorBoost;
+        float _speedAvg; // velocidade suavizada: a perna não "desliga" num frame sem passo
         Transform[] _legs = new Transform[0];
         Transform _armL, _armR;
         readonly List<Transform> _wheels = new List<Transform>();
@@ -38,6 +40,7 @@ namespace TDFende
             _flag = Get(ModelLib.Flag);
             _body = Get(ModelLib.Body);
             _wing = Get(ModelLib.Wing);
+            _rotor = Get(ModelLib.Rotor);
             _armL = Get(ModelLib.ArmL);
             _armR = Get(ModelLib.ArmR);
 
@@ -80,14 +83,31 @@ namespace TDFende
         }
 
         /// <summary>Coice do tiro: o cano recua e volta sozinho em <see cref="TickTower"/>.</summary>
-        public void Kick() => _recoil = 1f;
+        public void Kick()
+        {
+            _recoil = 1f;
+            _rotorBoost = 1f;
+        }
 
         public void TickTower(float dt)
         {
+            if (_rotor != null)
+            {
+                // pás giram sempre; a rajada acelera e a inércia devolve ao giro de cruzeiro
+                _rotorBoost = Mathf.Max(0f, _rotorBoost - 0.8f * dt);
+                _rotorAngle += (60f + 540f * _rotorBoost) * dt;
+                _rotor.localRotation = Quaternion.Euler(0f, 0f, -_rotorAngle);
+            }
             if (_barrel == null) return;
             _recoil = Mathf.Max(0f, _recoil - 5f * dt);
             _barrel.localPosition = _barrelRest - Vector3.forward * (_recoil * _recoil * 0.06f);
         }
+
+        /// <summary>Onde a chama do braseiro nasce (torre de Fogo), em mundo. Nulo se não houver.</summary>
+        public Vector3? BrazierWorld =>
+            Def.Brazier.HasValue && _top != null
+                ? _top.TransformPoint(Def.Brazier.Value - Def.Find(ModelLib.Top).Pivot)
+                : (Vector3?)null;
 
         /// <summary>Boca do cano em coordenadas de mundo (onde nasce o clarão e o tiro).</summary>
         public Vector3 MuzzleWorld
@@ -133,7 +153,10 @@ namespace TDFende
 
         void Walk(float distance, float dt)
         {
-            bool moving = distance > 1e-5f;
+            // decide "andando" pela velocidade MÉDIA, não pelo frame: um frame com
+            // deslocamento zero não pode fechar as pernas e reabrir no seguinte
+            if (dt > 0f) _speedAvg = Mathf.Lerp(_speedAvg, distance / dt, Mathf.Clamp01(8f * dt));
+            bool moving = _speedAvg > 0.05f;
             _phase += distance / Mathf.Max(0.05f, Def.Stride) * Mathf.PI;
             float swing = moving ? Mathf.Sin(_phase) : 0f;
             float blend = Mathf.Clamp01(12f * dt);
@@ -149,7 +172,8 @@ namespace TDFende
         {
             _phase += distance / Mathf.Max(0.05f, Def.Stride) * Mathf.PI * 2f;
             float blend = Mathf.Clamp01(12f * dt);
-            bool moving = distance > 1e-5f;
+            if (dt > 0f) _speedAvg = Mathf.Lerp(_speedAvg, distance / dt, Mathf.Clamp01(8f * dt));
+            bool moving = _speedAvg > 0.05f;
             float a = moving ? 1f : 0f;
             // galope: patas da frente e de trás defasadas, cada par levemente desencontrado
             if (_legs.Length >= 4)

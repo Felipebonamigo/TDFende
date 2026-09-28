@@ -31,6 +31,8 @@ namespace TDFende
         public float ShaftHeight;
         /// <summary>Torres: boca do cano, em coordenadas do modelo.</summary>
         public Vector3 Muzzle;
+        /// <summary>Torre de Fogo: onde a chama do braseiro nasce, em coordenadas do modelo.</summary>
+        public Vector3? Brazier;
         /// <summary>Andantes: comprimento do passo (mundo). Rodas: raio.</summary>
         public float Stride = 0.3f;
 
@@ -65,6 +67,8 @@ namespace TDFende
     {
         // nomes de peça que a vista procura
         public const string Shaft = "Shaft", Top = "Top", Turret = "Turret", Barrel = "Barrel", Flag = "Flag";
+        /// <summary>Peça que gira sem parar (pás do moinho da torre de Ar).</summary>
+        public const string Rotor = "Rotor";
         public const string Body = "Body", LegL = "LegL", LegR = "LegR", ArmL = "ArmL", ArmR = "ArmR", Wing = "Wing";
 
         static readonly Dictionary<string, ModelDef> Cache = new Dictionary<string, ModelDef>();
@@ -85,6 +89,8 @@ namespace TDFende
             1 => Cached("Torre_Morteiro", MortarTower),
             2 => Cached("Torre_Gelo", FrostTower),
             3 => Cached("Torre_Sentinela", WatchTower),
+            4 => Cached("Torre_Fogo", FireTower),
+            5 => Cached("Torre_Ar", WindTower),
             _ => Cached("Torre_Canhao", CannonTower),
         };
 
@@ -103,6 +109,8 @@ namespace TDFende
             1 => Cached("Tiro_Morteiro", () => Ball(0.085f)),
             2 => Cached("Tiro_Gelo", IceShard),
             3 => Cached("Tiro_Sentinela", Bolt),
+            4 => Cached("Tiro_Fogo", Fireball),
+            5 => Cached("Tiro_Ar", () => new ModelDef()), // rajada: só o rastro de vento aparece
             _ => Cached("Tiro_Canhao", () => Ball(0.06f)),
         };
 
@@ -406,6 +414,115 @@ namespace TDFende
 
             TeamFlag(d, Top, new Vector3(0f, roofY + 0.22f, 0f), 0.22f, 0.16f, 0.1f);
             d.Height = roofY + 0.3f;
+            return d;
+        }
+
+        /// <summary>
+        /// Fogo: torre baixa e grossa de pedra escura, braseiro de ferro com brasa viva no
+        /// topo e um sifão de bronze de fogo grego que gira para o alvo.
+        /// </summary>
+        static ModelDef FireTower()
+        {
+            var d = new ModelDef();
+            Plinth(d, 0.9f);
+
+            const float y0 = 0.104f, shaftH = 0.4f;
+            d.ShaftHeight = shaftH;
+            var s = d.Part(Shaft, new Vector3(0f, y0, 0f)).Mesh;
+            s.Lathe(ArtMat.StoneDark, new Vector3(0f, y0, 0f), new[] { 0.42f, 0.38f, 0.37f },
+                new[] { 0f, 0.1f, shaftH }, 18);
+            s.Cylinder(ArtMat.Iron, new Vector3(0f, y0 + 0.16f, 0f), 0.385f, 0.385f, 0.03f, 18);
+            s.Cylinder(ArtMat.Iron, new Vector3(0f, y0 + 0.3f, 0f), 0.375f, 0.375f, 0.03f, 18);
+            // boca da fornalha na frente, brilhando
+            s.Box(ArtMat.Ember, new Vector3(0f, y0 + 0.08f, -0.37f), new Vector3(0.14f, 0.1f, 0.03f));
+            s.Box(ArtMat.Iron, new Vector3(0f, y0 + 0.14f, -0.375f), new Vector3(0.18f, 0.025f, 0.03f));
+
+            float ty = y0 + shaftH;
+            var t = d.Part(Top, new Vector3(0f, ty, 0f)).Mesh;
+            t.Cylinder(ArtMat.StoneDark, new Vector3(0f, ty, 0f), 0.37f, 0.4f, 0.05f, 18);
+            Battlement(t, ArtMat.StoneDark, new Vector3(0f, ty + 0.05f, 0f), 0.37f, 6, 0.06f, 0.06f, 0.06f);
+            // braseiro: tigela de ferro sobre três pés, cheia de brasa
+            var bowl = new Vector3(0.14f, ty + 0.14f, 0.14f);
+            for (int i = 0; i < 3; i++)
+            {
+                float a = i * Mathf.PI * 2f / 3f;
+                t.Rod(ArtMat.Iron, bowl + new Vector3(Mathf.Cos(a) * 0.08f, -0.09f, Mathf.Sin(a) * 0.08f), bowl, 0.012f, 5);
+            }
+            t.Lathe(ArtMat.Iron, bowl, new[] { 0.03f, 0.1f, 0.12f, 0.115f }, new[] { 0f, 0.03f, 0.07f, 0.075f }, 12);
+            t.Sphere(ArtMat.Ember, bowl + new Vector3(0f, 0.07f, 0f), new Vector3(0.1f, 0.035f, 0.1f), 10, 5, 0.25f, 3);
+            d.Brazier = bowl + new Vector3(0f, 0.1f, 0f);
+
+            float cy = ty + 0.05f;
+            var tu = d.Part(Turret, new Vector3(0f, cy, 0f), Top).Mesh;
+            tu.Box(ArtMat.WoodDark, new Vector3(0f, cy + 0.04f, -0.04f), new Vector3(0.14f, 0.08f, 0.22f));
+            // caldeira de bronze atrás, sifão comprido para a frente com boca de fera
+            tu.Lathe(ArtMat.Bronze, new Vector3(0f, cy + 0.08f, -0.12f), new[] { 0.06f, 0.08f, 0.08f, 0.05f, 0f },
+                new[] { 0f, 0.03f, 0.12f, 0.16f, 0.18f }, 12);
+            var trunnion = new Vector3(0f, cy + 0.16f, 0f);
+            var b = d.Part(Barrel, trunnion, Turret).Mesh;
+            b.Lathe(ArtMat.Bronze, trunnion + new Vector3(0f, 0f, -0.08f),
+                new[] { 0.035f, 0.03f, 0.028f, 0.045f, 0.05f, 0.03f },
+                new[] { 0f, 0.1f, 0.24f, 0.28f, 0.32f, 0.33f }, 10, Along(Vector3.forward));
+            b.Cylinder(ArtMat.Ember, trunnion + new Vector3(0f, 0f, 0.249f), 0.03f, 0.03f, 0.004f, 8, Along(Vector3.forward));
+            d.Muzzle = trunnion + new Vector3(0f, 0f, 0.27f);
+
+            TeamFlag(d, Top, new Vector3(-0.26f, ty + 0.05f, 0.24f), 0.38f, 0.18f, 0.12f);
+            d.Height = ty + 0.35f;
+            return d;
+        }
+
+        /// <summary>
+        /// Ar: torre de pedra com cabeça de moinho de madeira. A cabeça gira para o alvo e
+        /// as pás giram sempre — mais rápido depois de cada rajada.
+        /// </summary>
+        static ModelDef WindTower()
+        {
+            var d = new ModelDef();
+            Plinth(d, 0.82f);
+
+            const float y0 = 0.104f, shaftH = 0.62f;
+            d.ShaftHeight = shaftH;
+            var s = d.Part(Shaft, new Vector3(0f, y0, 0f)).Mesh;
+            s.Lathe(ArtMat.Stone, new Vector3(0f, y0, 0f), new[] { 0.33f, 0.28f, 0.26f },
+                new[] { 0f, 0.12f, shaftH }, 16);
+            s.Box(ArtMat.WoodDark, new Vector3(0f, y0 + 0.09f, -0.29f), new Vector3(0.11f, 0.17f, 0.03f));
+            s.Box(ArtMat.WoodDark, new Vector3(0.2f, y0 + 0.38f, -0.19f), new Vector3(0.05f, 0.07f, 0.02f),
+                Quaternion.Euler(0f, -45f, 0f));
+
+            float ty = y0 + shaftH;
+            var t = d.Part(Top, new Vector3(0f, ty, 0f)).Mesh;
+            t.Cylinder(ArtMat.StoneDark, new Vector3(0f, ty, 0f), 0.26f, 0.29f, 0.04f, 16);
+
+            float cy = ty + 0.04f;
+            var tu = d.Part(Turret, new Vector3(0f, cy, 0f), Top).Mesh;
+            // cabeça de madeira com telhado de duas águas
+            tu.Box(ArtMat.Wood, new Vector3(0f, cy + 0.11f, -0.02f), new Vector3(0.34f, 0.22f, 0.4f));
+            tu.Box(ArtMat.RoofTile, new Vector3(-0.1f, cy + 0.27f, -0.02f), new Vector3(0.24f, 0.025f, 0.46f),
+                Quaternion.Euler(0f, 0f, 38f));
+            tu.Box(ArtMat.RoofTile, new Vector3(0.1f, cy + 0.27f, -0.02f), new Vector3(0.24f, 0.025f, 0.46f),
+                Quaternion.Euler(0f, 0f, -38f));
+            var hub = new Vector3(0f, cy + 0.14f, 0.2f);
+            tu.Rod(ArtMat.WoodDark, hub - Vector3.forward * 0.06f, hub + Vector3.forward * 0.04f, 0.025f, 8);
+
+            var r = d.Part(Rotor, hub + Vector3.forward * 0.04f, Turret).Mesh;
+            var rc = hub + Vector3.forward * 0.04f;
+            r.Sphere(ArtMat.WoodDark, rc, Vector3.one * 0.035f, 8, 6);
+            for (int i = 0; i < 4; i++)
+            {
+                var rot = Quaternion.AngleAxis(i * 90f + 20f, Vector3.forward);
+                var tip = rc + rot * new Vector3(0f, 0.42f, 0f);
+                r.Beam(ArtMat.WoodDark, rc, tip, 0.018f);
+                // pano da pá: preso de um lado da vara, com leve passo (torção)
+                var side = rot * new Vector3(0.09f, 0f, 0f);
+                var twist = rot * new Vector3(0f, 0f, 0.02f);
+                r.DoubleQuad(ArtMat.Cloth, rc + rot * new Vector3(0f, 0.1f, 0f), tip,
+                    tip + side + twist, rc + rot * new Vector3(0f, 0.1f, 0f) + side * 0.8f + twist);
+                r.Beam(ArtMat.Wood, rc + rot * new Vector3(0f, 0.1f, 0f) + side * 0.8f, tip + side, 0.008f);
+            }
+            d.Muzzle = rc + Vector3.forward * 0.08f;
+
+            TeamFlag(d, Top, new Vector3(0.2f, ty + 0.04f, -0.2f), 0.5f, 0.16f, 0.1f);
+            d.Height = cy + 0.55f;
             return d;
         }
 
@@ -750,6 +867,14 @@ namespace TDFende
         {
             var d = new ModelDef();
             d.Part(Body, Vector3.zero).Mesh.Sphere(ArtMat.Iron, Vector3.zero, Vector3.one * r, 10, 7);
+            return d;
+        }
+
+        static ModelDef Fireball()
+        {
+            var d = new ModelDef();
+            var b = d.Part(Body, Vector3.zero).Mesh;
+            b.Sphere(ArtMat.Ember, Vector3.zero, Vector3.one * 0.07f, 10, 7, 0.2f, 5);
             return d;
         }
 

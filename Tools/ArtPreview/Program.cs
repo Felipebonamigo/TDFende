@@ -23,9 +23,9 @@ static class Program
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         var models = new List<ModelDef>();
-        for (int i = 0; i < 4; i++) models.Add(ModelLib.Tower(i));
+        for (int i = 0; i < 6; i++) models.Add(ModelLib.Tower(i));
         for (int i = 0; i < 6; i++) models.Add(ModelLib.Enemy(i));
-        for (int i = 0; i < 4; i++) models.Add(ModelLib.Projectile(i));
+        for (int i = 0; i < 5; i++) models.Add(ModelLib.Projectile(i));
         models.Add(ModelLib.Keep());
         models.Add(ModelLib.Camp());
         var scenery = new ModelDef { Name = "Cenario" };

@@ -93,6 +93,9 @@ namespace TDFende
                 sb.Append($";slowsecs={F(t.SlowSeconds)}");
                 sb.Append($";vsflying={F(t.VsFlyingMultiplier)}");
                 sb.Append($";border={F(t.BorderRadius)}");
+                sb.Append($";burn={F(t.BurnPctPerSecond)}");
+                sb.Append($";burnsecs={F(t.BurnSeconds)}");
+                sb.Append($";push={F(t.Knockback)}");
                 sb.Append('\n');
             }
             return sb.ToString();
@@ -115,7 +118,10 @@ namespace TDFende
                     SlowFactor = Flt(fields, "slow", 1f),
                     SlowSeconds = Flt(fields, "slowsecs", 0f),
                     VsFlyingMultiplier = Flt(fields, "vsflying", 1f),
-                    BorderRadius = Flt(fields, "border", 0f)
+                    BorderRadius = Flt(fields, "border", 0f),
+                    BurnPctPerSecond = Flt(fields, "burn", 0f),
+                    BurnSeconds = Flt(fields, "burnsecs", 0f),
+                    Knockback = Flt(fields, "push", 0f)
                 };
                 if (t.Cost <= 0) { error = $"linha {lineNo}: custo tem que ser > 0"; return false; }
                 if (t.Cooldown <= 0f) { error = $"linha {lineNo}: cadência tem que ser > 0"; return false; }
@@ -123,6 +129,11 @@ namespace TDFende
                 // slow=0 pararia o inimigo para sempre; slow>1 seria acelerar
                 if (t.SlowFactor <= 0f || t.SlowFactor > 1f)
                 { error = $"linha {lineNo}: slow tem que estar entre 0 (exclusivo) e 1"; return false; }
+                // burn>=1 mataria qualquer coisa em um segundo; push grande teleporta
+                if (t.BurnPctPerSecond < 0f || t.BurnPctPerSecond >= 1f || t.BurnSeconds < 0f)
+                { error = $"linha {lineNo}: burn tem que estar entre 0 e 1, burnsecs >= 0"; return false; }
+                if (t.Knockback < 0f || t.Knockback > 3f)
+                { error = $"linha {lineNo}: push tem que estar entre 0 e 3"; return false; }
                 list.Add(t);
             }
             if (list.Count == 0) { error = "nenhuma torre no arquivo"; return false; }

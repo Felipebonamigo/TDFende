@@ -63,7 +63,9 @@ modelo e luz são gerados em código; a textura é **foto de verdade** onde havi
   - Torres: **Canhão** (torre redonda de cantaria, canhão de bronze em reparo de madeira),
     **Morteiro** (bastião octogonal baixo, morteiro apontado ao céu, barris de pólvora),
     **Gelo** (torre de pedra clara, cristal de gelo sob telhado de ardósia),
-    **Sentinela** (torre de vigia de madeira com balista no alto)
+    **Sentinela** (torre de vigia de madeira com balista no alto),
+    **Fogo** (torre baixa com braseiro aceso e sifão de fogo grego),
+    **Ar** (torre com cabeça de moinho; as pás giram e aceleram a cada rajada)
   - Inimigos: **Recruta** (lanceiro com chapéu de ferro e broquel), **Enxame** (escaramuçador
     de couro e capuz), **Corredor** (cavaleiro de lança), **Couraçado** (cavaleiro de armadura
     e escudo de pipa), **Planador** (asa de morcego à Da Vinci), **Colosso** (torre de cerco com rodas)
@@ -110,6 +112,20 @@ npx http-server out         # http://localhost:8080  e  http://localhost:8080/?s
 
 Roda o **mesmo** `Art/*.cs` do jogo (com stubs de matemática do Unity) e desenha no navegador
 com three.js: os modelos lado a lado, ou o Tower Wars montado na câmera do jogo.
+
+## Torres e o que cada uma responde
+
+| Torre | Responde a | Como |
+|---|---|---|
+| Canhão | nada em especial (a régua) | dano único, muita fronteira |
+| Morteiro | Enxame | dano em área, bomba em arco |
+| Gelo | Corredor | lentidão |
+| Sentinela | Planador | bônus contra voador |
+| **Fogo** | Couraçado, Colosso | queima uma fração da vida MÁXIMA por segundo, acumula até 3 camadas |
+| **Ar** | quem atravessa a fronteira rápido | empurra de volta pelo caminho (mais tempo sob atrito); bônus contra voador. Desliga na morte súbita |
+
+A vista desenha **entre** os tiques da simulação (30 por segundo): sem isso, soldado e tiro
+andavam em degraus numa tela de 144 Hz ou mais.
 
 ## Modo Tower Wars
 

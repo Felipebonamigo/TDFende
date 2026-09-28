@@ -218,8 +218,10 @@ namespace TDFende
                 _hoverUpgradeCost = -1; // partida acabou: nada de dica de upgrade parada na tela
             }
 
-            _playerView.Sync();
-            _foeView.Sync();
+            // fração do próximo tique já decorrida: a vista desenha entre um tique e outro
+            float alpha = over ? 1f : _accumulator / TowerWarsConfig.FixedStep;
+            _playerView.Sync(alpha);
+            _foeView.Sync(alpha);
         }
 
         void HandleBuildInput()

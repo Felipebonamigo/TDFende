@@ -10,6 +10,7 @@ namespace TDFende
     {
         Stone, StoneDark, StoneFrost, Wood, WoodDark, Iron, Bronze, Slate, RoofTile,
         Cloth, ClothTeam, Leather, Skin, HorseCoat, Ice, Foliage, Bark, Grass, Dirt, Rock, Water, Hair,
+        Ember,
     }
 
     /// <summary>Parâmetros PBR de um material. Cor em sRGB, como o Inspector mostraria.</summary>
@@ -55,6 +56,12 @@ namespace TDFende
                 case ArtMat.Rock: return S("#77736B", 0.20f, 0f, 1.2f);
                 case ArtMat.Water: return S("#1E3B42", 0.94f, 0f, 3f);
                 case ArtMat.Hair: return S("#3A2A1E", 0.25f, 0f, 0.2f);
+                case ArtMat.Ember:
+                    // brasa: casca escura com rachaduras incandescentes. Emissão acima de 1
+                    // de propósito — é o que o bloom pega e faz parecer fogo, não laranja
+                    var ember = S("#2A1810", 0.2f, 0f, 0.3f);
+                    ember.Emission = new Color(2.4f, 0.8f, 0.18f);
+                    return ember;
                 default: return S("#FF00FF", 0.5f, 0f, 1f);
             }
         }
@@ -285,6 +292,9 @@ namespace TDFende
                     break;
                 case ArtMat.Water:
                     strength = Water(s, b, seed, col, h);
+                    break;
+                case ArtMat.Ember:
+                    strength = Ember(s, b, seed, col, h);
                     break;
                 default:
                     strength = Soft(s, b, seed, col, h, 0.02f);
@@ -621,6 +631,24 @@ namespace TDFende
                 h[i] = 0.7f * n + 0.2f * strata;
             }
             return 4f;
+        }
+
+        /// <summary>Brasa: placas de carvão escuro separadas por rachaduras em brasa (claras no albedo).</summary>
+        static float Ember(int s, Color b, int seed, Color[] col, float[] h)
+        {
+            var glow = Hex("#FF9A3C");
+            for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float u = (x + 0.5f) / s, v = (y + 0.5f) / s;
+                ProcNoise.Cells(u, v, 10, seed, out float f1, out float f2, out _);
+                float crack = 1f - Smooth01((f2 - f1) / 0.09f);
+                float n = ProcNoise.Fbm(u, v, 8, 4, seed + 3);
+                int i = y * s + x;
+                col[i] = Color.Lerp(b * (0.7f + 0.6f * n), glow, crack);
+                h[i] = 0.6f - 0.5f * crack + 0.2f * n;
+            }
+            return 3f;
         }
 
         static float Water(int s, Color b, int seed, Color[] col, float[] h)
