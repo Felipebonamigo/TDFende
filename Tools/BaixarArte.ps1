@@ -4,7 +4,7 @@
 #     powershell -ExecutionPolicy Bypass -File Tools\BaixarArte.ps1
 #
 # O que baixa (tudo CC0, pode usar em jogo comercial sem crédito):
-#   Assets/Resources/TDFende/Cenario/Pedras|Tocos|Troncos|Barris|Caixas/<id>/  modelos FBX 1k + texturas
+#   Assets/Resources/TDFende/Cenario/Arvores|Pedras|Tocos|Troncos|Barris|Caixas/<id>/  modelos FBX 1k + texturas
 #   Assets/Resources/TDFende/Textures/RoofTile_*.bytes, Slate_*.bytes           telha e ardósia
 #
 # O jogo usa o que encontrar e segue procedural no que faltar. Rodar de novo não
@@ -32,6 +32,7 @@ Write-Host ("  {0} modelos disponíveis" -f $ids.Count)
 
 # categoria do jogo -> expressão que escolhe pelo id (o nome do arquivo na Poly Haven)
 $plan = [ordered]@{
+    'Arvores' = @{ Pattern = '(tree|pine|fir|oak|birch|spruce|maple|beech)'; Max = 5 }
     'Pedras'  = @{ Pattern = '^(rock|boulder|stone)'; Max = 6 }
     'Tocos'   = @{ Pattern = 'stump';                 Max = 3 }
     'Troncos' = @{ Pattern = '(log|trunk)';           Max = 3 }
@@ -40,6 +41,7 @@ $plan = [ordered]@{
 }
 # coisa moderna não entra num jogo medieval
 $exclude = @{
+    'Arvores' = 'stump|trunk|dead|palm|quiver|coconut|banana|cactus|bonsai|island|jungle|tropical|log'
     'Caixas'  = 'plastic|metal'
     'Barris'  = 'plastic|metal|oil'
 }

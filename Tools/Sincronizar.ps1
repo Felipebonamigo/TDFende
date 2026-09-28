@@ -25,6 +25,21 @@ if ($LASTEXITCODE -ne 0) {
 $after = git rev-parse HEAD
 if ($before -ne $after) { Log "atualizado: $($before.Substring(0,7)) -> $($after.Substring(0,7))" }
 
+# o Claude mudou a lista de arte a baixar? roda o download de novo (só baixa o que falta)
+$dl = Join-Path $PSScriptRoot 'BaixarArte.ps1'
+$stamp = Join-Path $PSScriptRoot '.baixararte.hash'
+if (Test-Path $dl) {
+    $hash = (Get-FileHash $dl -Algorithm SHA256).Hash
+    $last = if (Test-Path $stamp) { Get-Content $stamp -Raw } else { '' }
+    if ($hash -ne $last.Trim()) {
+        try {
+            & $dl *>> $log
+            Set-Content -Path $stamp -Value $hash
+            Log 'BaixarArte mudou: download rodado de novo'
+        } catch { Log "BaixarArte falhou: $($_.Exception.Message)" }
+    }
+}
+
 $art = @('Assets/Resources/TDFende/Cenario', 'Assets/Resources/TDFende/Textures')
 $art = @($art | Where-Object { Test-Path (Join-Path $repo $_) })
 if ($art.Count -gt 0) {

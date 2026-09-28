@@ -42,9 +42,21 @@ namespace TDFende
             var models = new GameObject("CenarioModelos").transform;
             models.SetParent(root, false);
             var procedural = new System.Collections.Generic.List<WorldLayout.Prop>();
+            // árvore de verdade pesa (dezenas de milhares de triângulos cada): só as mais
+            // perto do tabuleiro; as do fundo, que a névoa já apaga, seguem procedurais
+            const int MaxModelTrees = 60;
+            const float ModelTreeReach = 22f;
+            int modelTrees = 0;
             foreach (var p in layout.ScatterScenery())
             {
                 GameObject placed = null;
+                bool tree = p.Kind == WorldLayout.PropKind.Pine || p.Kind == WorldLayout.PropKind.Oak;
+                if (tree && modelTrees < MaxModelTrees && layout.DistanceToPlay(p.Pos.x, p.Pos.z) < ModelTreeReach)
+                {
+                    // altura da árvore procedural equivalente: ~2x o "tamanho" do pinheiro
+                    placed = SceneryModels.Place("Arvores", models, p.Pos, p.Size * 1.9f, p.Seed, byHeight: true);
+                    if (placed != null) modelTrees++;
+                }
                 if (p.Kind == WorldLayout.PropKind.Boulder)
                     placed = SceneryModels.Place("Pedras", models, p.Pos, p.Size * 2.2f, p.Seed);
                 else if (p.Kind == WorldLayout.PropKind.Stump)

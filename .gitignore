@@ -33,3 +33,4 @@ Assets/Resources/TDFende/Personagens/*.fbm.meta
 
 # registro da sincronização automática (Tools/Sincronizar.ps1)
 Tools/sincronizar.log
+Tools/.baixararte.hash

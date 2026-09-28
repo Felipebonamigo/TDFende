@@ -3,7 +3,7 @@
 O jogo funciona sem nada disto (tudo tem versão procedural). Cada item abaixo que você
 fizer troca uma parte do procedural por arte real; o código já sabe usar.
 
-## 1. Poly Haven — pedras, tocos, troncos, barris, caixas, telhado (5 min, automático)
+## 1. Poly Haven — árvores, pedras, tocos, troncos, barris, caixas, telhado (automático)
 
 Grátis e CC0 (domínio público: pode vender o jogo, sem crédito obrigatório).
 
@@ -14,6 +14,8 @@ powershell -ExecutionPolicy Bypass -File Tools\BaixarArte.ps1
 ```
 
 Depois abra o Unity (ele importa sozinho) e faça commit — estes arquivos PODEM ir para o GitHub.
+Com a sincronização automática instalada (`Tools\InstalarSincronizacao.ps1`), nada disso é
+preciso: quando o script de download muda, o PC roda de novo sozinho e envia a arte nova.
 
 ## 2. Mixamo — soldados realistas animados (15–20 min, manual)
 
