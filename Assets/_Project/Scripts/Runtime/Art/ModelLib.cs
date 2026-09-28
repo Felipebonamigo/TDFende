@@ -550,15 +550,25 @@ namespace TDFende
             Vector3 M(float x, float y, float z) => new Vector3(x, y, z) * k;
 
             var body = d.Part(Body, Vector3.zero).Mesh;
-            // tronco e saia da túnica
-            body.Box(kit.Torso, M(0f, 1.18f, 0f), M(0.38f * bulk, 0.56f, 0.24f * bulk));
+            // tronco: peito oval (não caixa) afinando para a cintura, e saia da túnica
+            body.Sphere(kit.Torso, M(0f, 1.23f, 0f), M(0.2f * bulk, 0.25f, 0.135f * bulk), 12, 9);
+            body.Lathe(kit.Torso, M(0f, 0.93f, 0f), new[] { 0.16f * k * bulk, 0.17f * k * bulk, 0.19f * k * bulk },
+                new[] { 0f, 0.12f * k, 0.24f * k }, 12);
             body.Lathe(kit.Torso, M(0f, 0.74f, 0f), new[] { 0.23f * k * bulk, 0.2f * k * bulk }, new[] { 0f, 0.3f * k }, 8);
             body.Box(ArtMat.Leather, M(0f, 0.95f, 0f), M(0.4f * bulk, 0.06f, 0.26f * bulk));
             body.Box(ArtMat.Bronze, M(0f, 0.95f, 0.13f * bulk), M(0.06f, 0.05f, 0.02f));
             // pescoço e cabeça
             body.Cylinder(ArtMat.Skin, M(0f, 1.44f, 0f), 0.055f * k, 0.05f * k, 0.08f * k, 8);
-            body.Sphere(ArtMat.Skin, M(0f, 1.6f, 0.01f), M(0.1f, 0.12f, 0.11f), 10, 8);
-            body.Box(ArtMat.Skin, M(0f, 1.59f, 0.11f), M(0.03f, 0.05f, 0.04f)); // nariz: dá direção ao rosto
+            body.Sphere(ArtMat.Skin, M(0f, 1.6f, 0.01f), M(0.095f, 0.12f, 0.11f), 12, 9);
+            // queixo, nariz, olhos e orelhas: de perto é um rosto, de longe dá direção à cabeça
+            body.Sphere(ArtMat.Skin, M(0f, 1.52f, 0.05f), M(0.06f, 0.045f, 0.06f), 8, 6);
+            body.Lathe(ArtMat.Skin, M(0f, 1.6f, 0.1f), new[] { 0.018f * k, 0.012f * k, 0f },
+                new[] { 0f, 0.03f * k, 0.045f * k }, 6, Quaternion.Euler(70f, 0f, 0f));
+            foreach (float sx in new[] { -1f, 1f })
+            {
+                body.Sphere(ArtMat.Hair, M(sx * 0.038f, 1.63f, 0.1f), M(0.014f, 0.01f, 0.01f), 6, 4);
+                body.Sphere(ArtMat.Skin, M(sx * 0.097f, 1.6f, 0f), M(0.015f, 0.035f, 0.025f), 6, 4);
+            }
             if (kit.Helmet)
             {
                 // chapéu de ferro (kettle hat): copa + aba larga
@@ -589,8 +599,13 @@ namespace TDFende
             {
                 var hip = M(sx * 0.1f * bulk, 0.9f, 0f);
                 var leg = d.Part(name, hip, Body).Mesh;
-                leg.Box(kit.Legs, M(sx * 0.1f * bulk, 0.55f, 0f), M(0.14f, 0.7f, 0.15f));
-                leg.Box(ArtMat.Leather, M(sx * 0.1f * bulk, 0.1f, 0.03f), M(0.15f, 0.2f, 0.24f));
+                // coxa grossa afinando até o tornozelo, joelho marcado, bota com bico
+                leg.Lathe(kit.Legs, M(sx * 0.1f * bulk, 0.18f, 0f),
+                    new[] { 0.05f * k, 0.058f * k, 0.052f * k, 0.066f * k, 0.078f * k, 0.08f * k },
+                    new[] { 0f, 0.18f * k, 0.32f * k, 0.44f * k, 0.62f * k, 0.74f * k }, 10);
+                leg.Lathe(ArtMat.Leather, M(sx * 0.1f * bulk, 0f, 0f), new[] { 0.06f * k, 0.065f * k, 0.058f * k },
+                    new[] { 0f, 0.1f * k, 0.22f * k }, 10);
+                leg.Sphere(ArtMat.Leather, M(sx * 0.1f * bulk, 0.04f, 0.07f), M(0.055f, 0.045f, 0.09f), 8, 6);
             }
 
             // braços: pivô no ombro
@@ -598,7 +613,11 @@ namespace TDFende
             {
                 var shoulder = M(sx * 0.25f * bulk, 1.4f, 0f);
                 var arm = d.Part(name, shoulder, Body).Mesh;
-                arm.Box(kit.Arms, M(sx * 0.25f * bulk, 1.13f, 0f), M(0.11f, 0.56f, 0.12f));
+                // antebraço fino, cotovelo, braço mais grosso e ombro redondo
+                arm.Lathe(kit.Arms, M(sx * 0.25f * bulk, 0.85f, 0f),
+                    new[] { 0.036f * k, 0.042f * k, 0.047f * k, 0.052f * k, 0.058f * k, 0.06f * k },
+                    new[] { 0f, 0.14f * k, 0.26f * k, 0.3f * k, 0.46f * k, 0.55f * k }, 9);
+                arm.Sphere(kit.Arms, M(sx * 0.245f * bulk, 1.4f, 0f), M(0.068f, 0.065f, 0.068f), 8, 6);
                 arm.Sphere(ArtMat.Skin, M(sx * 0.25f * bulk, 0.82f, 0.02f), M(0.055f, 0.06f, 0.055f), 8, 6);
 
                 var hand = M(sx * 0.25f * bulk, 0.82f, 0.02f);
@@ -694,12 +713,14 @@ namespace TDFende
             body.Beam(ArtMat.Hair, M(0f, 1.7f, 0.55f), M(0f, 2.05f, 0.95f), 0.08f * k);
             body.Beam(ArtMat.Hair, M(0f, 1.45f, -0.72f), M(0f, 0.85f, -0.98f), 0.1f * k);
             // xairel nas cores do time + sela
-            body.Box(ArtMat.ClothTeam, M(0f, 1.5f, -0.05f), M(0.72f, 0.3f, 0.7f));
-            body.Box(ArtMat.Leather, M(0f, 1.66f, -0.05f), M(0.4f, 0.1f, 0.5f));
+            // manta do time caída sobre o lombo (casca um pouco maior que o corpo) e sela
+            body.Sphere(ArtMat.ClothTeam, M(0f, 1.36f, -0.05f), M(0.37f, 0.33f, 0.5f), 14, 9);
+            body.Lathe(ArtMat.Leather, M(0f, 1.62f, -0.05f), new[] { 0.2f * k, 0.18f * k, 0.12f * k },
+                new[] { 0f, 0.06f * k, 0.1f * k }, 10);
 
             // cavaleiro sentado (parte do corpo: não anda, cavalga)
-            body.Box(ArtMat.ClothTeam, M(0f, 2.05f, -0.05f), M(0.36f, 0.56f, 0.24f));
-            body.Box(ArtMat.Iron, M(0f, 2.07f, 0.06f), M(0.3f, 0.4f, 0.04f));
+            body.Sphere(ArtMat.ClothTeam, M(0f, 2.06f, -0.05f), M(0.19f, 0.3f, 0.14f), 12, 9);
+            body.Sphere(ArtMat.Iron, M(0f, 2.12f, 0.0f), M(0.17f, 0.2f, 0.13f), 10, 7); // peitoral
             body.Sphere(ArtMat.Skin, M(0f, 2.46f, -0.03f), M(0.1f, 0.12f, 0.11f), 10, 8);
             body.Lathe(ArtMat.Iron, M(0f, 2.46f, -0.03f), new[] { 0.12f * k, 0.12f * k, 0.08f * k, 0f },
                 new[] { 0f, 0.08f * k, 0.15f * k, 0.2f * k }, 10);

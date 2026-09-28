@@ -152,6 +152,9 @@ namespace TDFende
             Emit(_ember, pos, 1);
         }
 
+        /// <summary>Poeira de casco e de roda: chão de terra batida sob peso.</summary>
+        public void Footstep(Vector3 pos) => Emit(_dust, pos, 1);
+
         /// <summary>Chama viva do braseiro da torre de Fogo.</summary>
         public void Brazier(Vector3 pos) => Emit(_flame, pos, 1);
 

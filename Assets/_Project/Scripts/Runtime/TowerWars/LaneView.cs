@@ -49,6 +49,18 @@ namespace TDFende
         readonly List<float> _brazierFx = new List<float>();
 
         readonly List<ModelRig> _towers = new List<ModelRig>(32);
+        readonly List<float> _towerAge = new List<float>(32); // construção: a torre sobe do chão
+
+        /// <summary>Inimigo que acabou de morrer: tomba, fica um instante e afunda antes de voltar ao pool.</summary>
+        struct Dying
+        {
+            public ModelRig Rig;
+            public float T;
+            public float Side;      // tomba para a esquerda ou para a direita
+            public Quaternion From;
+        }
+        readonly List<Dying> _dying = new List<Dying>();
+        const float FallTime = 0.45f, LieTime = 1.1f, SinkTime = 0.8f, BuildTime = 0.7f;
         ModelRig _keep;
         Transform _keepFlag;
         int _drawnTowers;
@@ -174,6 +186,7 @@ namespace TDFende
             SyncEnemies(dt, alpha);
             SyncProjectiles(alpha);
             AnimateKeep();
+            AnimateDying(dt);
         }
 
         void AnimateKeep()
@@ -196,12 +209,21 @@ namespace TDFende
                 // torreta nasce virada para o acampamento: é de lá que o inimigo vem
                 rig.AimAt(_root.TransformPoint(_sim.Map.CellToWorld(_sim.SpawnCells.Count > 0 ? _sim.SpawnCells[0] : _sim.GoalCell)), 1f, 1f);
                 _towers.Add(rig);
+                _towerAge.Add(0f);
             }
             _drawnTowers = _sim.TowerCount;
 
             for (int i = 0; i < _towers.Count; i++)
             {
                 var rig = _towers[i];
+                if (_towerAge[i] < BuildTime)
+                {
+                    // sobe do chão desacelerando, como quem assenta a última pedra
+                    _towerAge[i] = Mathf.Min(BuildTime, _towerAge[i] + dt);
+                    float u = 1f - _towerAge[i] / BuildTime;
+                    var home = _sim.Map.CellToWorld(_sim.TowerCell(i));
+                    rig.transform.localPosition = home + Vector3.down * (u * u * rig.Def.Height);
+                }
                 // o nível se lê na própria torre: ela cresce e ganha estandarte
                 rig.SetLevel(_sim.TowerLevel(i));
                 rig.TickTower(dt);
@@ -276,6 +298,17 @@ namespace TDFende
                 if ((_enemyCur[s] - _enemyPrev[s]).sqrMagnitude > 0.5f * 0.5f) _enemyPrev[s] = _enemyCur[s];
                 rig.Follow(Vector3.Lerp(_enemyPrev[s], _enemyCur[s], alpha), dt, snap: fresh);
 
+                // cavalo e torre de cerco levantam poeira do chão
+                if (rig.Def.Anim == AnimKind.Horse || rig.Def.Anim == AnimKind.Wheels)
+                {
+                    _burnFx[s] -= dt * 0.35f;
+                    if (_burnFx[s] <= 0f && !e.Burning)
+                    {
+                        _burnFx[s] = 0.1f;
+                        Vfx.Instance?.Footstep(rig.transform.position + Vector3.up * 0.05f);
+                    }
+                }
+
                 // dano se lê na barra; fogo, na chama e no brilho laranja; atrito, no gelado
                 float frac = e.MaxHp > 0f ? e.Hp / e.MaxHp : 1f;
                 rig.SetHealth(frac, _cam);
@@ -303,8 +336,51 @@ namespace TDFende
 
         void ReleaseEnemy(int slot)
         {
-            Return(_enemyBySlot[slot]);
+            var rig = _enemyBySlot[slot];
             _enemyBySlot[slot] = null;
+            if (rig == null) return;
+
+            // quem chegou à fortaleza some (a explosão do vazamento cobre); quem morreu
+            // no caminho tomba — sumir do nada é o que mais denuncia "jogo de protótipo"
+            var goal = _sim.Map.CellToWorld(_sim.GoalCell);
+            var p = rig.transform.localPosition;
+            if (new Vector2(p.x - goal.x, p.z - goal.z).sqrMagnitude < 0.8f * 0.8f)
+            {
+                Return(rig);
+                return;
+            }
+            rig.ResetState();
+            _dying.Add(new Dying
+            {
+                Rig = rig, T = 0f, From = rig.transform.localRotation,
+                Side = ((slot * 7 + _dying.Count) & 1) == 0 ? 1f : -1f,
+            });
+        }
+
+        void AnimateDying(float dt)
+        {
+            for (int i = _dying.Count - 1; i >= 0; i--)
+            {
+                var d = _dying[i];
+                d.T += dt;
+                var tr = d.Rig.transform;
+                // tomba de lado com aceleração (cai, não gira), fica, e afunda no chão
+                float fall = Mathf.Clamp01(d.T / FallTime);
+                fall *= fall;
+                tr.localRotation = d.From * Quaternion.Euler(0f, 0f, d.Side * 88f * fall);
+                var pos = tr.localPosition;
+                float sink = Mathf.Clamp01((d.T - FallTime - LieTime) / SinkTime);
+                pos.y = -sink * d.Rig.Def.Height * 0.6f;
+                tr.localPosition = pos;
+                if (d.T >= FallTime + LieTime + SinkTime)
+                {
+                    tr.localRotation = d.From;
+                    Return(d.Rig);
+                    _dying.RemoveAt(i);
+                    continue;
+                }
+                _dying[i] = d;
+            }
         }
 
         // pool por MODELO: um catálogo carregado de arquivo pode ter mais tipos que
