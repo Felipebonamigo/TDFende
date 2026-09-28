@@ -38,7 +38,44 @@ namespace TDFende
             }
 
             ArtFactory.Static("Mureta", layout.BuildCurbs(), root, neutral);
-            ArtFactory.Static("Cenario", layout.BuildScenery(), root, neutral);
+            // cenário: modelo baixado (Poly Haven) onde existe, procedural no resto
+            var models = new GameObject("CenarioModelos").transform;
+            models.SetParent(root, false);
+            var procedural = new System.Collections.Generic.List<WorldLayout.Prop>();
+            foreach (var p in layout.ScatterScenery())
+            {
+                GameObject placed = null;
+                if (p.Kind == WorldLayout.PropKind.Boulder)
+                    placed = SceneryModels.Place("Pedras", models, p.Pos, p.Size * 2.2f, p.Seed);
+                else if (p.Kind == WorldLayout.PropKind.Stump)
+                    placed = (p.Seed & 1) == 0
+                        ? SceneryModels.Place("Troncos", models, p.Pos, p.Size * 3.2f, p.Seed)
+                        : SceneryModels.Place("Tocos", models, p.Pos, p.Size * 0.9f, p.Seed, byHeight: true);
+                if (placed == null) procedural.Add(p);
+            }
+            ArtFactory.Static("Cenario", WorldLayout.BuildScenery(procedural), root, neutral);
+
+            // depósito de suprimentos junto de cada fortaleza, do lado de fora da mureta:
+            // barril e caixa de verdade dão escala humana à cena
+            foreach (var area in layout.PlayAreas)
+            {
+                float x = area.Max.x + 0.75f, z = (area.Min.y + area.Max.y) * 0.5f;
+                float Y(float px, float pz) => layout.GroundHeight != null ? layout.GroundHeight(px, pz) : 0f;
+                var spots = new[]
+                {
+                    ("Barris", new Vector3(x, 0f, z - 1.1f), 0.28f, true),
+                    ("Barris", new Vector3(x + 0.35f, 0f, z - 0.8f), 0.26f, true),
+                    ("Caixas", new Vector3(x + 0.1f, 0f, z + 1.0f), 0.34f, false),
+                    ("Caixas", new Vector3(x + 0.5f, 0f, z + 1.35f), 0.3f, false),
+                    ("Troncos", new Vector3(x + 0.6f, 0f, z + 0.1f), 0.9f, false),
+                };
+                int n = 0;
+                foreach (var (cat, spot, size, byH) in spots)
+                {
+                    var at = new Vector3(spot.x, Y(spot.x, spot.z), spot.z);
+                    SceneryModels.Place(cat, models, at, size, 900 + n++ * 13, byH);
+                }
+            }
             return root;
         }
     }

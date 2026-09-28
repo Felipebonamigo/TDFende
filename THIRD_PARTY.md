@@ -14,6 +14,12 @@ Os materiais sem foto continuam procedurais (`Runtime/Art/ProcTex.cs`).
 
 CC0 não exige crédito; fica registrado para saber de onde veio cada coisa.
 
+**Baixados pelo `Tools/BaixarArte.ps1`** (`Assets/Resources/TDFende/Cenario/`, `RoofTile_*`,
+`Slate_*`): Poly Haven, CC0. Cada pasta leva o id do asset na Poly Haven.
+
+**Personagens do Mixamo** (`Assets/Resources/TDFende/Personagens/`): licença da Adobe —
+uso em jogo liberado, redistribuição do arquivo cru não. Por isso não entram no Git.
+
 **Ao publicar o jogo** (Steam), o aviso MIT abaixo precisa ir junto — nos créditos ou num
 arquivo de licenças que acompanha o executável.
 

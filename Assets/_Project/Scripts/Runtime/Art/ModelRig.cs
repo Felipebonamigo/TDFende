@@ -15,6 +15,8 @@ namespace TDFende
         Transform _shaft, _top, _turret, _barrel, _flag, _body, _wing, _rotor;
         float _rotorAngle, _rotorBoost;
         float _speedAvg; // velocidade suavizada: a perna não "desliga" num frame sem passo
+        Animation _clips; // personagem baixado: animação de verdade no lugar da perna procedural
+        string _clipState;
         Transform[] _legs = new Transform[0];
         Transform _armL, _armR;
         readonly List<Transform> _wheels = new List<Transform>();
@@ -138,10 +140,46 @@ namespace TDFende
             Animate(delta.magnitude, dt);
         }
 
+        /// <summary>Personagem com clipes (CharacterLoader): Walk, Run, Idle.</summary>
+        internal void UseClips(Animation anim)
+        {
+            _clips = anim;
+            _renderers = GetComponentsInChildren<Renderer>(true);
+        }
+
+        /// <summary>
+        /// Escolhe o clipe pela velocidade e acelera/desacelera a animação para o pé não
+        /// patinar. Referência: um passo de caminhada cobre ~0,8 da altura do boneco por
+        /// segundo, uma corrida ~2 alturas — na escala do jogo, o inimigo anda depressa.
+        /// </summary>
+        void AnimateClips(float distance, float dt)
+        {
+            if (dt > 0f) _speedAvg = Mathf.Lerp(_speedAvg, distance / dt, Mathf.Clamp01(8f * dt));
+            float h = Mathf.Max(0.1f, Def.Height);
+            string want;
+            float refSpeed;
+            if (_speedAvg < 0.05f && _clips.GetClip("Idle") != null) { want = "Idle"; refSpeed = 0f; }
+            else if (_speedAvg > 1.3f * h && _clips.GetClip("Run") != null) { want = "Run"; refSpeed = 2.0f * h; }
+            else { want = "Walk"; refSpeed = 0.8f * h; }
+            if (_clips.GetClip(want) == null) return;
+
+            if (want != _clipState)
+            {
+                _clips.CrossFade(want, 0.2f);
+                _clipState = want;
+            }
+            if (refSpeed > 0f) _clips[want].speed = Mathf.Clamp(_speedAvg / refSpeed, 0.5f, 2.2f);
+        }
+
         /// <summary>Anima por <paramref name="distance"/> percorrida neste frame.</summary>
         public void Animate(float distance, float dt)
         {
             _time += dt;
+            if (_clips != null)
+            {
+                AnimateClips(distance, dt);
+                return;
+            }
             switch (Def.Anim)
             {
                 case AnimKind.Walker: Walk(distance, dt); break;

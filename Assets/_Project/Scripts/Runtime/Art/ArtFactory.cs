@@ -94,6 +94,36 @@ namespace TDFende
         /// vieram no padrão DirectX. JPG não tem alfa (= 1), o que serve tanto para o
         /// caminho RGB quanto para o "AG" do UnpackNormal, igual às normais procedurais.
         /// </summary>
+        /// <summary>
+        /// Casa a cor MÉDIA da foto com a cor do material no MatSpec. Foto baixada vem com
+        /// a luz e o tom de quem fotografou; sem isto, telha de um site e pedra de outro
+        /// não combinam na mesma cena. Mantém o detalhe, troca só o tom médio. Na foto que
+        /// já veio preparada, a média já bate e nada muda.
+        /// </summary>
+        static void GradeToPalette(Texture2D tex, Color target)
+        {
+            var px = tex.GetPixels32();
+            double r = 0, g = 0, b = 0;
+            for (int i = 0; i < px.Length; i++) { r += px[i].r; g += px[i].g; b += px[i].b; }
+            double n = System.Math.Max(1, px.Length) * 255.0;
+            float kr = target.r / (float)System.Math.Max(0.02, r / n);
+            float kg = target.g / (float)System.Math.Max(0.02, g / n);
+            float kb = target.b / (float)System.Math.Max(0.02, b / n);
+            if (Mathf.Abs(kr - 1f) < 0.02f && Mathf.Abs(kg - 1f) < 0.02f && Mathf.Abs(kb - 1f) < 0.02f)
+            {
+                tex.Apply(true, true);
+                return;
+            }
+            for (int i = 0; i < px.Length; i++)
+            {
+                px[i].r = (byte)Mathf.Min(255f, px[i].r * kr);
+                px[i].g = (byte)Mathf.Min(255f, px[i].g * kg);
+                px[i].b = (byte)Mathf.Min(255f, px[i].b * kb);
+            }
+            tex.SetPixels32(px);
+            tex.Apply(true, true);
+        }
+
         static bool TryLoadExternal(ArtMat m)
         {
             var ext = MatSpec.External(m);
@@ -104,11 +134,12 @@ namespace TDFende
 
             var albedo = new Texture2D(2, 2, TextureFormat.RGBA32, true, false) { name = $"{m}_Albedo" };
             var normal = new Texture2D(2, 2, TextureFormat.RGBA32, true, true) { name = $"{m}_Normal" };
-            if (!albedo.LoadImage(albedoBytes.bytes, true) || !normal.LoadImage(normalBytes.bytes, true))
+            if (!albedo.LoadImage(albedoBytes.bytes, false) || !normal.LoadImage(normalBytes.bytes, true))
             {
                 Debug.LogWarning($"[TDFende] textura de {m} não abriu; usando a procedural");
                 return false;
             }
+            GradeToPalette(albedo, MatSpec.Of(m).Base);
             foreach (var t in new[] { albedo, normal })
             {
                 t.wrapMode = TextureWrapMode.Repeat;
@@ -217,6 +248,19 @@ namespace TDFende
             var root = new GameObject(name ?? def.Name);
             if (parent != null) root.transform.SetParent(parent, false);
             var parts = new Dictionary<string, Transform>();
+
+            // personagem com esqueleto e animação de verdade (Mixamo), se houver
+            if (def.Anim == AnimKind.Walker)
+            {
+                var character = CharacterLoader.TrySpawn(def, root.transform, team, out var anim);
+                if (character != null)
+                {
+                    var charRig = root.AddComponent<ModelRig>();
+                    charRig.Bind(def, parts);
+                    charRig.UseClips(anim);
+                    return charRig;
+                }
+            }
 
             var prefab = Resources.Load<GameObject>("TDFende/" + def.Name);
             if (prefab != null)

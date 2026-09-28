@@ -1,0 +1,2 @@
+Personagens baixados do Mixamo entram aqui. Passo a passo em ASSETS.md, na raiz do projeto.
+Os .fbx desta pasta NÃO vão para o Git (licença do Mixamo + repositório público).

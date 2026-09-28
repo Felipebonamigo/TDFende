@@ -90,6 +90,9 @@ namespace TDFende
                 case ArtMat.Bark: return ("Bark_albedo", "Bark_normal", 0.6f);
                 case ArtMat.Rock: return ("Rock_albedo", "Rock_normal", 1.4f);
                 case ArtMat.Dirt: return ("Dirt_albedo", "Dirt_normal", 2.5f);
+                // baixadas pelo Tools/BaixarArte.ps1 (Poly Haven, CC0), se o script rodou
+                case ArtMat.RoofTile: return ("RoofTile_albedo", "RoofTile_normal", 0.7f);
+                case ArtMat.Slate: return ("Slate_albedo", "Slate_normal", 0.7f);
                 default: return null;
             }
         }

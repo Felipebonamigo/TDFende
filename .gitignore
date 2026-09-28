@@ -23,3 +23,10 @@ Tools/ArtPreview/out/
 *.sln
 *.user
 *.suo
+
+# Personagens do Mixamo: a licença deixa usar no jogo, mas não redistribuir o arquivo cru —
+# e este repositório é público. Ficam só na máquina de quem baixou (ver ASSETS.md).
+Assets/Resources/TDFende/Personagens/*.fbx
+Assets/Resources/TDFende/Personagens/*.fbx.meta
+Assets/Resources/TDFende/Personagens/*.fbm/
+Assets/Resources/TDFende/Personagens/*.fbm.meta

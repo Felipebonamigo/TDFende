@@ -141,9 +141,29 @@ namespace TDFende
         /// Árvores, arbustos e pedras espalhados fora do tabuleiro. Mais denso longe:
         /// emoldura o tabuleiro sem tapar a jogada. Perto da borda, só coisa baixa.
         /// </summary>
-        public MeshBuilder BuildScenery()
+        public enum PropKind { Pine, Oak, Bush, Boulder, Stump }
+
+        /// <summary>Um item de cenário: onde, qual tipo, que tamanho, e a semente da variação.</summary>
+        public struct Prop
         {
-            var mb = new MeshBuilder();
+            public PropKind Kind;
+            public Vector3 Pos;
+            public float Size;
+            public int Seed;
+        }
+
+        /// <summary>
+        /// Onde vai cada árvore, arbusto e pedra. Separado de COMO desenhar: a vista usa
+        /// modelo baixado quando existe (pedra, toco da Poly Haven) e procedural no resto.
+        /// Mais denso longe — emoldura o tabuleiro sem tapar a jogada; perto da borda,
+        /// só coisa baixa.
+        /// </summary>
+        public List<Prop> ScatterScenery()
+        {
+            var props = new List<Prop>();
+            void Add(PropKind k, Vector3 p, float size, int seed) =>
+                props.Add(new Prop { Kind = k, Pos = p, Size = size, Seed = seed });
+
             for (int i = 0; i < 560; i++)
             {
                 float x = (ProcNoise.Hash(i, 0, Seed) * 2f - 1f) * (Extent - 6f);
@@ -163,11 +183,12 @@ namespace TDFende
                 bool nearBoard = edge < 4f;
                 if (nearBoard || kind < 0.18f)
                 {
-                    if (ProcNoise.Hash(i, 5, Seed) < 0.5f) ModelLib.Bush(mb, at, size * 0.9f, i);
-                    else ModelLib.Boulder(mb, at, 0.18f + 0.22f * size * (nearBoard ? 0.6f : 1f), i);
+                    if (ProcNoise.Hash(i, 5, Seed) < 0.5f) Add(PropKind.Bush, at, size * 0.9f, i);
+                    else Add(PropKind.Boulder, at, 0.18f + 0.22f * size * (nearBoard ? 0.6f : 1f), i);
                 }
-                else if (kind < 0.62f) ModelLib.Pine(mb, at, size * 1.35f, i);
-                else ModelLib.Oak(mb, at, size * 1.2f, i);
+                else if (kind < 0.22f) Add(PropKind.Stump, at, 0.2f + 0.1f * size, i);
+                else if (kind < 0.62f) Add(PropKind.Pine, at, size * 1.35f, i);
+                else Add(PropKind.Oak, at, size * 1.2f, i);
             }
             // pedras soltas nas margens do rio
             if (River)
@@ -178,10 +199,36 @@ namespace TDFende
                     float side = ProcNoise.Hash(i, 11, Seed) < 0.5f ? -1f : 1f;
                     float z = RiverCenter(x) + side * (1.7f + 0.8f * ProcNoise.Hash(i, 12, Seed));
                     if (DistanceToPlay(x, z) < 0.6f) continue;
-                    ModelLib.Boulder(mb, new Vector3(x, Ground(x, z) - 0.03f, z), 0.1f + 0.14f * ProcNoise.Hash(i, 13, Seed), i + 500);
+                    Add(PropKind.Boulder, new Vector3(x, Ground(x, z) - 0.03f, z), 0.1f + 0.14f * ProcNoise.Hash(i, 13, Seed), i + 500);
+                }
+            }
+            return props;
+        }
+
+        /// <summary>Desenha em código os itens que não ganharam modelo baixado.</summary>
+        public static MeshBuilder BuildScenery(IEnumerable<Prop> props)
+        {
+            var mb = new MeshBuilder();
+            foreach (var p in props)
+            {
+                switch (p.Kind)
+                {
+                    case PropKind.Pine: ModelLib.Pine(mb, p.Pos, p.Size, p.Seed); break;
+                    case PropKind.Oak: ModelLib.Oak(mb, p.Pos, p.Size, p.Seed); break;
+                    case PropKind.Bush: ModelLib.Bush(mb, p.Pos, p.Size, p.Seed); break;
+                    case PropKind.Boulder: ModelLib.Boulder(mb, p.Pos, p.Size, p.Seed); break;
+                    // toco procedural: tronco curto cortado
+                    case PropKind.Stump:
+                        mb.SetTransform(p.Pos, Quaternion.Euler(0f, p.Seed * 37f, 0f));
+                        mb.Cylinder(ArtMat.Bark, Vector3.zero, p.Size * 0.55f, p.Size * 0.45f, p.Size * 0.7f, 9, capBottom: false);
+                        mb.ResetTransform();
+                        break;
                 }
             }
             return mb;
         }
+
+        /// <summary>Tudo procedural (o preview fora do Unity usa esta).</summary>
+        public MeshBuilder BuildScenery() => BuildScenery(ScatterScenery());
     }
 }
