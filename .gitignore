@@ -30,3 +30,6 @@ Assets/Resources/TDFende/Personagens/*.fbx
 Assets/Resources/TDFende/Personagens/*.fbx.meta
 Assets/Resources/TDFende/Personagens/*.fbm/
 Assets/Resources/TDFende/Personagens/*.fbm.meta
+
+# registro da sincronização automática (Tools/Sincronizar.ps1)
+Tools/sincronizar.log
