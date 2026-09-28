@@ -1,4 +1,4 @@
-# Baixa arte CC0 (domínio público) da Poly Haven para dentro do projeto.
+﻿# Baixa arte CC0 (domínio público) da Poly Haven para dentro do projeto.
 #
 #   Uso, no PowerShell, na pasta do projeto:
 #     powershell -ExecutionPolicy Bypass -File Tools\BaixarArte.ps1
@@ -38,10 +38,17 @@ $plan = [ordered]@{
     'Barris'  = @{ Pattern = 'barrel';                Max = 3 }
     'Caixas'  = @{ Pattern = 'crate';                 Max = 3 }
 }
+# coisa moderna não entra num jogo medieval
+$exclude = @{
+    'Caixas'  = 'plastic|metal'
+    'Barris'  = 'plastic|metal|oil'
+}
 
 foreach ($cat in $plan.Keys) {
     $rule = $plan[$cat]
-    $pick = @($ids | Where-Object { $_ -match $rule.Pattern } | Sort-Object | Select-Object -First $rule.Max)
+    $skip = $exclude[$cat]
+    $pick = @($ids | Where-Object { $_ -match $rule.Pattern -and (-not $skip -or $_ -notmatch $skip) } |
+        Sort-Object | Select-Object -First $rule.Max)
     Write-Host ("{0}: {1}" -f $cat, ($pick -join ', '))
     foreach ($id in $pick) {
         try {
