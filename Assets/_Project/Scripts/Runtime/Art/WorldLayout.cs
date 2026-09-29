@@ -13,6 +13,8 @@ namespace TDFende
         public struct Area
         {
             public Vector2 Min, Max; // XZ de mundo
+            /// <summary>Cor de quem defende (muralha) e de quem ataca (acampamento). Alfa 0 = padrão.</summary>
+            public Color Owner, Attacker;
         }
 
         public readonly List<Area> PlayAreas = new List<Area>();
@@ -32,10 +34,11 @@ namespace TDFende
         public const float WaterY = -0.16f;
         const float Extent = 80f;
 
-        public void AddPlayArea(Vector3 center, Vector3 size)
+        public void AddPlayArea(Vector3 center, Vector3 size, Color owner = default, Color attacker = default)
         {
             PlayAreas.Add(new Area
             {
+                Owner = owner, Attacker = attacker,
                 Min = new Vector2(center.x - size.x * 0.5f, center.z - size.z * 0.5f),
                 Max = new Vector2(center.x + size.x * 0.5f, center.z + size.z * 0.5f),
             });

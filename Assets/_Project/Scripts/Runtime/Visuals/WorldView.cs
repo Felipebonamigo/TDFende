@@ -50,6 +50,7 @@ namespace TDFende
             var wind = models.gameObject.AddComponent<TreeWind>();
             foreach (var p in layout.ScatterScenery())
             {
+                if (InBackdrop(layout, p.Pos)) continue;
                 GameObject placed = null;
                 bool tree = p.Kind == WorldLayout.PropKind.Pine || p.Kind == WorldLayout.PropKind.Oak;
                 if (tree && modelTrees < MaxModelTrees && layout.DistanceToPlay(p.Pos.x, p.Pos.z) < ModelTreeReach)
@@ -93,7 +94,58 @@ namespace TDFende
                     SceneryModels.Place(cat, models, at, size, 900 + n++ * 13, byH);
                 }
             }
+
+            BuildBackdrop(layout, root);
             return root;
+        }
+
+        // muralha atrás da fortaleza (Max.x) e acampamento de onde o inimigo sai (Min.x)
+        const float WallGap = 2.1f, CampGap = 1.2f;
+
+        static bool InBackdrop(WorldLayout layout, Vector3 p)
+        {
+            foreach (var a in layout.PlayAreas)
+            {
+                float zc = (a.Min.y + a.Max.y) * 0.5f;
+                if (p.x > a.Max.x + WallGap - 1.0f && p.x < a.Max.x + WallGap + 1.1f
+                    && p.z > a.Min.y - 1.0f && p.z < a.Max.y + 1.0f) return true;
+                if (p.x > a.Min.x - CampGap - 3.4f && p.x < a.Min.x - CampGap + 0.8f
+                    && Mathf.Abs(p.z - zc) < 4.4f) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Pano de fundo que conta a história da partida: a muralha do castelo de quem defende,
+        /// com o estandarte dele, e o acampamento do exército que ataca, nas cores do atacante.
+        /// </summary>
+        static void BuildBackdrop(WorldLayout layout, Transform root)
+        {
+            var fires = new System.Collections.Generic.List<Vector3>();
+            int i = 0;
+            foreach (var a in layout.PlayAreas)
+            {
+                Color owner = a.Owner.a > 0f ? a.Owner : Palette.TeamPlayer;
+                Color attacker = a.Attacker.a > 0f ? a.Attacker : Palette.TeamFoe;
+                float zc = (a.Min.y + a.Max.y) * 0.5f;
+                float Y(float px, float pz) => layout.GroundHeight != null ? layout.GroundHeight(px, pz) : layout.Height(px, pz);
+
+                float wx = a.Max.x + WallGap;
+                var wall = new MeshBuilder();
+                ModelLib.CastleWall(wall, 0f, a.Min.y - zc, a.Max.y - zc);
+                var wgo = ArtFactory.Static("Muralha", wall, root, owner);
+                wgo.transform.position = new Vector3(wx, Y(wx, zc) - 0.05f, zc);
+
+                float cx = a.Min.x - CampGap;
+                var camp = new MeshBuilder();
+                var local = ModelLib.ArmyCamp(camp, 0f, 0f, 31 + i * 17);
+                var cgo = ArtFactory.Static("Acampamento", camp, root, attacker);
+                var basePos = new Vector3(cx, Y(cx, zc) - 0.02f, zc);
+                cgo.transform.position = basePos;
+                foreach (var f in local) fires.Add(basePos + f);
+                i++;
+            }
+            if (fires.Count > 0) root.gameObject.AddComponent<CampFires>().Points = fires.ToArray();
         }
     }
 
@@ -127,6 +179,22 @@ namespace TDFende
                 float side = Mathf.Sin(t * 0.7f + i * 2.3f) * 0.6f * gust;
                 tr.localRotation = _rest[i] * Quaternion.Euler(sway, 0f, side);
             }
+        }
+    }
+
+    /// <summary>Fogueiras do acampamento: chama e fagulha contínuas, cada uma no seu ritmo.</summary>
+    public class CampFires : MonoBehaviour
+    {
+        public Vector3[] Points;
+        float _t;
+
+        void Update()
+        {
+            if (Points == null || Vfx.Instance == null) return;
+            _t += Time.deltaTime;
+            if (_t < 0.09f) return;
+            _t = 0f;
+            foreach (var p in Points) Vfx.Instance.Brazier(p);
         }
     }
 

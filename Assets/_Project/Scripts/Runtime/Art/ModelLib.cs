@@ -1002,6 +1002,110 @@ namespace TDFende
             return d;
         }
 
+        // ===================================================== pano de fundo
+
+        /// <summary>
+        /// Muralha de castelo correndo em Z, atrás da fortaleza e fora da lane: cortina de
+        /// pedra com adarve ameado e torres redondas de telhado cônico nas pontas e no meio.
+        /// É cenário puro — dá escala e diz "isto é um castelo sitiado", sem tocar no jogo.
+        /// </summary>
+        public static void CastleWall(MeshBuilder mb, float x, float z0, float z1)
+        {
+            const float thick = 0.45f, h = 1.3f;
+            float len = z1 - z0;
+            float zc = (z0 + z1) * 0.5f;
+            mb.Box(ArtMat.Stone, new Vector3(x, h * 0.5f, zc), new Vector3(thick, h, len));
+            // sapata alargada na base e cinta de pedra escura sob o adarve
+            mb.Box(ArtMat.StoneDark, new Vector3(x, 0.09f, zc), new Vector3(thick + 0.16f, 0.18f, len));
+            mb.Box(ArtMat.StoneDark, new Vector3(x, h - 0.04f, zc), new Vector3(thick + 0.08f, 0.08f, len));
+            // parapeito externo com merlões, mureta interna baixa
+            int merlons = Mathf.Max(2, Mathf.RoundToInt(len / 0.34f));
+            for (int i = 0; i < merlons; i++)
+            {
+                float z = z0 + (i + 0.5f) * len / merlons;
+                mb.Box(ArtMat.Stone, new Vector3(x + thick * 0.4f, h + 0.07f, z), new Vector3(0.09f, 0.14f, len / merlons * 1.02f));
+                if (i % 2 == 0)
+                    mb.Box(ArtMat.Stone, new Vector3(x + thick * 0.4f, h + 0.2f, z), new Vector3(0.09f, 0.12f, len / merlons * 0.9f));
+            }
+            mb.Box(ArtMat.Stone, new Vector3(x - thick * 0.42f, h + 0.05f, zc), new Vector3(0.07f, 0.1f, len));
+
+            // torres: nas duas pontas e no meio
+            foreach (float z in new[] { z0, zc, z1 })
+            {
+                var c = new Vector3(x + 0.1f, 0f, z);
+                const float th = 1.95f;
+                mb.Lathe(ArtMat.Stone, c, new[] { 0.72f, 0.64f, 0.6f, 0.6f }, new[] { 0f, 0.25f, 0.4f, th }, 20);
+                mb.Cylinder(ArtMat.StoneDark, c + Vector3.up * th, 0.6f, 0.68f, 0.08f, 20);
+                mb.Cylinder(ArtMat.Slate, c + Vector3.up * (th + 0.08f), 0.72f, 0f, 0.95f, 20, capTop: false);
+                mb.Sphere(ArtMat.Bronze, c + Vector3.up * (th + 1.05f), Vector3.one * 0.04f, 6, 4);
+                // seteiras
+                for (int k = 0; k < 3; k++)
+                {
+                    float a = -0.9f + k * 0.9f;
+                    var p = c + new Vector3(Mathf.Cos(a) * -0.605f, 1.1f, Mathf.Sin(a) * 0.605f);
+                    mb.Box(ArtMat.WoodDark, p, new Vector3(0.03f, 0.16f, 0.05f), Quaternion.Euler(0f, a * Mathf.Rad2Deg, 0f));
+                }
+                // mastro com estandarte do dono, voltado para a batalha
+                var foot = c + Vector3.up * (th + 1.0f);
+                mb.Rod(ArtMat.WoodDark, foot, foot + Up * 0.7f, 0.018f, 5);
+                mb.DoubleQuad(ArtMat.ClothTeam, foot + new Vector3(0f, 0.38f, 0f), foot + new Vector3(0f, 0.68f, 0f),
+                    foot + new Vector3(-0.5f, 0.64f, 0f), foot + new Vector3(-0.48f, 0.4f, 0f));
+            }
+        }
+
+        /// <summary>
+        /// Acampamento do exército atacante, fora da lane do lado de onde o inimigo sai:
+        /// tendas redondas de lona (teto na cor do time), mastros com flâmula e fogueiras
+        /// com roda de pedras. Devolve onde ficam as fogueiras (a vista acende a chama).
+        /// </summary>
+        public static List<Vector3> ArmyCamp(MeshBuilder mb, float x, float zc, int seed)
+        {
+            var fires = new List<Vector3>();
+            var tents = new[]
+            {
+                new Vector3(-0.3f, 0f, -3.2f), new Vector3(-1.4f, 0f, -1.6f), new Vector3(-0.5f, 0f, 0.3f),
+                new Vector3(-1.6f, 0f, 2.1f), new Vector3(-0.4f, 0f, 3.6f), new Vector3(-2.6f, 0f, 0.6f),
+            };
+            for (int i = 0; i < tents.Length; i++)
+            {
+                var c = new Vector3(x, 0f, zc) + tents[i];
+                float r = 0.42f + 0.14f * ProcNoise.Hash(seed, i, 3);
+                // pavilhão: parede de lona, teto cônico, mastro saindo do topo
+                mb.Cylinder(ArtMat.Cloth, c, r, r * 0.97f, r * 0.7f, 14, capBottom: false);
+                mb.Cylinder(ArtMat.ClothTeam, c + Up * (r * 0.7f), r * 1.08f, 0f, r * 1.0f, 14, capTop: false);
+                var pole = c + Up * (r * 1.7f);
+                mb.Rod(ArtMat.WoodDark, pole - Up * 0.1f, pole + Up * 0.32f, 0.012f, 5);
+                mb.DoubleTri(ArtMat.ClothTeam, pole + Up * 0.3f, pole + Up * 0.2f, pole + new Vector3(0.22f, 0.27f, 0f));
+                // porta: aba escura na frente, virada para a lane (+X)
+                mb.Box(ArtMat.Leather, c + new Vector3(r * 0.95f, r * 0.3f, 0f), new Vector3(0.02f, r * 0.55f, r * 0.45f));
+            }
+            // fogueiras: roda de pedras, lenha cruzada e brasa
+            foreach (var off in new[] { new Vector3(-0.9f, 0f, -0.6f), new Vector3(-1.0f, 0f, 2.9f) })
+            {
+                var c = new Vector3(x, 0f, zc) + off;
+                for (int k = 0; k < 8; k++)
+                {
+                    float a = k * Mathf.PI / 4f;
+                    Boulder(mb, c + new Vector3(Mathf.Cos(a) * 0.22f, 0f, Mathf.Sin(a) * 0.22f), 0.06f, seed + k);
+                }
+                mb.Rod(ArtMat.Bark, c + new Vector3(-0.15f, 0.03f, -0.05f), c + new Vector3(0.15f, 0.06f, 0.05f), 0.025f, 6);
+                mb.Rod(ArtMat.Bark, c + new Vector3(-0.05f, 0.03f, 0.15f), c + new Vector3(0.05f, 0.06f, -0.15f), 0.025f, 6);
+                mb.Sphere(ArtMat.Ember, c + Up * 0.03f, new Vector3(0.12f, 0.04f, 0.12f), 8, 5, 0.3f, seed);
+                fires.Add(c + Up * 0.08f);
+            }
+            // armas encostadas: feixe de lanças num cavalete
+            var rack = new Vector3(x - 1.9f, 0f, zc - 3.0f);
+            mb.Beam(ArtMat.WoodDark, rack + new Vector3(0f, 0f, -0.3f), rack + new Vector3(0f, 0.4f, -0.3f), 0.03f);
+            mb.Beam(ArtMat.WoodDark, rack + new Vector3(0f, 0f, 0.3f), rack + new Vector3(0f, 0.4f, 0.3f), 0.03f);
+            mb.Beam(ArtMat.WoodDark, rack + new Vector3(0f, 0.38f, -0.32f), rack + new Vector3(0f, 0.38f, 0.32f), 0.025f);
+            for (int k = 0; k < 5; k++)
+            {
+                var b = rack + new Vector3(0.1f, 0f, -0.2f + k * 0.1f);
+                mb.Rod(ArtMat.Wood, b, b + new Vector3(-0.2f, 0.75f, 0f), 0.008f, 4);
+            }
+            return fires;
+        }
+
         // ============================================================== cenário
 
         /// <summary>Pinheiro: tronco + saias de galhos empilhadas, com variação por semente.</summary>

@@ -175,8 +175,8 @@ namespace TDFende
                 gameObject.AddComponent<GrassField>().Init(_terrain, areas);
 
             var layout = new WorldLayout { River = true, RiverZ = 0f };
-            layout.AddPlayArea(new Vector3(0f, 0f, -off), new Vector3(w, 0f, h));
-            layout.AddPlayArea(new Vector3(0f, 0f, off), new Vector3(w, 0f, h));
+            layout.AddPlayArea(new Vector3(0f, 0f, -off), new Vector3(w, 0f, h), Palette.TeamPlayer, Palette.TeamFoe);
+            layout.AddPlayArea(new Vector3(0f, 0f, off), new Vector3(w, 0f, h), Palette.TeamFoe, Palette.TeamPlayer);
             WorldView.Build(layout, _terrain);
         }
 

@@ -49,6 +49,16 @@ static class Program
             Copy(mb, part.Mesh);
             models.Add(d);
         }
+        // pano de fundo como o WorldView monta: muralha atrás da fortaleza, acampamento atrás do spawn
+        foreach (var (lz, tag) in new[] { (-11f, "J"), (11f, "A") })
+        {
+            var w = new ModelDef { Name = "Muralha" + tag };
+            ModelLib.CastleWall(w.Part("Body", Vector3.zero).Mesh, 12f + 2.1f, lz - 8f, lz + 8f);
+            models.Add(w);
+            var c = new ModelDef { Name = "Tendas" + tag };
+            ModelLib.ArmyCamp(c.Part("Body", Vector3.zero).Mesh, -12f - 1.2f, lz, 31);
+            models.Add(c);
+        }
         Console.WriteLine($"modelos: {sw.ElapsedMilliseconds} ms");
 
         var sb = new StringBuilder();

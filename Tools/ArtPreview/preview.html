@@ -161,6 +161,8 @@ if (MODE === 'world') {
     const o = build(byName[n], 'player'); scene.add(o);
     if (n === 'Terreno' || n === 'Rio') o.traverse(c => { if (c.isMesh) c.castShadow = false; });
   }
+  for (const [n, t] of [['MuralhaJ', 'player'], ['TendasJ', 'foe'], ['MuralhaA', 'foe'], ['TendasA', 'player']])
+    if (byName[n]) scene.add(build(byName[n], t));
   // mesma conta do GridMap: origem no canto (-12, -8) de cada lane, célula de 1
   const cell = (laneZ, cx, cy) => [-12 + cx + 0.5, laneZ - 8 + cy + 0.5];
   for (const [laneZ, owner, attacker] of [[-11, 'player', 'foe'], [11, 'foe', 'player']]) {
@@ -216,6 +218,8 @@ const shots = MODE === 'world' ? {
   game: { pos: [0, 36 * Math.sin(55 * Math.PI / 180), 36 * Math.cos(55 * Math.PI / 180)], at: [0, 0, 0], fov: 60 },
   mid: { pos: [-2, 14 * Math.sin(55 * Math.PI / 180), 11 + 14 * Math.cos(55 * Math.PI / 180)], at: [-2, 0, 11], fov: 60 },
   close: { pos: [-1, 6.5, 15.8], at: [-1.5, 0.3, 11.2], fov: 60 },
+  muralha: { pos: [8.5, 5.5, 17], at: [13.5, 1.2, 11], fov: 60 },
+  tendas: { pos: [-8.5, 4.5, 16], at: [-13.5, 0.3, 11], fov: 60 },
 } : {
   game: { pos: [0, 11.5, 8.5], at: [0.4, 0, 0.4] },
   towers: { pos: [0.1, 2.3, 1.6], at: [0.1, 0.55, -2.2] },
