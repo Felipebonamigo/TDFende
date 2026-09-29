@@ -12,7 +12,10 @@ namespace TDFende
         const float DragPanFactor = 0.05f; // pixels -> unidades de mundo, escala com o zoom
         const float ZoomStep = 2.5f;
         const float MinDist = 8f;
-        const float Pitch = 55f;
+        // Inclinação acompanha o zoom (Total War, RoN): longe, olha de cima e lê o
+        // tabuleiro; perto, deita e mostra a torre, o soldado e o horizonte.
+        const float PitchFar = 58f;
+        const float PitchNear = 36f;
 
         readonly Transform _rig;
         readonly Camera _cam;
@@ -60,7 +63,9 @@ namespace TDFende
 
         void Apply()
         {
-            var rot = Quaternion.Euler(Pitch, 0f, 0f);
+            float t = Mathf.InverseLerp(MinDist, _maxDist, _dist);
+            float pitch = Mathf.Lerp(PitchNear, PitchFar, Mathf.Sqrt(t)); // deita só no zoom bem perto
+            var rot = Quaternion.Euler(pitch, 0f, 0f);
             _cam.transform.localRotation = rot;
             _cam.transform.localPosition = rot * new Vector3(0f, 0f, -_dist) + Juice.ShakeOffset;
         }

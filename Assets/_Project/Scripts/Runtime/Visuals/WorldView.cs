@@ -47,6 +47,7 @@ namespace TDFende
             const int MaxModelTrees = 60;
             const float ModelTreeReach = 22f;
             int modelTrees = 0;
+            var wind = models.gameObject.AddComponent<TreeWind>();
             foreach (var p in layout.ScatterScenery())
             {
                 GameObject placed = null;
@@ -55,7 +56,11 @@ namespace TDFende
                 {
                     // altura da árvore procedural equivalente: ~2x o "tamanho" do pinheiro
                     placed = SceneryModels.Place("Arvores", models, p.Pos, p.Size * 1.9f, p.Seed, byHeight: true);
-                    if (placed != null) modelTrees++;
+                    if (placed != null)
+                    {
+                        modelTrees++;
+                        wind.Add(placed.transform);
+                    }
                 }
                 if (p.Kind == WorldLayout.PropKind.Boulder)
                     placed = SceneryModels.Place("Pedras", models, p.Pos, p.Size * 2.2f, p.Seed);
@@ -89,6 +94,39 @@ namespace TDFende
                 }
             }
             return root;
+        }
+    }
+
+    /// <summary>
+    /// Vento nas árvores de verdade: balanço lento a partir da base, cada uma com fase e
+    /// ritmo próprios, e rajadas que atravessam o campo. Um componente para todas (não
+    /// um por árvore) — são dezenas de transforms, custo desprezível.
+    /// </summary>
+    public class TreeWind : MonoBehaviour
+    {
+        readonly System.Collections.Generic.List<Transform> _trees = new System.Collections.Generic.List<Transform>();
+        readonly System.Collections.Generic.List<Quaternion> _rest = new System.Collections.Generic.List<Quaternion>();
+
+        public void Add(Transform tree)
+        {
+            _trees.Add(tree);
+            _rest.Add(tree.localRotation);
+        }
+
+        void Update()
+        {
+            float t = Time.time;
+            for (int i = 0; i < _trees.Count; i++)
+            {
+                var tr = _trees[i];
+                if (tr == null) continue;
+                var p = tr.position;
+                // rajada: onda que anda pelo mapa, então árvores vizinhas se curvam juntas
+                float gust = 0.6f + 0.4f * Mathf.Sin(t * 0.35f - p.x * 0.08f - p.z * 0.05f);
+                float sway = Mathf.Sin(t * (0.9f + (i % 5) * 0.07f) + i * 1.7f) * 1.4f * gust;
+                float side = Mathf.Sin(t * 0.7f + i * 2.3f) * 0.6f * gust;
+                tr.localRotation = _rest[i] * Quaternion.Euler(sway, 0f, side);
+            }
         }
     }
 
