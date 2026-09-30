@@ -782,6 +782,25 @@ class Program
         Check(poorUp.Gold < poorUp.UpgradeCostAt(new Vector2Int(9, 8)),
             "Upgrade do jogador: para quando o ouro acaba");
 
+        // ---------- grid em pé (modo clássico) ----------
+        // Só a conversão mundo <-> célula gira: a marcha (+X do grid) desce em -Z de mundo.
+        var upGrid = new GridMap(24, 16, 1f, upright: true);
+        bool roundTrip = true;
+        for (int x = 0; x < 24; x++)
+        for (int y = 0; y < 16; y++)
+            if (upGrid.WorldToCell(upGrid.CellToWorld(x, y)) != new Vector2Int(x, y)) roundTrip = false;
+        Check(roundTrip, "Grid em pé: célula -> mundo -> célula volta igual");
+        var upSpawn = upGrid.CellToWorld(2, 8);
+        var upGoal = upGrid.CellToWorld(21, 8);
+        Check(upSpawn.z > upGoal.z + 18f && Math.Abs(upSpawn.x - upGoal.x) < 0.01f,
+            "Grid em pé: acampamento em cima (Z maior), base embaixo");
+        Check(Math.Abs(upGrid.Extent.x - 16f) < 0.01f && Math.Abs(upGrid.Extent.z - 24f) < 0.01f,
+            "Grid em pé: ocupa 16 de largura e 24 de fundo");
+        var upFlow = new FlowField(upGrid);
+        upFlow.Rebuild(new Vector2Int(21, 8));
+        var upDir = upFlow.SampleDirection(upSpawn);
+        Check(upDir.z < -0.9f, "Grid em pé: o fluxo desce em -Z");
+
         // ---------- venda de torre ----------
         // Devolve parte do que a torre custou (construção + upgrades), libera a célula,
         // refaz caminho e fronteira, e avisa a vista qual índice saiu.

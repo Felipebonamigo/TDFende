@@ -50,7 +50,8 @@ namespace TDFende
 
         void Start()
         {
-            Map = new GridMap(GameConfig.GridWidth, GameConfig.GridHeight, GameConfig.CellSize);
+            // em pé, como o Tower Wars: o inimigo desce do acampamento (em cima) até a base (embaixo)
+            Map = new GridMap(GameConfig.GridWidth, GameConfig.GridHeight, GameConfig.CellSize, upright: true);
             Flow = new FlowField(Map);
             Territory = new TerritoryField(Map);
             State = new PlayerState(GameConfig.StartLives, GameConfig.StartGold);
@@ -73,7 +74,7 @@ namespace TDFende
             new Vfx();
 
             _input = new DesktopInput();
-            _cameraRig = new CameraRigDriver(cam, Vector3.zero, Map.WorldSize);
+            _cameraRig = new CameraRigDriver(cam, Vector3.zero, Map.Extent + new Vector3(0f, 0f, 6f), Map.Extent.z * 0.85f);
             _placer = new TowerPlacer(this);
             _territoryRenderer = new TerritoryRenderer(Palette.TeamPlayer);
             gameObject.AddComponent<DebugHud>().Init(this);
@@ -311,18 +312,21 @@ namespace TDFende
         {
             // chão de verdade (grama fotográfica + tufos 3D) quando a arte existe;
             // senão, relevo procedural
-            var size = Map.WorldSize;
+            var size = Map.Extent;
             var area = new[] { new Rect(-size.x * 0.5f, -size.z * 0.5f, size.x, size.z) };
             var terrain = GroundBuilder.Build(area);
+            // a grade é montada no referencial do grid; um pai girado a põe em pé
+            var gridRoot = new GameObject("Grade").transform;
+            gridRoot.rotation = Quaternion.Euler(0f, Map.Yaw, 0f);
             if (terrain != null)
             {
                 gameObject.AddComponent<GrassField>().Init(terrain, area);
-                GridOverlay.Build(Map, transform);
+                GridOverlay.Build(Map, gridRoot);
             }
-            else Overlays.Grid(Map, null);
+            else Overlays.Grid(Map, gridRoot);
 
             var layout = new WorldLayout();
-            layout.AddPlayArea(Vector3.zero, size);
+            layout.AddPlayArea(Vector3.zero, size, default, default, new Vector2(Map.MarchDir.x, Map.MarchDir.z));
             WorldView.Build(layout, terrain);
 
             // fortaleza com o portão virado para o acampamento de onde o inimigo sai
@@ -337,7 +341,8 @@ namespace TDFende
             {
                 var camp = ArtFactory.Spawn(ModelLib.Camp(), Palette.TeamFoe, null, "Spawn");
                 camp.transform.position = Map.CellToWorld(s);
-                camp.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // portal atravessado no sentido da marcha
+                // portal atravessado no sentido da marcha
+                camp.transform.rotation = Quaternion.Euler(0f, Map.Yaw + 90f, 0f);
             }
         }
 
