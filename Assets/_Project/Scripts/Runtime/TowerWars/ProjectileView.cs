@@ -64,7 +64,10 @@ namespace TDFende
 
             _target = target;
             _targetGeneration = target != null ? target.Generation : -1;
-            _targetY = target != null && target.Flies ? FlyingTargetY : GroundTargetY;
+            // mira no peito do bicho: rato rente ao chão, elefante lá em cima
+            _targetY = target == null ? GroundTargetY
+                : target.Flies ? FlyingTargetY
+                : Mathf.Clamp(target.Rig.Def.Height * 0.5f, 0.08f, 0.9f);
             _lastTarget = target != null ? target.PositionAt(clock.Alpha) : _origin;
 
             transform.localPosition = _origin;

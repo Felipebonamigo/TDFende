@@ -63,7 +63,7 @@ namespace TDFende
     /// própria no zoom do jogo — lanceiro, escaramuçador, cavaleiro, cavaleiro de
     /// armadura, planador, torre de cerco. Detalhe é bônus; silhueta é leitura.
     /// </summary>
-    public static class ModelLib
+    public static partial class ModelLib
     {
         // nomes de peça que a vista procura
         public const string Shaft = "Shaft", Top = "Top", Turret = "Turret", Barrel = "Barrel", Flag = "Flag";
@@ -94,14 +94,18 @@ namespace TDFende
             _ => Cached("Torre_Canhao", CannonTower),
         };
 
+        /// <summary>Bicho de cada envio, na ordem do SendCatalog (do rato ao elefante).</summary>
         public static ModelDef Enemy(int typeId) => typeId switch
         {
-            1 => Cached("Inimigo_Enxame", Skirmisher),
-            2 => Cached("Inimigo_Corredor", Horseman),
-            3 => Cached("Inimigo_Couracado", Knight),
-            4 => Cached("Inimigo_Planador", Glider),
-            5 => Cached("Inimigo_Colosso", SiegeTower),
-            _ => Cached("Inimigo_Recruta", Spearman),
+            0 => Cached("Inimigo_Rato", Rat),
+            2 => Cached("Inimigo_Lobo", Wolf),
+            3 => Cached("Inimigo_Javali", Boar),
+            4 => Cached("Inimigo_Aguia", Eagle),
+            5 => Cached("Inimigo_Urso", Bear),
+            6 => Cached("Inimigo_Tigre", Tiger),
+            7 => Cached("Inimigo_Rinoceronte", Rhino),
+            8 => Cached("Inimigo_Elefante", Elephant),
+            _ => Cached("Inimigo_Cachorro", Dog),
         };
 
         public static ModelDef Projectile(int towerTypeId) => towerTypeId switch

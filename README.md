@@ -66,9 +66,10 @@ modelo e luz são gerados em código; a textura é **foto de verdade** onde havi
     **Sentinela** (torre de vigia de madeira com balista no alto),
     **Fogo** (torre baixa com braseiro aceso e sifão de fogo grego),
     **Ar** (torre com cabeça de moinho; as pás giram e aceleram a cada rajada)
-  - Inimigos: **Recruta** (lanceiro com chapéu de ferro e broquel), **Enxame** (escaramuçador
-    de couro e capuz), **Corredor** (cavaleiro de lança), **Couraçado** (cavaleiro de armadura
-    e escudo de pipa), **Planador** (asa de morcego à Da Vinci), **Colosso** (torre de cerco com rodas)
+  - Inimigos (bichos, do menor ao maior): **Rato** (vem em bando de 4), **Cachorro**, **Lobo**
+    (veloz), **Javali** (presas e cerdas), **Águia** (voa sobre a fronteira), **Urso**, **Tigre**
+    (gordo e rápido), **Rinoceronte** (dois chifres), **Elefante** (com torre de combate no lombo).
+    A cor do time vai na coleira dos pequenos e na manta dos grandes
 - **Texturas fotográficas** — `Assets/Resources/TDFende/Textures`: cor + normal map, recoloridas
   para a paleta. `MatSpec.External` diz qual material usa qual foto; se o arquivo faltar, o jogo
   cai no procedural sozinho
@@ -118,10 +119,10 @@ com three.js: os modelos lado a lado, ou o Tower Wars montado na câmera do jogo
 | Torre | Responde a | Como |
 |---|---|---|
 | Canhão | nada em especial (a régua) | dano único, muita fronteira |
-| Morteiro | Enxame | dano em área, bomba em arco |
-| Gelo | Corredor | lentidão |
-| Sentinela | Planador | bônus contra voador |
-| **Fogo** | Couraçado, Colosso | queima uma fração da vida MÁXIMA por segundo, acumula até 3 camadas |
+| Morteiro | Rato (bando) | dano em área, bomba em arco |
+| Gelo | Lobo, Tigre | lentidão |
+| Sentinela | Águia | bônus contra voador |
+| **Fogo** | Urso, Rinoceronte, Elefante | queima uma fração da vida MÁXIMA por segundo, acumula até 3 camadas |
 | **Ar** | quem atravessa a fronteira rápido | empurra de volta pelo caminho (mais tempo sob atrito); bônus contra voador. Desliga na morte súbita |
 
 A vista desenha **entre** os tiques da simulação (30 por segundo): sem isso, soldado e tiro
@@ -154,7 +155,7 @@ usa exatamente o mesmo código de desenho da sua — e no multiplayer ela vira s
 alimentado pela rede. O jogo roda em **passo fixo**, o mesmo do `FlowSim`: o que você joga
 é a simulação que foi balanceada com 300 partidas headless.
 
-O **Planador** existe por design: ignora o atrito. Sem ele, investir em fronteira seria vitória
+A **Águia** existe por design: ignora o atrito. Sem ele, investir em fronteira seria vitória
 automática e o território deixaria de ser uma decisão.
 
 ## Testes headless

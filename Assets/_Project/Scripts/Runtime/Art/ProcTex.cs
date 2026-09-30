@@ -11,6 +11,8 @@ namespace TDFende
         Stone, StoneDark, StoneFrost, Wood, WoodDark, Iron, Bronze, Slate, RoofTile,
         Cloth, ClothTeam, Leather, Skin, HorseCoat, Ice, Foliage, Bark, Grass, Dirt, Rock, Water, Hair,
         Ember,
+        // bichos que o atacante manda: pelagem, couro grosso, marfim, pena e bico
+        FurGray, FurTan, FurBrown, FurOrange, Hide, Ivory, Feather, Beak,
     }
 
     /// <summary>Parâmetros PBR de um material. Cor em sRGB, como o Inspector mostraria.</summary>
@@ -56,6 +58,14 @@ namespace TDFende
                 case ArtMat.Rock: return S("#77736B", 0.20f, 0f, 1.2f);
                 case ArtMat.Water: return S("#1E3B42", 0.94f, 0f, 3f);
                 case ArtMat.Hair: return S("#3A2A1E", 0.25f, 0f, 0.2f);
+                case ArtMat.FurGray: return S("#77716A", 0.22f, 0f, 0.25f);
+                case ArtMat.FurTan: return S("#A57A4C", 0.22f, 0f, 0.3f);
+                case ArtMat.FurBrown: return S("#4A3222", 0.20f, 0f, 0.35f);
+                case ArtMat.FurOrange: return S("#C9702A", 0.24f, 0f, 0.35f);
+                case ArtMat.Hide: return S("#7A7671", 0.18f, 0f, 0.5f);
+                case ArtMat.Ivory: return S("#E6DCC4", 0.45f, 0f, 0.2f);
+                case ArtMat.Feather: return S("#5A4230", 0.20f, 0f, 0.3f);
+                case ArtMat.Beak: return S("#D9A62E", 0.45f, 0f, 0.15f);
                 case ArtMat.Ember:
                     // brasa: casca escura com rachaduras incandescentes. Emissão acima de 1
                     // de propósito — é o que o bloom pega e faz parecer fogo, não laranja
@@ -273,7 +283,19 @@ namespace TDFende
                     strength = Soft(s, b, seed, col, h, 0.05f);
                     break;
                 case ArtMat.HorseCoat:
+                case ArtMat.FurGray:
+                case ArtMat.FurTan:
+                case ArtMat.FurBrown:
+                case ArtMat.FurOrange:
+                case ArtMat.Feather:
                     strength = Coat(s, b, seed, col, h);
+                    break;
+                case ArtMat.Hide:
+                    strength = Leather(s, b, seed, col, h);
+                    break;
+                case ArtMat.Ivory:
+                case ArtMat.Beak:
+                    strength = Soft(s, b, seed, col, h, 0.03f);
                     break;
                 case ArtMat.Ice:
                     strength = Ice(s, b, seed, col, h);

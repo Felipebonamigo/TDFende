@@ -72,7 +72,7 @@ namespace TDFende
         /// finito, então a partida termina independentemente de balanceamento futuro.
         /// </summary>
         public const float SuddenDeathMinutes = 7f;
-        public const float SuddenDeathAccel = 2.2f;
+        public const float SuddenDeathAccel = 3.0f;
 
         // Ritmo da partida
         /// <summary>Camadas de fogo que um inimigo aguenta ao mesmo tempo (torre de Fogo).</summary>

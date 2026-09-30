@@ -97,8 +97,8 @@ namespace TDFende
             float frac = _state.MaxHp > 0f ? _state.Hp / _state.MaxHp : 1f;
             _rig.SetHealth(frac, _cam);
 
-            // cavalo e torre de cerco levantam poeira do chão
-            if (_rig.Def.Anim == AnimKind.Horse || _rig.Def.Anim == AnimKind.Wheels)
+            // bicho grande levanta poeira do chão (rato e cachorro não)
+            if ((_rig.Def.Anim == AnimKind.Horse || _rig.Def.Anim == AnimKind.Wheels) && _rig.Def.Height > 0.5f)
             {
                 _dustTimer -= dt;
                 if (_dustTimer <= 0f)

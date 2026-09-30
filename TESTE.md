@@ -22,7 +22,7 @@ Está em ordem de valor: se der errado no passo 0 ou 1, pare e me mande o erro.
    - Algum material **rosa/magenta**? (shader não achado — me diga em quê)
    - Algum modelo **de dentro para fora** ou escuro demais? (normal ou face invertida)
    - A pedra, a madeira e o bronze **parecem material** ou parecem tinta?
-   - Os inimigos **andam** (perna mexendo) e **viram** para onde vão? O Colosso rola?
+   - Os bichos **andam** (quatro patas galopando) e **viram** para onde vão? A águia bate as asas?
    - O céu aparece? Tem **sombra**? O bronze do canhão **brilha** um pouco?
    - A barra de vida aparece em quem levou dano? O brilho gelado aparece em quem está
      dentro da sua fronteira?

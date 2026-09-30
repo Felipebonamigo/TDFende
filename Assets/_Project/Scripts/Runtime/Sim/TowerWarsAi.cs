@@ -34,9 +34,10 @@ namespace TDFende
             public static Personality Easy => new Personality
             {
                 // CounterStrength 0,6 -> 0,5 com Fogo e Ar: com seis torres, ler a ameaça pela
-                // metade já chegava perto do Normal (medido: Normal só 57% contra o Fácil)
+                // metade já chegava perto do Normal (medido: Normal só 57% contra o Fácil).
+                // Com os bichos (nove envios) e o repasse, amostras 14 -> 10: Normal 47% -> 77%
                 Name = "Fácil", DecisionInterval = 1.45f, SafetyMargin = 1.5f,
-                GreedBias = 0.85f, CounterStrength = 0.5f, PlacementSamples = 14
+                GreedBias = 0.85f, CounterStrength = 0.5f, PlacementSamples = 10
             };
 
             public static Personality Normal => new Personality

@@ -55,7 +55,7 @@ namespace TDFende
         // Medidas do HUD num lugar só: OnGUI desenha com elas e o clique-no-mundo as
         // consulta para não construir por baixo da interface.
         const float HudMargin = 12f;
-        const float SendButtonWidth = 150f;
+        const float SendButtonWidth = 118f;
         const float SendButtonHeight = 62f;
         const float SendButtonGap = 6f;
 
@@ -315,9 +315,9 @@ namespace TDFende
 
         void HandleSendInput()
         {
-            // teclas 1..6 escolhem e disparam o envio: a mão fica no teclado,
+            // teclas 1..9 escolhem e disparam o envio: a mão fica no teclado,
             // sem obrigar a viajar até um botão a cada compra
-            for (int i = 0; i < SendCatalog.Count && i < 6; i++)
+            for (int i = 0; i < SendCatalog.Count && i < 9; i++)
             {
                 if (!Input.GetKeyDown(KeyCode.Alpha1 + i)) continue;
                 _selectedSend = i;
@@ -410,7 +410,7 @@ namespace TDFende
                 var prev = GUI.color;
                 GUI.color = afford ? Color.white : new Color(1f, 1f, 1f, 0.45f);
                 var r = new Rect(x0 + i * (w + SendButtonGap), y0, w, h);
-                if (GUI.Button(r, $"[{i + 1}] {u.Name}\n<color=#E8C15A>{u.Cost} ouro</color>  +{u.IncomeBonus} renda",
+                if (GUI.Button(r, $"[{i + 1}] {u.Name}\n<color=#E8C15A>{u.Cost} ouro</color>  +{u.IncomeBonus}/renda",
                         UiSkin.Button) && afford)
                 {
                     _selectedSend = i;
@@ -433,7 +433,7 @@ namespace TDFende
                 $"Clique na SUA lane (a da esquerda): {TowerCatalog.Get(_selectedTower).Name} " +
                 $"({TowerCatalog.Get(_selectedTower).Cost} ouro)  |  Q/E troca a torre" +
                 $"  |  clique numa torre sua: subir, botão direito: vender{hover}\n" +
-                "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", UiSkin.Panel);
+                "1-9 ou os botões: enviar bicho para a lane da IA  |  R: reiniciar  |  F9: salvar replay", UiSkin.Panel);
 
             if (_saveMessageTimer > 0f && _lastSaveMessage != null)
                 UiSkin.Shadowed(new Rect(HudMargin, 92f, Screen.width - HudMargin * 2f, 22f),

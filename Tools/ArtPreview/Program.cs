@@ -24,7 +24,7 @@ static class Program
 
         var models = new List<ModelDef>();
         for (int i = 0; i < 6; i++) models.Add(ModelLib.Tower(i));
-        for (int i = 0; i < 6; i++) models.Add(ModelLib.Enemy(i));
+        for (int i = 0; i < 9; i++) models.Add(ModelLib.Enemy(i)); // os nove bichos do SendCatalog
         for (int i = 0; i < 5; i++) models.Add(ModelLib.Projectile(i));
         models.Add(ModelLib.Keep());
         models.Add(ModelLib.Camp());

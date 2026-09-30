@@ -12,7 +12,7 @@ namespace TDFende
     {
         public ModelDef Def { get; private set; }
 
-        Transform _shaft, _top, _turret, _barrel, _flag, _body, _wing, _rotor;
+        Transform _shaft, _top, _turret, _barrel, _flag, _body, _wing, _rotor, _wingL, _wingR;
         float _rotorAngle, _rotorBoost;
         float _speedAvg; // velocidade suavizada: a perna não "desliga" num frame sem passo
         Animation _clips; // personagem baixado: animação de verdade no lugar da perna procedural
@@ -42,6 +42,8 @@ namespace TDFende
             _flag = Get(ModelLib.Flag);
             _body = Get(ModelLib.Body);
             _wing = Get(ModelLib.Wing);
+            _wingL = Get("WingL");
+            _wingR = Get("WingR");
             _rotor = Get(ModelLib.Rotor);
             _armL = Get(ModelLib.ArmL);
             _armR = Get(ModelLib.ArmR);
@@ -242,6 +244,14 @@ namespace TDFende
                 _body.localPosition = _bodyRest + Vector3.up * (Mathf.Sin(_time * 1.7f + _phase) * 0.05f);
             if (_wing != null)
                 _wing.localRotation = Quaternion.Euler(Mathf.Sin(_time * 0.9f) * 2f, 0f, Mathf.Sin(_time * 1.1f) * 7f);
+            // ave: bate as asas em rajadas e plana entre elas
+            if (_wingL != null && _wingR != null)
+            {
+                float burst = Mathf.Clamp01(Mathf.Sin(_time * 0.8f + _phase) * 1.6f + 0.4f);
+                float flap = Mathf.Sin(_time * 9f) * 32f * burst + 6f;
+                _wingL.localRotation = Quaternion.Euler(0f, 0f, -flap);
+                _wingR.localRotation = Quaternion.Euler(0f, 0f, flap);
+            }
         }
 
         static void SwingX(Transform t, float deg, float blend)

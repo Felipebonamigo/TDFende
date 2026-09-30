@@ -379,8 +379,8 @@ class Program
         // ---------- enxame gera vários bonecos ----------
         var c = new LaneSim(24, 16);
         var d = new LaneSim(24, 16);
-        c.TrySend(1, d, rng);
-        Check(d.EnemiesAlive == SendCatalog.Get(1).Count, "Envio: enxame gera Count bonecos");
+        c.TrySend(0, d, rng);
+        Check(d.EnemiesAlive == SendCatalog.Get(0).Count, "Envio: enxame gera Count bonecos");
 
         // ---------- sem ouro, sem envio ----------
         var poor = new LaneSim(24, 16);
@@ -404,7 +404,7 @@ class Program
         // ---------- vazamento sem defesa ----------
         var atk = new LaneSim(24, 16);
         var undefended = new LaneSim(24, 16);
-        atk.TrySend(0, undefended, rng);
+        atk.TrySend(1, undefended, rng);
         int livesBefore = undefended.Lives;
         Advance(undefended, 30f);
         Check(undefended.Lives == livesBefore - 1, "Vazamento: inimigo sem defesa tira exatamente 1 vida");
@@ -420,9 +420,9 @@ class Program
         Check(built > 0, "Construção: torres colocadas no meio do caminho");
         int goldPre = def.Gold;
         sender.DebugGrantGold(500);
-        sender.TrySend(0, def, rng);
+        sender.TrySend(1, def, rng);
         Advance(def, 30f);
-        Check(def.KilledByTower > 0, "Torre: mata o Recruta antes da base");
+        Check(def.KilledByTower > 0, "Torre: mata o Cachorro antes da base");
         Check(def.Gold > goldPre, "Torre: abate paga bounty para o DEFENSOR");
 
         // ---------- atrito mata sozinho ----------
@@ -430,7 +430,7 @@ class Program
         var attrFoe = new LaneSim(24, 16);
         for (int x = 6; x <= 16; x += 2) attr.TryBuildTower(new Vector2Int(x, 8));
         attrFoe.DebugGrantGold(2000);
-        for (int i = 0; i < 6; i++) attrFoe.TrySend(1, attr, rng); // Enxame: frágil
+        for (int i = 0; i < 6; i++) attrFoe.TrySend(0, attr, rng); // Ratos: frágeis
         Advance(attr, 60f);
         Check(attr.KilledByAttrition > 0, "Atrito: fronteira mata sem tiro nenhum");
 
@@ -439,9 +439,9 @@ class Program
         var flyFoe = new LaneSim(24, 16);
         for (int x = 6; x <= 16; x += 2) fly.TryBuildTower(new Vector2Int(x, 8));
         flyFoe.DebugGrantGold(2000);
-        for (int i = 0; i < 6; i++) flyFoe.TrySend(4, fly, rng); // Planador
+        for (int i = 0; i < 6; i++) flyFoe.TrySend(4, fly, rng); // Águia
         Advance(fly, 60f);
-        Check(fly.KilledByAttrition == 0, "Contra-jogo: Planador atravessa o território sem sofrer atrito");
+        Check(fly.KilledByAttrition == 0, "Contra-jogo: Águia atravessa o território sem sofrer atrito");
 
         // ---------- eventos que alimentam o feedback visual ----------
         // A vista só desenha explosão/tremor porque estes eventos disparam. Se pararem,
@@ -461,7 +461,7 @@ class Program
         evLane.TowerChanged += (pos, level) => { if (level > 1) evUpgrade++; };
 
         evFeeder.DebugGrantGold(4000);
-        evFeeder.TrySend(0, evLane, rng);            // sem defesa ainda: tem que vazar
+        evFeeder.TrySend(1, evLane, rng);            // sem defesa ainda: tem que vazar
         Advance(evLane, 20f);
         Check(evLeak == 1 && evTower == 0 && evAttrition == 0,
             $"Eventos: vazamento dispara uma vez ({evLeak})");
@@ -472,7 +472,7 @@ class Program
         Check(evLane.TryUpgradeCheapestTower() && evUpgrade == 1,
             "Eventos: upgrade dispara TowerChanged com nível > 1");
 
-        for (int i = 0; i < 8; i++) evFeeder.TrySend(1, evLane, rng);
+        for (int i = 0; i < 8; i++) evFeeder.TrySend(0, evLane, rng);
         Advance(evLane, 40f);
         Check(evTower > 0, $"Eventos: morte por tiro dispara ({evTower})");
         Check(evAttrition > 0, $"Eventos: morte por atrito dispara ({evAttrition})");
@@ -607,28 +607,28 @@ class Program
             "Torres: existe resposta para enxame, para velocidade e para voador");
 
         // Morteiro (área) contra ENXAME tem que matar mais que o Canhão no mesmo tempo
-        int cannonSwarmKills = KillsAgainst(1, towerType: 0, seconds: 12f);
-        int mortarSwarmKills = KillsAgainst(1, towerType: 1, seconds: 12f);
+        int cannonSwarmKills = KillsAgainst(0, towerType: 0, seconds: 12f);
+        int mortarSwarmKills = KillsAgainst(0, towerType: 1, seconds: 12f);
         Check(mortarSwarmKills > cannonSwarmKills,
-            $"Torres: Morteiro mata mais Enxame que o Canhão ({mortarSwarmKills} vs {cannonSwarmKills})");
+            $"Torres: Morteiro mata mais Rato que o Canhão ({mortarSwarmKills} vs {cannonSwarmKills})");
 
-        // ...e contra ALVO ÚNICO (um Colosso só) o Canhão tem que ser melhor, senão o
+        // ...e contra ALVO ÚNICO (um Elefante só) o Canhão tem que ser melhor, senão o
         // Morteiro seria simplesmente superior e a escolha não existiria.
         // sends:1 é essencial — com vários, eles se aglomeram e a área acerta o grupo.
-        float cannonSolo = DamageDealt(5, towerType: 0, seconds: 12f, sends: 1);
-        float mortarSolo = DamageDealt(5, towerType: 1, seconds: 12f, sends: 1);
+        float cannonSolo = DamageDealt(8, towerType: 0, seconds: 12f, sends: 1);
+        float mortarSolo = DamageDealt(8, towerType: 1, seconds: 12f, sends: 1);
         Check(cannonSolo > mortarSolo,
             $"Torres: Canhão bate mais forte no alvo único que o Morteiro ({cannonSolo:0} vs {mortarSolo:0})");
 
         // Sentinela contra PLANADOR (voador) tem que superar o Canhão
-        // Contra o Planador a pergunta é TEMPO ATÉ MATAR, não dano acumulado: as duas o
+        // Contra a Águia a pergunta é TEMPO ATÉ MATAR, não dano acumulado: as duas o
         // matam, então o dano bate no teto da vida dele (120) e os números empatam.
         float cannonKillTime = TimeToKill(4, towerType: 0);
         float sentryKillTime = TimeToKill(4, towerType: 3);
         Check(cannonKillTime > 0f && sentryKillTime > 0f,
-            "Torres: as duas chegam a matar o Planador (medição válida)");
+            "Torres: as duas chegam a matar a Águia (medição válida)");
         Check(sentryKillTime < cannonKillTime,
-            $"Torres: Sentinela derruba o Planador mais rápido que o Canhão " +
+            $"Torres: Sentinela derruba a Águia mais rápido que o Canhão " +
             $"({sentryKillTime:0.00}s vs {cannonKillTime:0.00}s)");
 
         // Gelo tem que atrasar POR CAUSA DA LENTIDÃO. Comparar contra lane vazia media o
@@ -639,19 +639,19 @@ class Program
         Check(iceX < cannonX,
             $"Torres: Gelo atrasa mais que um Canhão na MESMA célula ({iceX:0.0} vs {cannonX:0.0})");
 
-        // Fogo contra o GORDO (Colosso sozinho): a queima por fração da vida tem que render
+        // Fogo contra o GORDO (Elefante sozinho): a queima por fração da vida tem que render
         // mais que o Canhão — é a razão de o Fogo existir
-        float cannonHeavy = DamageDealt(5, towerType: 0, seconds: 12f, sends: 1);
-        float fireHeavy = DamageDealt(5, towerType: 4, seconds: 12f, sends: 1);
+        float cannonHeavy = DamageDealt(8, towerType: 0, seconds: 12f, sends: 1);
+        float fireHeavy = DamageDealt(8, towerType: 4, seconds: 12f, sends: 1);
         Check(fireHeavy > cannonHeavy,
-            $"Torres: Fogo machuca mais o Colosso que o Canhão ({fireHeavy:0} vs {cannonHeavy:0})");
+            $"Torres: Fogo machuca mais o Elefante que o Canhão ({fireHeavy:0} vs {cannonHeavy:0})");
 
-        // ...e contra o Recruta (vida baixa) o Canhão continua melhor: senão o Fogo seria
+        // ...e contra o Cachorro (vida baixa) o Canhão continua melhor: senão o Fogo seria
         // simplesmente superior
-        float cannonLight = DamageDealt(0, towerType: 0, seconds: 12f, sends: 1);
-        float fireLight = DamageDealt(0, towerType: 4, seconds: 12f, sends: 1);
+        float cannonLight = DamageDealt(1, towerType: 0, seconds: 12f, sends: 1);
+        float fireLight = DamageDealt(1, towerType: 4, seconds: 12f, sends: 1);
         Check(cannonLight >= fireLight,
-            $"Torres: Canhão rende mais que o Fogo no Recruta ({cannonLight:0} vs {fireLight:0})");
+            $"Torres: Canhão rende mais que o Fogo no Cachorro ({cannonLight:0} vs {fireLight:0})");
 
         // Ar tem que atrasar POR CAUSA DO EMPURRÃO: mesma célula, mesmo labirinto
         float airX = DeepestXWith(towerType: 5, cell: new Vector2Int(6, 8), seconds: 4f);
@@ -689,9 +689,11 @@ class Program
 
         for (int t = 0; t < 9000 && !live.Over; t++)
         {
-            // jogador sintético: constrói, sobe e envia em momentos irregulares
+            // jogador sintético: constrói, sobe e envia em momentos irregulares. Constrói perto
+            // do corredor do meio: com o repasse (quem vaza volta a correr), defesa espalhada
+            // ao acaso perdia a partida em meio minuto e o replay gravava quase nada
             if (t % 47 == 0)
-                live.Enqueue(MatchCommand.Build(4 + recRng.Next(14), 2 + recRng.Next(12)));
+                live.Enqueue(MatchCommand.Build(4 + recRng.Next(14), 5 + recRng.Next(7)));
             if (t % 131 == 0)
                 live.Enqueue(MatchCommand.Upgrade(4 + recRng.Next(14), 2 + recRng.Next(12)));
             if (t % 89 == 0)
@@ -801,7 +803,7 @@ class Program
             l0.DebugGrantGold(500);
             l1.DebugGrantGold(500);
             l1.TryBuildTower(new Vector2Int(10, 6)); // fere de passagem, sem matar
-            l0.TrySend(5, l1, leakRng);              // Colosso: aguenta a torre
+            l0.TrySend(8, l1, leakRng);              // Elefante: aguenta a torre
             var runLanes = new[] { l0, l1 };
             float hpAtGoal = -1f;
             int livesStart = l1.Lives;
@@ -826,7 +828,7 @@ class Program
             var loose = new LaneSim(24, 16);
             var looseFeeder = new LaneSim(24, 16);
             looseFeeder.DebugGrantGold(100);
-            looseFeeder.TrySend(0, loose, leakRng);
+            looseFeeder.TrySend(1, loose, leakRng);
             for (int t = 0; t < 30 * 60; t++) loose.Tick(TowerWarsConfig.FixedStep);
             var drained = new System.Collections.Generic.List<LaneSim.SimEnemy>();
             loose.DrainLeaks(drained);
@@ -914,7 +916,7 @@ class Program
         int firedEvents = 0;
         shootLane.TowerFired += _ => firedEvents++;
         shootFeeder.DebugGrantGold(500);
-        shootFeeder.TrySend(5, shootLane, rng); // Colosso: aguenta vários tiros
+        shootFeeder.TrySend(8, shootLane, rng); // Elefante: aguenta vários tiros
 
         bool sawAim = false, sawProjectile = false, projInBounds = true;
         for (int i = 0; i < 400; i++)
@@ -938,7 +940,7 @@ class Program
         aimLane.DebugGrantGold(500);
         aimLane.TryBuildTower(new Vector2Int(12, 8));
         aimFeeder.DebugGrantGold(500);
-        aimFeeder.TrySend(5, aimLane, rng);
+        aimFeeder.TrySend(8, aimLane, rng);
 
         Vector3 prevAim = default;
         bool hadPrev = false, aimMovedBetweenShots = false;
@@ -1035,8 +1037,8 @@ class Program
         lvl6.TryBuildTower(new Vector2Int(12, 8));
         while (lvl6.TryUpgradeCheapestTower()) { }
         feeder.DebugGrantGold(5000);
-        feeder.TrySend(5, lvl1, rng);   // Colosso nos dois, mesmo instante
-        feeder.TrySend(5, lvl6, rng);
+        feeder.TrySend(8, lvl1, rng);   // Elefante nos dois, mesmo instante
+        feeder.TrySend(8, lvl6, rng);
         Advance(lvl1, 25f);
         Advance(lvl6, 25f);
         Check(lvl6.KilledByTower >= lvl1.KilledByTower && lvl6.TotalLeaked <= lvl1.TotalLeaked,

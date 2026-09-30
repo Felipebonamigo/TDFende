@@ -17,37 +17,18 @@ Depois abra o Unity (ele importa sozinho) e faça commit — estes arquivos PODE
 Com a sincronização automática instalada (`Tools\InstalarSincronizacao.ps1`), nada disso é
 preciso: quando o script de download muda, o PC roda de novo sozinho e envia a arte nova.
 
-## 2. Mixamo — soldados realistas animados (15–20 min, manual)
+## 2. Bichos (as tropas que você envia)
 
-Grátis, uso comercial liberado, mas exige conta Adobe (grátis) e **o arquivo não pode ir
-para o GitHub** — o `.gitignore` já barra. Ficam só no seu PC.
+As tropas agora são animais, do rato ao elefante — todos feitos em código
+(`Art/ModelLibAnimals.cs`), sem arquivo para baixar. O passo do Mixamo não vale mais
+(o Mixamo só tem gente).
 
-1. Entre em https://www.mixamo.com com uma conta Adobe (crie se não tiver).
-2. Aba **Characters**, escolha o personagem (sugestões abaixo; pode trocar por outro parecido).
-3. Com o personagem selecionado, clique **Download**: Format **FBX for Unity (.fbx)**,
-   Pose **T-pose**. Salve com o nome da tabela.
-4. Aba **Animations**, com o MESMO personagem selecionado, baixe cada animação:
-   - marque **In Place** quando a opção aparecer (senão o boneco sai andando sozinho)
-   - Download: Format **FBX for Unity**, Skin **Without Skin**, 30 fps
-5. Coloque todos os arquivos em `Assets/Resources/TDFende/Personagens/`.
+Para trocar um bicho por um modelo de verdade (ex.: um pacote grátis de animais da Asset
+Store), crie um prefab em `Assets/Resources/TDFende/` com o nome do modelo — ele substitui
+o procedural sozinho:
 
-| Inimigo do jogo | Personagem sugerido (busca no Mixamo) | Arquivos |
-|---|---|---|
-| Recruta (lanceiro) | "Castle Guard" ou "Knight D Pelegrini" | `Inimigo_Recruta.fbx` |
-| Couraçado (armadura) | "Paladin J Nordstrom" | `Inimigo_Couracado.fbx` |
-| Enxame (leve) | "Erika Archer" ou outro de roupa leve | `Inimigo_Enxame.fbx` |
-
-Animações, para CADA um (troque `Inimigo_Recruta` pelo nome da linha):
-
-| Busca no Mixamo | Nome do arquivo |
-|---|---|
-| "Walking" | `Inimigo_Recruta@Walk.fbx` |
-| "Running" | `Inimigo_Recruta@Run.fbx` |
-| "Idle" (qualquer de pé) | `Inimigo_Recruta@Idle.fbx` |
-
-Só o modelo + `@Walk` já basta para funcionar; `@Run` e `@Idle` melhoram. O jogo acerta
-o tamanho, põe um anel com a cor do time no pé e sincroniza a passada com a velocidade.
-Cavaleiro, planador e torre de cerco continuam procedurais (Mixamo só tem gente).
+`Inimigo_Rato`, `Inimigo_Cachorro`, `Inimigo_Lobo`, `Inimigo_Javali`, `Inimigo_Aguia`,
+`Inimigo_Urso`, `Inimigo_Tigre`, `Inimigo_Rinoceronte`, `Inimigo_Elefante`.
 
 ## 3. Unity Asset Store — pacotes gratuitos (opcional)
 
