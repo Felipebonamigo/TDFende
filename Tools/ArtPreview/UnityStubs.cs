@@ -87,6 +87,15 @@ namespace UnityEngine
 
         public static Quaternion Inverse(Quaternion q) => new Quaternion(-q.x, -q.y, -q.z, q.w);
 
+        // Unity com "up" = Y: guinada pelo XZ, arfagem pelo Y
+        public static Quaternion LookRotation(Vector3 forward)
+        {
+            var f = forward.normalized;
+            float yaw = (float)Math.Atan2(f.x, f.z) * Mathf.Rad2Deg;
+            float pitch = -(float)Math.Asin(Math.Max(-1f, Math.Min(1f, f.y))) * Mathf.Rad2Deg;
+            return Euler(pitch, yaw, 0f);
+        }
+
         public static Quaternion operator *(Quaternion a, Quaternion b) => new Quaternion(
             a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
             a.w * b.y + a.y * b.w + a.z * b.x - a.x * b.z,

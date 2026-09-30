@@ -120,10 +120,14 @@ com three.js: os modelos lado a lado, ou o Tower Wars montado na câmera do jogo
 |---|---|---|
 | Canhão | nada em especial (a régua) | dano único, muita fronteira |
 | Morteiro | Rato (bando) | dano em área, bomba em arco |
-| Gelo | Lobo, Tigre | lentidão |
+| Gelo | Lobo, Tigre | lentidão, e **congela**: frio acumulado deixa o bicho parado por um instante (depois fica imune um pouco). Nível alto congela com menos tiros e segura mais |
 | Sentinela | Águia | bônus contra voador |
-| **Fogo** | Urso, Rinoceronte, Elefante | queima uma fração da vida MÁXIMA por segundo, acumula até 3 camadas |
+| **Fogo** | Urso, Rinoceronte, Elefante | queima uma fração da vida MÁXIMA por segundo, acumula até 3 camadas; nível alto queima mais forte |
 | **Ar** | quem atravessa a fronteira rápido | empurra de volta pelo caminho (mais tempo sob atrito); bônus contra voador. Desliga na morte súbita |
+
+**Cada nível muda a torre**, não só a altura: nv 2 cinta de bronze e bandeira, nv 3 contrafortes,
+nv 4 coroa de pontas, nv 5 runas acesas, nv 6 remate e anel aceso no chão. E cada tipo ganha o seu:
+cristais e pingentes no Gelo, braseiros extras e lava no Fogo, canhão duplo no Canhão, pás extras no Ar.
 
 A vista desenha **entre** os tiques da simulação (30 por segundo): sem isso, soldado e tiro
 andavam em degraus numa tela de 144 Hz ou mais.

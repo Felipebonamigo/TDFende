@@ -313,6 +313,9 @@ namespace TDFende
                     {
                         _brazierFx[i] = 0.09f;
                         Vfx.Instance?.Brazier(brazier.Value);
+                        // braseiros que o nível acendeu (parapeito, cantos da base, coroa)
+                        for (int k = 0; k < rig.FirePointCount; k++)
+                            if (rig.TryGetFirePoint(k, out var fp)) Vfx.Instance?.Brazier(fp);
                     }
                 }
             }

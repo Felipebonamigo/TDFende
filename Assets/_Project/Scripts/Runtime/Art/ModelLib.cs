@@ -35,6 +35,11 @@ namespace TDFende
         public Vector3? Brazier;
         /// <summary>Andantes: comprimento do passo (mundo). Rodas: raio.</summary>
         public float Stride = 0.3f;
+        /// <summary>
+        /// Chamas extras que acendem com o nível (torre de Fogo): posição no espaço do modelo,
+        /// nível a partir do qual acende e a peça que a carrega (Top ou Base).
+        /// </summary>
+        public readonly List<(Vector3 Pos, int Level, string Parent)> FirePoints = new List<(Vector3, int, string)>();
 
         public ModelPart Part(string name, Vector3 pivot, string parent = null)
         {
@@ -84,14 +89,15 @@ namespace TDFende
             return d;
         }
 
+        /// <summary>Torre de cada tipo, já com os enfeites de nível 2 a 6 (escondidos até subir).</summary>
         public static ModelDef Tower(int typeId) => typeId switch
         {
-            1 => Cached("Torre_Morteiro", MortarTower),
-            2 => Cached("Torre_Gelo", FrostTower),
-            3 => Cached("Torre_Sentinela", WatchTower),
-            4 => Cached("Torre_Fogo", FireTower),
-            5 => Cached("Torre_Ar", WindTower),
-            _ => Cached("Torre_Canhao", CannonTower),
+            1 => Cached("Torre_Morteiro", () => WithTiers(MortarTower(), 1)),
+            2 => Cached("Torre_Gelo", () => WithTiers(FrostTower(), 2)),
+            3 => Cached("Torre_Sentinela", () => WithTiers(WatchTower(), 3)),
+            4 => Cached("Torre_Fogo", () => WithTiers(FireTower(), 4)),
+            5 => Cached("Torre_Ar", () => WithTiers(WindTower(), 5)),
+            _ => Cached("Torre_Canhao", () => WithTiers(CannonTower(), 0)),
         };
 
         /// <summary>Bicho de cada envio, na ordem do SendCatalog (do rato ao elefante).</summary>

@@ -203,6 +203,16 @@ if (MODE === 'world') {
   const towers = [['Torre_Canhao', 'Canhão'], ['Torre_Morteiro', 'Morteiro'], ['Torre_Gelo', 'Gelo'],
     ['Torre_Sentinela', 'Sentinela'], ['Torre_Fogo', 'Fogo'], ['Torre_Ar', 'Ar']];
   towers.forEach(([n, t], i) => place(n, -4.0 + i * 1.6, -2.2, 'player', t, 0.6));
+  // evolução: a mesma torre no nível 1 (enfeites escondidos) e no 6 (tudo aceso, fuste +70%)
+  towers.forEach(([n, t], i) => {
+    const x = -5.5 + i * 2.2;
+    const lo = build(byName[n], 'player', false); lo.position.set(x, 0, -7); scene.add(lo); label(lo, t + ' nv 1', byName[n].height);
+    const hi = build(byName[n], 'player', true); hi.position.set(x + 0.95, 0, -7);
+    const shaft = hi.userData.nodes['Shaft'], top = hi.userData.nodes['Top'];
+    if (shaft) shaft.scale.y = 1.7;
+    if (top && shaft) top.position.y += (byName[n].shaftHeight || 0.5) * 0.7;
+    scene.add(hi); label(hi, 'nv 6', byName[n].height + 0.3);
+  });
   // bichos do rato ao elefante, na ordem do SendCatalog
   const enemies = [['Inimigo_Rato', 'Rato'], ['Inimigo_Cachorro', 'Cachorro'], ['Inimigo_Lobo', 'Lobo'],
     ['Inimigo_Javali', 'Javali'], ['Inimigo_Aguia', 'Águia'], ['Inimigo_Urso', 'Urso'], ['Inimigo_Tigre', 'Tigre'],
@@ -236,6 +246,8 @@ const shots = MODE === 'world' ? {
   grandes: { pos: [2.4, 1.4, 2.8], at: [2.2, 0.45, 0.3] },
   miudos: { pos: [-2.9, 0.7, 1.6], at: [-2.9, 0.15, 0.4] },
   todos: { pos: [0, 3.2, 5.8], at: [0, 0.3, 0.2] },
+  niveis: { pos: [0, 2.6, -3.6], at: [0, 0.5, -7] },
+  niveis2: { pos: [3.3, 2.0, -4.6], at: [3.3, 0.55, -7] },
   base: { pos: [0.4, 2.6, 7.2], at: [0.4, 0.6, 3.2] },
 };
 function shot(name) {

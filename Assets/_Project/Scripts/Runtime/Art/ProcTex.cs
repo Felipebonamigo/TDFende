@@ -13,6 +13,8 @@ namespace TDFende
         Ember,
         // bichos que o atacante manda: pelagem, couro grosso, marfim, pena e bico
         FurGray, FurTan, FurBrown, FurOrange, Hide, Ivory, Feather, Beak,
+        // runa dourada que acende nas torres de nível alto
+        Rune,
     }
 
     /// <summary>Parâmetros PBR de um material. Cor em sRGB, como o Inspector mostraria.</summary>
@@ -66,6 +68,10 @@ namespace TDFende
                 case ArtMat.Ivory: return S("#E6DCC4", 0.45f, 0f, 0.2f);
                 case ArtMat.Feather: return S("#5A4230", 0.20f, 0f, 0.3f);
                 case ArtMat.Beak: return S("#D9A62E", 0.45f, 0f, 0.15f);
+                case ArtMat.Rune:
+                    var rune = S("#C9A44C", 0.6f, 0.5f, 0.3f);
+                    rune.Emission = new Color(1.3f, 0.95f, 0.35f);
+                    return rune;
                 case ArtMat.Ember:
                     // brasa: casca escura com rachaduras incandescentes. Emissão acima de 1
                     // de propósito — é o que o bloom pega e faz parecer fogo, não laranja
@@ -295,6 +301,7 @@ namespace TDFende
                     break;
                 case ArtMat.Ivory:
                 case ArtMat.Beak:
+                case ArtMat.Rune:
                     strength = Soft(s, b, seed, col, h, 0.03f);
                     break;
                 case ArtMat.Ice:

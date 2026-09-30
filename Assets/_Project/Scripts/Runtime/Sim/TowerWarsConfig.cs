@@ -78,6 +78,20 @@ namespace TDFende
         /// <summary>Camadas de fogo que um inimigo aguenta ao mesmo tempo (torre de Fogo).</summary>
         public const int MaxBurnStacks = 3;
 
+        // ---- Gelo congela, Fogo queima: e os dois crescem com o nível da torre ----
+
+        /// <summary>Lentidão aprofunda com o nível: fator^(1 + isto × (nível-1)). 0,55 no nv 1, ~0,38 no nv 6.</summary>
+        public const float IceSlowPerLevel = 0.12f;
+        /// <summary>Frio que congela. Nível 1 congela no 3º acerto; do nível 3 em diante, no 2º.</summary>
+        public const float ChillToFreeze = 3f;
+        public static float ChillPerHit(int level) => 1f + 0.25f * (level - 1);
+        /// <summary>Quanto tempo fica parado: 0,45 s no nível 1, 0,8 s no nível 6.</summary>
+        public static float FreezeSeconds(int level) => 0.45f + 0.07f * (level - 1);
+        /// <summary>Imunidade depois de descongelar: bateria de Gelo não trava a marcha para sempre.</summary>
+        public const float FreezeGuardSeconds = 2f;
+        /// <summary>Queima por camada cresce 15% por nível acima do primeiro.</summary>
+        public const float FireBurnPerLevel = 0.15f;
+
         public const float FixedStep = 1f / 30f;   // passo fixo da simulação headless
         public const float MatchTimeLimit = 900f;  // 15 min: empate técnico decide por vidas
     }

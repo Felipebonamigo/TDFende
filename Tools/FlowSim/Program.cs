@@ -784,6 +784,78 @@ class Program
         Check(poorUp.Gold < poorUp.UpgradeCostAt(new Vector2Int(9, 8)),
             "Upgrade do jogador: para quando o ouro acaba");
 
+        // ---------- Gelo congela, Fogo queima: e crescem com o nível ----------
+        {
+            // sem dano de verdade no teste: só a regra do frio
+            int HitsToFreeze(int level)
+            {
+                var lane = new LaneSim(24, 16);
+                var feeder = new LaneSim(24, 16);
+                lane.DebugGrantGold(20000);
+                feeder.DebugGrantGold(500);
+                lane.TryBuildTower(new Vector2Int(8, 6), 2);
+                for (int l = 1; l < level; l++) lane.TryUpgradeTowerAt(new Vector2Int(8, 6));
+                feeder.TrySend(8, lane, new Random(3)); // Elefante: não morre do gelo
+                int shots = 0;
+                lane.TowerFired += _ => shots++;
+                for (int t = 0; t < 30 * 20; t++)
+                {
+                    lane.Tick(TowerWarsConfig.FixedStep);
+                    for (int sl = 0; sl < lane.EnemySlotCount; sl++)
+                        if (lane.TryGetEnemy(sl, out var e) && e.Frozen) return shots;
+                }
+                return -1;
+            }
+            int h1 = HitsToFreeze(1), h6 = HitsToFreeze(6);
+            Check(h1 > 0 && h6 > 0 && h6 < h1, $"Gelo: congela, e o nível alto congela com menos tiros ({h1} vs {h6})");
+
+            var fz = new LaneSim(24, 16);
+            var fzFeeder = new LaneSim(24, 16);
+            fz.DebugGrantGold(20000);
+            fzFeeder.DebugGrantGold(500);
+            fz.TryBuildTower(new Vector2Int(8, 6), 2);
+            fzFeeder.TrySend(8, fz, new Random(4));
+            bool sawFrozenStill = false, sawGuard = false;
+            Vector3 lastPos = default;
+            bool wasFrozen = false;
+            for (int t = 0; t < 30 * 20; t++)
+            {
+                fz.Tick(TowerWarsConfig.FixedStep);
+                for (int sl = 0; sl < fz.EnemySlotCount; sl++)
+                {
+                    if (!fz.TryGetEnemy(sl, out var e)) continue;
+                    if (e.Frozen && wasFrozen && (e.Pos - lastPos).sqrMagnitude < 1e-8f) sawFrozenStill = true;
+                    if (!e.Frozen && e.FreezeGuard > 0f) sawGuard = true;
+                    wasFrozen = e.Frozen;
+                    lastPos = e.Pos;
+                }
+            }
+            Check(sawFrozenStill, "Gelo: congelado fica parado no lugar");
+            Check(sawGuard, "Gelo: depois de descongelar fica um tempo imune");
+
+            float BurnDamage(int level)
+            {
+                var lane = new LaneSim(24, 16);
+                var feeder = new LaneSim(24, 16);
+                lane.DebugGrantGold(20000);
+                feeder.DebugGrantGold(500);
+                lane.TryBuildTower(new Vector2Int(8, 6), 4);
+                for (int l = 1; l < level; l++) lane.TryUpgradeTowerAt(new Vector2Int(8, 6));
+                feeder.TrySend(8, lane, new Random(5));
+                float maxBurn = 0f;
+                for (int t = 0; t < 30 * 12; t++)
+                {
+                    lane.Tick(TowerWarsConfig.FixedStep);
+                    for (int sl = 0; sl < lane.EnemySlotCount; sl++)
+                        if (lane.TryGetEnemy(sl, out var e)) maxBurn = Math.Max(maxBurn, e.BurnPct);
+                }
+                return maxBurn;
+            }
+            float b1 = BurnDamage(1), b6 = BurnDamage(6);
+            Check(b1 > 0f && b6 > b1 * 1.5f, $"Fogo: nível 6 queima mais forte que o 1 ({b1:0.000} vs {b6:0.000})");
+            Check(b6 <= LaneSim.MaxBurnPct + 1e-4f, "Fogo: brilho da vista cobre a queima mais forte (MaxBurnPct)");
+        }
+
         // ---------- quem passa da base volta a correr ----------
         // Não some: volta com a vida que tinha, na lane do próximo adversário (nunca na de
         // quem enviou). Num 1x1, corre de novo na mesma lane. Cada base cruzada custa uma vida.

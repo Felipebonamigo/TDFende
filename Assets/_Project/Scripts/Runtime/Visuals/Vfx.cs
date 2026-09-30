@@ -155,6 +155,23 @@ namespace TDFende
         /// <summary>Poeira de casco e de roda: chão de terra batida sob peso.</summary>
         public void Footstep(Vector3 pos) => Emit(_dust, pos, 1);
 
+        /// <summary>Gelado (lento): cristalzinho de geada soltando do corpo.</summary>
+        public void Chill(Vector3 pos) => Emit(_frost, pos, 1);
+
+        /// <summary>Congelou: estalo de geada e névoa fria em volta.</summary>
+        public void Freeze(Vector3 pos)
+        {
+            Emit(_frost, pos, 18);
+            Emit(_mist, pos, 5);
+        }
+
+        /// <summary>Descongelou: a casca estoura em lascas de gelo.</summary>
+        public void Thaw(Vector3 pos)
+        {
+            Emit(_frost, pos, 12);
+            Emit(_mist, pos, 2);
+        }
+
         /// <summary>Chama viva do braseiro da torre de Fogo.</summary>
         public void Brazier(Vector3 pos) => Emit(_flame, pos, 1);
 

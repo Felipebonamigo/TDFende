@@ -18,6 +18,10 @@ namespace TDFende
         Animation _clips; // personagem baixado: animação de verdade no lugar da perna procedural
         string _clipState;
         Transform[] _legs = new Transform[0];
+        // enfeites de nível ("Lv{n}_{pai}"): aparecem quando a torre chega ao nível n
+        readonly List<(Transform T, int Level)> _tiers = new List<(Transform, int)>();
+        // chamas extras de nível (torre de Fogo): peça que carrega e ponto local a ela
+        readonly List<(Transform T, Vector3 Local, int Level)> _firePoints = new List<(Transform, Vector3, int)>();
         Transform _armL, _armR;
         readonly List<Transform> _wheels = new List<Transform>();
         Vector3 _topRest, _barrelRest, _bodyRest;
@@ -60,7 +64,28 @@ namespace TDFende
             if (_body != null) _bodyRest = _body.localPosition;
             _barrelPivot = def.Find(ModelLib.Barrel)?.Pivot ?? Vector3.zero;
             _turretPivot = def.Find(ModelLib.Turret)?.Pivot ?? Vector3.zero;
+            foreach (var kv in parts)
+                if (kv.Key.StartsWith("Lv") && kv.Key.Length > 2 && char.IsDigit(kv.Key[2]))
+                    _tiers.Add((kv.Value, kv.Key[2] - '0'));
+            foreach (var (pos, lvl, parent) in def.FirePoints)
+            {
+                var t = Get(parent);
+                if (t == null) continue;
+                var parentPivot = def.Find(parent)?.Pivot ?? Vector3.zero;
+                _firePoints.Add((t, pos - parentPivot, lvl));
+            }
             _renderers = GetComponentsInChildren<Renderer>(true);
+        }
+
+        /// <summary>Quantas chamas extras a torre tem (acesas ou não).</summary>
+        public int FirePointCount => _firePoints.Count;
+
+        /// <summary>Posição de mundo da chama extra <paramref name="i"/>; false se o nível ainda não a acendeu.</summary>
+        public bool TryGetFirePoint(int i, out Vector3 world)
+        {
+            var (t, local, lvl) = _firePoints[i];
+            world = t.TransformPoint(local);
+            return _level >= lvl && t.gameObject.activeInHierarchy;
         }
 
         // ================================================================ torre
@@ -74,6 +99,8 @@ namespace TDFende
             if (_shaft != null) _shaft.localScale = new Vector3(1f, 1f + grow, 1f);
             if (_top != null) _top.localPosition = _topRest + Vector3.up * (Def.ShaftHeight * grow);
             if (_flag != null) _flag.gameObject.SetActive(level >= 2);
+            // cada nível acende o seu conjunto de enfeites (e os de baixo continuam)
+            foreach (var (t, lvl) in _tiers) t.gameObject.SetActive(level >= lvl);
         }
 
         /// <summary>Gira a torreta para o alvo (só no plano, como reparo de verdade).</summary>

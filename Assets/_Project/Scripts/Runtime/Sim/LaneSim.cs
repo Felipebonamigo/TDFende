@@ -36,11 +36,15 @@ namespace TDFende
             public float BurnPct;         // fração da vida-base por segundo enquanto arde
             public float BurnLeft;        // segundos restantes de fogo (a vista desenha chama)
             public float KnockGuard;      // imune a novo empurrão enquanto > 0
+            public float Chill;           // frio acumulado pelos tiros de Gelo; cheio = congela
+            public float FrozenLeft;      // segundos congelado (parado no lugar)
+            public float FreezeGuard;     // imune a congelar de novo enquanto > 0
             public int SenderId;          // lane de quem comprou o envio (-1 = ninguém)
             public int Laps;              // quantas bases já atravessou vivo
             public bool Burning => BurnLeft > 0f;
 
-            public float CurrentSpeed => SlowLeft > 0f ? Speed * SlowFactor : Speed;
+            public bool Frozen => FrozenLeft > 0f;
+            public float CurrentSpeed => FrozenLeft > 0f ? 0f : SlowLeft > 0f ? Speed * SlowFactor : Speed;
         }
 
         struct SimTower
@@ -65,6 +69,7 @@ namespace TDFende
             public float TotalTime;  // com Origin, permite à vista desenhar o tiro em voo
             public Vector3 Origin;
             public int TowerTypeId;  // decide área e bônus anti-aéreo no impacto
+            public int Level;        // nível da torre que atirou: Gelo e Fogo ficam mais fortes
         }
 
         // ---- estado do tabuleiro ----
@@ -548,6 +553,9 @@ namespace TDFende
             _enemies[slot].BurnPct = 0f;
             _enemies[slot].BurnLeft = 0f;
             _enemies[slot].KnockGuard = 0f;
+            _enemies[slot].Chill = 0f;
+            _enemies[slot].FrozenLeft = 0f;
+            _enemies[slot].FreezeGuard = 0f;
             // recompensa acompanha a vida, senão o defensor quebra no fim da partida
             _enemies[slot].Bounty = (int)(u.Bounty * scale);
             _enemies[slot].TypeId = sendId;
@@ -581,6 +589,9 @@ namespace TDFende
             _enemies[slot].BurnPct = 0f;
             _enemies[slot].BurnLeft = 0f;
             _enemies[slot].KnockGuard = 0f;
+            _enemies[slot].Chill = 0f;
+            _enemies[slot].FrozenLeft = 0f;
+            _enemies[slot].FreezeGuard = 0f;
             _enemies[slot].Laps = carried.Laps + 1;
             _enemyCount++;
             TotalReentries++;
@@ -615,6 +626,10 @@ namespace TDFende
 
                 if (_enemies[i].SlowLeft > 0f) _enemies[i].SlowLeft -= dt;
                 if (_enemies[i].KnockGuard > 0f) _enemies[i].KnockGuard -= dt;
+                if (_enemies[i].FrozenLeft > 0f) _enemies[i].FrozenLeft -= dt;
+                if (_enemies[i].FreezeGuard > 0f) _enemies[i].FreezeGuard -= dt;
+                // o frio se dissipa se ninguém continuar gelando
+                if (_enemies[i].Chill > 0f) _enemies[i].Chill = Math.Max(0f, _enemies[i].Chill - 0.4f * dt);
 
                 // fogo: dano contínuo proporcional à vida-BASE do tipo, não à vida escalada.
                 // Proporcional à escalada, o fogo anularia a morte súbita (que existe
@@ -709,14 +724,15 @@ namespace TDFende
                     tw.Cooldown = type.Cooldown;
                     var muzzle = tw.Pos + Vector3.up * 0.95f;
                     FireProjectile(target, (float)Math.Sqrt(best),
-                        TowerCatalog.DamageAtLevel(tw.TypeId, tw.Level), muzzle, tw.TypeId);
+                        TowerCatalog.DamageAtLevel(tw.TypeId, tw.Level), muzzle, tw.TypeId, tw.Level);
                     TowerFired?.Invoke(muzzle);
                 }
                 _towers[t] = tw;
             }
         }
 
-        void FireProjectile(int targetSlot, float distance, float damage, Vector3 origin, int towerTypeId)
+        void FireProjectile(int targetSlot, float distance, float damage, Vector3 origin, int towerTypeId,
+            int level = 1)
         {
             int slot = -1;
             for (int i = 0; i < _projectiles.Length; i++)
@@ -733,6 +749,7 @@ namespace TDFende
             _projectiles[slot].Damage = damage;
             _projectiles[slot].Origin = origin;
             _projectiles[slot].TowerTypeId = towerTypeId;
+            _projectiles[slot].Level = level;
             // tempo de voo importa: dano em trânsito para um alvo que já morreu é DPS jogado fora,
             // e é isso que faz torre empilhada render menos do que a conta ingênua diz.
             _projectiles[slot].TimeLeft = _projectiles[slot].TotalTime =
@@ -740,7 +757,7 @@ namespace TDFende
         }
 
         /// <summary>Aplica dano e lentidão de um tipo de torre a um inimigo.</summary>
-        void HitEnemy(int slot, float damage, TowerType type)
+        void HitEnemy(int slot, float damage, TowerType type, int level = 1)
         {
             if (!_enemies[slot].Active) return;
 
@@ -749,16 +766,36 @@ namespace TDFende
 
             if (type.SlowSeconds > 0f)
             {
-                _enemies[slot].SlowFactor = type.SlowFactor;
+                // Gelo de nível alto segura mais: o fator de lentidão aprofunda com o nível
+                float factor = (float)Math.Pow(type.SlowFactor, 1.0 + TowerWarsConfig.IceSlowPerLevel * (level - 1));
+                _enemies[slot].SlowFactor = _enemies[slot].SlowLeft > 0f
+                    ? Math.Min(_enemies[slot].SlowFactor, factor) : factor;
                 _enemies[slot].SlowLeft = type.SlowSeconds;
+
+                // Congelar: cada acerto junta frio; frio cheio = parado no lugar por um instante.
+                // Depois fica um tempo imune, senão uma bateria de Gelo travava a marcha para
+                // sempre. Na morte súbita não congela: a partida TEM que acabar.
+                if (!InSuddenDeath && _enemies[slot].FreezeGuard <= 0f && _enemies[slot].FrozenLeft <= 0f)
+                {
+                    _enemies[slot].Chill += TowerWarsConfig.ChillPerHit(level);
+                    if (_enemies[slot].Chill >= TowerWarsConfig.ChillToFreeze)
+                    {
+                        float freeze = TowerWarsConfig.FreezeSeconds(level);
+                        _enemies[slot].Chill = 0f;
+                        _enemies[slot].FrozenLeft = freeze;
+                        _enemies[slot].FreezeGuard = freeze + TowerWarsConfig.FreezeGuardSeconds;
+                    }
+                }
             }
 
             // fogo acumula até 3 camadas: uma bateria de torres de Fogo queima de verdade,
             // uma torre sozinha é pouco contra o miúdo. Cada acerto renova a duração.
+            // Torre de nível alto queima mais forte por camada.
             if (type.BurnSeconds > 0f && type.BurnPctPerSecond > 0f)
             {
-                _enemies[slot].BurnPct = Math.Min(_enemies[slot].BurnPct + type.BurnPctPerSecond,
-                    type.BurnPctPerSecond * TowerWarsConfig.MaxBurnStacks);
+                float perStack = type.BurnPctPerSecond * (1f + TowerWarsConfig.FireBurnPerLevel * (level - 1));
+                _enemies[slot].BurnPct = Math.Min(_enemies[slot].BurnPct + perStack,
+                    perStack * TowerWarsConfig.MaxBurnStacks);
                 _enemies[slot].BurnLeft = type.BurnSeconds;
             }
 
@@ -816,7 +853,7 @@ namespace TDFende
 
                 if (type.SplashRadius <= 0f)
                 {
-                    HitEnemy(s, _projectiles[p].Damage, type);
+                    HitEnemy(s, _projectiles[p].Damage, type, _projectiles[p].Level);
                     continue;
                 }
 
@@ -829,7 +866,7 @@ namespace TDFende
                     var d = _enemies[i].Pos - impact;
                     d.y = 0f;
                     if (d.sqrMagnitude > r2) continue;
-                    HitEnemy(i, _projectiles[p].Damage, type);
+                    HitEnemy(i, _projectiles[p].Damage, type, _projectiles[p].Level);
                 }
             }
         }
@@ -891,7 +928,8 @@ namespace TDFende
             {
                 float max = 0f;
                 for (int i = 0; i < TowerCatalog.Count; i++)
-                    max = Math.Max(max, TowerCatalog.Get(i).BurnPctPerSecond * TowerWarsConfig.MaxBurnStacks);
+                    max = Math.Max(max, TowerCatalog.Get(i).BurnPctPerSecond * TowerWarsConfig.MaxBurnStacks
+                        * (1f + TowerWarsConfig.FireBurnPerLevel * (TowerWarsConfig.MaxTowerLevel - 1)));
                 return max;
             }
         }
