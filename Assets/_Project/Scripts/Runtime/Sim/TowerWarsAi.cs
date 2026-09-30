@@ -135,14 +135,15 @@ namespace TDFende
             }
 
             if (canUpgrade && upgradeValue >= buildValue)
-                return TryUpgrade() || BuildSomewhere();
+                return TryUpgrade() || BuildSomewhere(buildType);
 
-            return BuildSomewhere() || TryUpgrade();
+            return BuildSomewhere(buildType) || TryUpgrade();
         }
 
         bool TryUpgrade() => _me.TryUpgradeBest();
 
         readonly float[] _towerScores = new float[TowerCatalog.Count];
+        readonly int[] _owned = new int[TowerCatalog.Count];
 
         /// <summary>
         /// Escolhe o TIPO de torre pela ameaça que está na tela agora: enxame pede área,
@@ -166,6 +167,10 @@ namespace TDFende
                 if (u.Hp >= 150f) heavyHp += e.Hp;
             }
 
+            // quantas de cada tipo já tenho: defesa de um tipo só tem um furo só
+            for (int id = 0; id < _owned.Length; id++) _owned[id] = 0;
+            for (int i = 0; i < _me.TowerCount; i++) _owned[_me.TowerTypeId(i)]++;
+
             for (int id = 0; id < TowerCatalog.Count; id++)
             {
                 var t = TowerCatalog.Get(id);
@@ -175,6 +180,10 @@ namespace TDFende
                 // o fogo rende em função da vida do alvo: conta uma queima típica (120 de vida)
                 float burnDps = t.BurnPctPerSecond * t.BurnSeconds * 120f / t.Cooldown;
                 float score = (t.Dps + burnDps) / t.Cost + t.BorderRadius * 0.02f;
+                // Gelo e Ar não se pagam em dano: rendem segurando o inimigo no alcance das
+                // outras torres e dentro da fronteira. Sem contar isso, a nota deles era um
+                // quarto da do Canhão e a IA quase nunca os construía (2% das torres).
+                score += (1f - t.SlowFactor) * 0.5f + t.Knockback * 0.4f;
 
                 float cs = _p.CounterStrength;
                 if (t.SplashRadius > 0f) score *= 1f + 1.6f * cs * (swarmHp / totalHp);
@@ -182,6 +191,10 @@ namespace TDFende
                 if (t.SlowFactor < 1f) score *= 1f + 1.4f * cs * (fastHp / totalHp);
                 if (t.BurnPctPerSecond > 0f) score *= 1f + 1.8f * cs * (heavyHp / totalHp);
                 if (t.Knockback > 0f) score *= 1f + 1.2f * cs * (fastHp / totalHp);
+
+                // Variedade: cada torre repetida do tipo pesa. Sem isto, medido em 40 partidas,
+                // Canhão e Fogo eram 78% das torres e Gelo, 2% — a IA parecia não conhecer o resto.
+                score /= 1f + 0.6f * _owned[id];
 
                 _towerScores[id] = score * score; // acentua o favorito sem zerar o resto
             }
@@ -271,33 +284,70 @@ namespace TDFende
             return last;
         }
 
+        readonly System.Collections.Generic.List<Vector2Int> _path = new System.Collections.Generic.List<Vector2Int>();
+
         /// <summary>
         /// Coloca torre por amostragem: sorteia células válidas e fica com a de melhor
         /// nota. Mais amostras = maze mais esperto, e é assim que a dificuldade escala
         /// sem precisar de uma IA diferente por nível.
+        ///
+        /// A nota lê o CAMINHO de verdade: quantas células da marcha ficam no alcance e
+        /// quanto a torre alonga a marcha. A versão anterior só olhava a linha do meio e
+        /// "a metade da frente" — medido em 40 partidas, empilhava as torres coladas no
+        /// próprio acampamento inimigo (e até atrás dele), cobrindo meia dúzia de passos.
         /// </summary>
-        bool BuildSomewhere()
+        bool BuildSomewhere(int typeId = -1)
         {
-            int typeId = ChooseTowerType();
-            if (typeId < 0) return false;
+            if (typeId < 0) typeId = ChooseTowerType();
+            if (typeId < 0 || _me.SpawnCells.Count == 0) return false;
 
             int w = _me.Map.Width, h = _me.Map.Height;
+            var spawn = _me.SpawnCells[0];
+            var goal = _me.GoalCell;
+            _me.Flow.Path(spawn, _path);
+            if (_path.Count == 0) return false;
+            int costNow = _me.Flow.CostAt(spawn);
+            float range = TowerCatalog.Get(typeId).Range;
+            float range2 = range * range;
+
             Vector2Int bestCell = default;
             float bestScore = float.NegativeInfinity;
             bool found = false;
 
             for (int s = 0; s < _p.PlacementSamples; s++)
             {
-                var cell = new Vector2Int(_rng.Next(1, w - 1), _rng.Next(0, h));
+                // dois terços das amostras ao lado da marcha, o resto em qualquer lugar
+                Vector2Int cell;
+                if (s % 3 != 2)
+                {
+                    var along = _path[_rng.Next(_path.Count)];
+                    int reach = Math.Max(1, (int)range);
+                    cell = new Vector2Int(along.x + _rng.Next(-reach, reach + 1), along.y + _rng.Next(-reach, reach + 1));
+                }
+                else cell = new Vector2Int(_rng.Next(1, w - 1), _rng.Next(0, h));
+
+                // nada colado no acampamento nem na porta da base: ali a torre cobre pouco
+                // e fica com cara de engano
+                if (Math.Max(Math.Abs(cell.x - spawn.x), Math.Abs(cell.y - spawn.y)) < 3) continue;
+                if (Math.Max(Math.Abs(cell.x - goal.x), Math.Abs(cell.y - goal.y)) < 2) continue;
                 if (!_me.CanBuild(cell, typeId)) continue;
 
-                float score = 0f;
+                // cobertura: passos da marcha dentro do alcance, os do começo valendo um
+                // pouco mais (quem é pego cedo apanha de mais torres no caminho)
+                float cover = 0f;
+                for (int i = 0; i < _path.Count; i++)
+                {
+                    float dx = _path[i].x - cell.x, dy = _path[i].y - cell.y;
+                    if (dx * dx + dy * dy <= range2) cover += 1f - 0.4f * i / _path.Count;
+                }
+                float score = cover * 1.0f;
 
-                // Perto do corredor central: é por onde o fluxo passa.
-                float rowDist = Math.Abs(cell.y - h * 0.5f);
-                score -= rowDist * 0.6f;
+                // maze: quanto a marcha fica mais longa com a torre aqui (em passos)
+                int costAfter = _me.Flow.CostIfBlocked(cell, spawn);
+                if (costAfter != FlowField.Unreachable && costNow != FlowField.Unreachable)
+                    score += (costAfter - costNow) / 10f * 0.8f;
 
-                // Encostada em torre existente: adensa o território e alonga o maze.
+                // encostada em torre existente adensa o território, sem virar o critério principal
                 int neighbours = 0;
                 for (int dx = -1; dx <= 1; dx++)
                 for (int dy = -1; dy <= 1; dy++)
@@ -306,10 +356,7 @@ namespace TDFende
                     int nx = cell.x + dx, ny = cell.y + dy;
                     if (_me.Map.InBounds(nx, ny) && _me.Map.IsBlocked(nx, ny)) neighbours++;
                 }
-                score += neighbours * 1.4f;
-
-                // Prefere a metade da frente: intercepta cedo em vez de na porta da base.
-                score += (1f - cell.x / (float)w) * 2.0f;
+                score += Math.Min(neighbours, 3) * 0.5f;
 
                 score += (float)_rng.NextDouble() * 0.8f; // desempate, evita padrão robótico
 

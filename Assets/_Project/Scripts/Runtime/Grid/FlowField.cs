@@ -59,6 +59,51 @@ namespace TDFende
             return blocks;
         }
 
+        /// <summary>Custo integrado até a base (10 por passo reto), ou Unreachable.</summary>
+        public int CostAt(Vector2Int cell) =>
+            _map.InBounds(cell.x, cell.y) ? _cost[Index(cell.x, cell.y)] : Unreachable;
+
+        /// <summary>
+        /// Custo de <paramref name="from"/> até a base SE <paramref name="cell"/> fosse bloqueada
+        /// (Unreachable = fecharia o caminho). A diferença para CostAt é quanto uma torre ali
+        /// alonga a marcha — a medida do "maze" que a IA usa para escolher onde construir.
+        /// </summary>
+        public int CostIfBlocked(Vector2Int cell, Vector2Int from)
+        {
+            bool was = _map.IsBlocked(cell);
+            _map.SetBlocked(cell, true);
+            ComputeCosts(_goal, _scratchCost);
+            _map.SetBlocked(cell, was);
+            return _scratchCost[Index(from.x, from.y)];
+        }
+
+        /// <summary>
+        /// Caminho de <paramref name="from"/> até a base descendo o custo, célula a célula —
+        /// é por onde a marcha passa agora. Preenche <paramref name="into"/> (limpa antes).
+        /// </summary>
+        public void Path(Vector2Int from, List<Vector2Int> into)
+        {
+            into.Clear();
+            if (CostAt(from) == Unreachable) return;
+            var c = from;
+            for (int guard = 0; guard < _cost.Length && c != _goal; guard++)
+            {
+                into.Add(c);
+                int best = _cost[Index(c.x, c.y)];
+                var next = c;
+                for (int n = 0; n < 8; n++)
+                {
+                    int nx = c.x + Dx[n], ny = c.y + Dy[n];
+                    if (!_map.InBounds(nx, ny)) continue;
+                    int nc = _cost[Index(nx, ny)];
+                    if (nc < best) { best = nc; next = new Vector2Int(nx, ny); }
+                }
+                if (next == c) break;
+                c = next;
+            }
+            into.Add(_goal);
+        }
+
         /// <summary>Direção de movimento na posição de mundo dada (plano Y=0).</summary>
         public Vector3 SampleDirection(Vector3 worldPos)
         {
