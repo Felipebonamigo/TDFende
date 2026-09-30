@@ -133,6 +133,16 @@ namespace TDFende
         /// <summary>Disparado a cada tiro, na boca do cano — a vista faz o clarão.</summary>
         public event System.Action<Vector3> TowerFired;
 
+        /// <summary>
+        /// Disparado quando uma torre é vendida: posição, ÍNDICE que ela ocupava (as de
+        /// depois descem uma casa — a vista tira o rig do mesmo lugar) e ouro devolvido.
+        /// </summary>
+        public event System.Action<Vector3, int, int> TowerSold;
+
+        /// <summary>Sobe a cada torre construída ou vendida: a vista sabe quando refazer o território.</summary>
+        public int TowerVersion { get; private set; }
+        public int TotalSold { get; private set; }
+
         public int TowerCount => _towers.Count;
         public int EnemiesAlive => _enemyCount;
         public bool Dead => Lives <= 0;
@@ -225,6 +235,7 @@ namespace TDFende
             {
                 Cell = cell, Pos = Map.CellToWorld(cell), Cooldown = 0f, Level = 1, TypeId = typeId
             });
+            TowerVersion++;
             TowerChanged?.Invoke(Map.CellToWorld(cell), 1);
 
             Flow.Rebuild(_goalCell);
@@ -352,6 +363,49 @@ namespace TDFende
             _towers[i] = t;
             TotalUpgrades++;
             TowerChanged?.Invoke(t.Pos, t.Level);
+            return true;
+        }
+
+        /// <summary>Quanto a venda da torre daquela célula devolve, ou -1 se não há torre.</summary>
+        public int SellValueAt(Vector2Int cell)
+        {
+            int i = TowerIndexAt(cell);
+            return i < 0 ? -1 : SellValue(i);
+        }
+
+        int SellValue(int i)
+        {
+            var t = _towers[i];
+            int invested = TowerCatalog.Get(t.TypeId).Cost;
+            for (int level = 1; level < t.Level; level++)
+                invested += TowerCatalog.UpgradeCost(t.TypeId, level);
+            return (int)(invested * TowerWarsConfig.SellRefund);
+        }
+
+        /// <summary>
+        /// Vende a torre da célula: devolve parte do ouro, libera a célula e refaz caminho
+        /// e fronteira. Quem estava marchando só ganha um atalho — nunca fica preso,
+        /// porque tirar bloqueio não fecha rota nenhuma.
+        /// </summary>
+        public bool TrySellTowerAt(Vector2Int cell)
+        {
+            if (Dead) return false;
+            int i = TowerIndexAt(cell);
+            if (i < 0) return false;
+
+            int refund = SellValue(i);
+            var pos = _towers[i].Pos;
+            _towers.RemoveAt(i);
+            _towerCells.RemoveAt(i);
+            _bestUpgradeIndex = -1;
+            Map.SetBlocked(cell, false);
+            Gold += refund;
+            TotalSold++;
+            TowerVersion++;
+
+            Flow.Rebuild(_goalCell);
+            RebuildTerritory();
+            TowerSold?.Invoke(pos, i, refund);
             return true;
         }
 

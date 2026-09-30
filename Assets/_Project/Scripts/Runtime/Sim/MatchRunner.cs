@@ -73,6 +73,7 @@ namespace TDFende
                 case CommandKind.Build: return Player.TryBuildTower(new Vector2Int(cmd.X, cmd.Y), cmd.TowerType);
                 case CommandKind.Upgrade: return Player.TryUpgradeTowerAt(new Vector2Int(cmd.X, cmd.Y));
                 case CommandKind.Send: return Player.TrySend(cmd.SendId, Foe, _rng);
+                case CommandKind.Sell: return Player.TrySellTowerAt(new Vector2Int(cmd.X, cmd.Y));
                 default: return false;
             }
         }

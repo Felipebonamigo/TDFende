@@ -263,6 +263,13 @@ namespace TDFende
             int rangeType = onOwnTower ? Player.TowerTypeAt(cell) : _selectedTower;
             _ghost.Show(_playerView.CellToWorld(cell), color, TowerCatalog.Get(rangeType).Range * Player.Map.CellSize);
 
+            // botão direito (ou X/Delete) em torre própria: vende
+            if (_input.SellPressed && onOwnTower)
+            {
+                _runner.Enqueue(MatchCommand.Sell(cell.x, cell.y));
+                return;
+            }
+
             // clique esquerdo em torre própria também sobe: quem já está com o cursor
             // ali não devia precisar lembrar de trocar de botão
             if ((_input.PlacePressed || _input.UpgradePressed) && onOwnTower)
@@ -401,11 +408,13 @@ namespace TDFende
                 hoverIdx >= 0
                     ? $"  ►  subir esta torre para nv {Player.TowerLevel(hoverIdx) + 1}: {_hoverUpgradeCost} ouro"
                     : _hoverUpgradeCost == 0 ? "  ►  torre já no nível máximo" : "";
+            int sellValue = _hoverUpgradeCost >= 0 ? Player.SellValueAt(_hoverCell) : -1;
+            if (sellValue >= 0) hover += $"  |  botão direito: vender por <color=#E8C15A>{sellValue} ouro</color>";
 
             GUI.Box(HelpBoxRect,
                 $"Clique na SUA lane (a de baixo): {TowerCatalog.Get(_selectedTower).Name} " +
                 $"({TowerCatalog.Get(_selectedTower).Cost} ouro)  |  Q/E troca a torre" +
-                $"  |  clique numa torre sua: subir de nível{hover}\n" +
+                $"  |  clique numa torre sua: subir, botão direito: vender{hover}\n" +
                 "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", UiSkin.Panel);
 
             if (_saveMessageTimer > 0f && _lastSaveMessage != null)

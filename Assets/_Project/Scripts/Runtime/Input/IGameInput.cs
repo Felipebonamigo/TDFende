@@ -20,11 +20,16 @@ namespace TDFende
         bool PlacePressed { get; }
 
         /// <summary>
-        /// Ação secundária sobre o que está sob o cursor (subir torre).
-        /// No desktop é o botão direito; no toque vira toque-longo — é exatamente
-        /// para trocas assim que o jogo consome intenções em vez de cliques.
+        /// Subir a torre sob o cursor por atalho (no desktop, a tecla U; o clique
+        /// esquerdo numa torre própria também sobe).
         /// </summary>
         bool UpgradePressed { get; }
+
+        /// <summary>
+        /// Vender a torre sob o cursor. No desktop é o botão direito (ou X/Delete); no
+        /// toque vira toque-longo — é para trocas assim que o jogo consome intenções.
+        /// </summary>
+        bool SellPressed { get; }
         bool CallWavePressed { get; }
         bool RestartPressed { get; }
     }

@@ -30,6 +30,13 @@ namespace TDFende
         public const int MaxTowerLevel = 6;
         public const float TowerDamagePerLevel = 0.85f; // +85% do dano-base por nível
 
+        /// <summary>
+        /// Venda devolve esta fração de TUDO que a torre custou (construção + upgrades).
+        /// Menos que 100% para que vender não seja de graça: trocar a defesa de lugar
+        /// custa, e construir-vender não vira truque para desviar a marcha sem perda.
+        /// </summary>
+        public const float SellRefund = 0.7f;
+
         // Fronteira + atrito
         public const float BorderRadius = 2.75f;
 

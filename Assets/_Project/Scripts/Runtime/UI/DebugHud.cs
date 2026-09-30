@@ -48,7 +48,8 @@ namespace TDFende
             GUILayout.EndArea();
 
             GUI.Box(HelpRect,
-                $"Clique esquerdo: construir torre ({GameConfig.TowerCost} de ouro)\n" +
+                $"Clique esquerdo: construir torre ({GameConfig.TowerCost} de ouro)  |  " +
+                $"botão direito numa torre: vender ({(int)(GameConfig.TowerCost * TowerWarsConfig.SellRefund)} de ouro)\n" +
                 $"Torres projetam FRONTEIRA: inimigos dentro dela sofrem {GameConfig.AttritionDps:0} de dano/s\n" +
                 "Inimigo com brilho GELADO = sendo drenado.  Número azul = morreu de atrito, dourado = de tiro\n" +
                 "WASD/setas: mover câmera  |  Scroll: zoom  |  Botão do meio: arrastar\n" +

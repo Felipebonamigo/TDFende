@@ -782,6 +782,56 @@ class Program
         Check(poorUp.Gold < poorUp.UpgradeCostAt(new Vector2Int(9, 8)),
             "Upgrade do jogador: para quando o ouro acaba");
 
+        // ---------- venda de torre ----------
+        // Devolve parte do que a torre custou (construção + upgrades), libera a célula,
+        // refaz caminho e fronteira, e avisa a vista qual índice saiu.
+        var sell = new LaneSim(24, 16);
+        sell.DebugGrantGold(5000);
+        var sA = new Vector2Int(8, 8);
+        var sB = new Vector2Int(12, 5);
+        var sC = new Vector2Int(15, 10);
+        sell.TryBuildTower(sA, 0);
+        sell.TryBuildTower(sB, 2);
+        sell.TryBuildTower(sC, 3);
+        sell.TryUpgradeTowerAt(sB);
+        sell.TryUpgradeTowerAt(sB);
+        int investedB = TowerCatalog.Get(2).Cost + TowerCatalog.UpgradeCost(2, 1) + TowerCatalog.UpgradeCost(2, 2);
+        int expectB = (int)(investedB * TowerWarsConfig.SellRefund);
+        Check(sell.SellValueAt(sB) == expectB, "Venda: vale a fração certa de construção + upgrades");
+        Check(sell.SellValueAt(new Vector2Int(3, 3)) == -1, "Venda: célula vazia devolve -1");
+        Check(expectB < investedB, "Venda: nunca devolve tudo");
+
+        int soldIdx = -1, soldRefund = -1;
+        sell.TowerSold += (_, idx, refund) => { soldIdx = idx; soldRefund = refund; };
+        int goldPreSell = sell.Gold, versionPre = sell.TowerVersion;
+        Check(sell.TrySellTowerAt(sB), "Venda: aceita em torre própria");
+        Check(sell.Gold == goldPreSell + expectB, "Venda: devolve o ouro");
+        Check(soldIdx == 1 && soldRefund == expectB, "Venda: evento traz o índice e o valor");
+        Check(sell.TowerCount == 2 && sell.TowerIndexAt(sB) == -1, "Venda: a torre some");
+        Check(sell.TowerTypeAt(sC) == 3 && sell.TowerIndexAt(sC) == 1, "Venda: as de depois descem uma casa");
+        Check(!sell.Map.IsBlocked(sB) && sell.TowerVersion != versionPre, "Venda: célula liberada e território refeito");
+        Check(!sell.TrySellTowerAt(sB), "Venda: recusada em célula sem torre");
+        Check(sell.TryBuildTower(sB, 0), "Venda: dá para construir de novo no lugar");
+
+        // vender abre caminho: com a muralha só com uma brecha, fechar a brecha é proibido;
+        // vendida uma torre do meio, surge outra passagem e a brecha pode ser fechada
+        var detour = new LaneSim(24, 16);
+        detour.DebugGrantGold(5000);
+        for (int y = 0; y < 15; y++) detour.TryBuildTower(new Vector2Int(10, y));
+        var gap = new Vector2Int(10, 15);
+        bool sealedBefore = detour.CanBuild(gap);
+        detour.TrySellTowerAt(new Vector2Int(10, 8));
+        Check(detour.TowerCount == 14 && !sealedBefore && detour.CanBuild(gap), "Venda: o caminho se refaz na hora");
+
+        // replay com venda: grava, relê e reproduz igual
+        var sellCmd = MatchCommand.Sell(8, 8);
+        var sellReplay = new Replay { Seed = 3 };
+        sellReplay.Record(10, MatchCommand.Build(8, 8, 0));
+        sellReplay.Record(40, sellCmd);
+        Replay.TryParse(sellReplay.Serialize(), out var parsedSell, out string sellErr);
+        Check(parsedSell != null && parsedSell.Commands.Count == 2 && parsedSell.Commands[1].Cmd.Kind == CommandKind.Sell
+              && parsedSell.Commands[1].Cmd.X == 8, "Venda: comando atravessa o replay (" + sellErr + ")");
+
         // ---------- tiro visível: mira e projétil em voo ----------
         // A vista não tem como desenhar tiro nenhum sem estas duas leituras. Sem elas,
         // a torre mata mas parece desligada.

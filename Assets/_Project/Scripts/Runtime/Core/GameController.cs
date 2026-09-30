@@ -246,6 +246,36 @@ namespace TDFende
             Juice.Shake(0.12f);
         }
 
+        /// <summary>Quanto a torre da célula devolve se vendida, ou -1 se não há torre.</summary>
+        public int SellValueAt(Vector2Int cell) =>
+            Phase != WavePhase.GameOver && _towerCells.Contains(cell)
+                ? (int)(GameConfig.TowerCost * TowerWarsConfig.SellRefund) : -1;
+
+        /// <summary>
+        /// Vende a torre da célula: devolve parte do ouro, libera o caminho (os inimigos
+        /// pegam o atalho na hora) e encolhe a fronteira.
+        /// </summary>
+        public void SellTower(Vector2Int cell)
+        {
+            int refund = SellValueAt(cell);
+            int i = _towerCells.IndexOf(cell);
+            if (refund < 0 || i < 0) return;
+
+            Destroy(_towers[i]);
+            _towers.RemoveAt(i);
+            _towerCells.RemoveAt(i);
+            Map.SetBlocked(cell, false);
+            Flow.Rebuild(_goalCell);
+            Territory.Rebuild(_towerCells, GameConfig.BorderRadius);
+            _territoryRenderer.Rebuild(Territory, Map);
+            State.AddGold(refund);
+
+            var pos = Map.CellToWorld(cell);
+            Vfx.Instance?.Build(pos);
+            _floatingText.Show(pos + Vector3.up * 1.2f, $"+{refund}", Palette.TextGold);
+            Juice.Shake(0.08f);
+        }
+
         public void ResetGame()
         {
             for (int i = Enemy.Alive.Count - 1; i >= 0; i--)

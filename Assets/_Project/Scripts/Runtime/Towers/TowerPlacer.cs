@@ -37,6 +37,13 @@ namespace TDFende
                 return;
             }
 
+            // botão direito (ou X/Delete) numa torre: vende
+            if (input.SellPressed && _gc.SellValueAt(cell) >= 0)
+            {
+                _gc.SellTower(cell);
+                return;
+            }
+
             bool valid = _gc.CanPlaceTower(cell);
             _ghost.Show(_gc.Map.CellToWorld(cell), valid ? Palette.GhostValid : Palette.GhostInvalid,
                 GameConfig.TowerRange);

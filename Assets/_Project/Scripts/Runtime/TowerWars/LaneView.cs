@@ -96,6 +96,7 @@ namespace TDFende
             _sim.EnemyDespawned += OnEnemyDespawned;
             _sim.TowerChanged += OnTowerChanged;
             _sim.TowerFired += OnTowerFired;
+            _sim.TowerSold += OnTowerSold;
         }
 
         /// <summary>Solta os eventos. Sem isso, uma lane descartada continuaria desenhando.</summary>
@@ -104,6 +105,72 @@ namespace TDFende
             _sim.EnemyDespawned -= OnEnemyDespawned;
             _sim.TowerChanged -= OnTowerChanged;
             _sim.TowerFired -= OnTowerFired;
+            _sim.TowerSold -= OnTowerSold;
+        }
+
+        /// <summary>
+        /// Torre vendida: o rig sai da lista NA MESMA POSIÇÃO que a simulação tirou a torre
+        /// (as de depois descem uma casa nos dois lados) e desmorona afundando no chão.
+        /// </summary>
+        void OnTowerSold(Vector3 localPos, int index, int refund)
+        {
+            var world = _root.TransformPoint(localPos);
+            Vfx.Instance?.Build(world);
+            if (_isPlayer)
+            {
+                Juice.Shake(0.08f);
+                FloatingText.Instance?.Show(world + Vector3.up * 1.2f, $"+{refund}", Palette.TextGold);
+            }
+            // vendida no mesmo quadro em que foi construída: ainda não tinha rig
+            if (index >= _drawnTowers) return;
+
+            var rig = _towers[index];
+            _towers.RemoveAt(index);
+            _towerAge.RemoveAt(index);
+            if (index < _brazierFx.Count) _brazierFx.RemoveAt(index);
+            _drawnTowers--;
+            _razing.Add(new Razing
+            {
+                Rig = rig, T = 0f, Tilt = (index & 1) == 0 ? 1f : -1f, Yaw = rig.transform.localEulerAngles.y
+            });
+        }
+
+        /// <summary>Torre vendida desmontando: inclina um pouco e afunda, depois some.</summary>
+        struct Razing
+        {
+            public ModelRig Rig;
+            public float T;
+            public float Tilt;
+            public float Yaw;
+        }
+        readonly List<Razing> _razing = new List<Razing>();
+        const float RazeTime = 0.6f;
+
+        void AnimateRazing(float dt)
+        {
+            for (int i = _razing.Count - 1; i >= 0; i--)
+            {
+                var r = _razing[i];
+                r.T += dt;
+                if (r.Rig == null || r.T >= RazeTime)
+                {
+                    if (r.Rig != null) Object.Destroy(r.Rig.gameObject);
+                    _razing.RemoveAt(i);
+                    continue;
+                }
+                float u = r.T / RazeTime;
+                var tr = r.Rig.transform;
+                tr.localPosition += Vector3.down * (dt / RazeTime * r.Rig.Def.Height * 1.1f * (0.4f + 1.2f * u));
+                tr.localRotation = Quaternion.Euler(r.Tilt * 9f * u, r.Yaw, r.Tilt * 6f * u);
+                // poeira levantando no pé da torre enquanto ela afunda
+                if ((i + Time.frameCount) % 3 == 0)
+                {
+                    var foot = tr.localPosition;
+                    foot.y = 0.05f;
+                    Vfx.Instance?.Footstep(_root.TransformPoint(foot));
+                }
+                _razing[i] = r;
+            }
         }
 
         void OnTowerFired(Vector3 localMuzzle)
@@ -187,6 +254,7 @@ namespace TDFende
             SyncProjectiles(alpha);
             AnimateKeep();
             AnimateDying(dt);
+            AnimateRazing(dt);
         }
 
         void AnimateKeep()
@@ -199,7 +267,7 @@ namespace TDFende
 
         void SyncTowers(float dt)
         {
-            // torres só nascem, nunca somem: basta criar as que faltam
+            // torres novas entram no fim da lista; as vendidas saem em OnTowerSold
             for (int i = _drawnTowers; i < _sim.TowerCount; i++)
             {
                 int type = _sim.TowerTypeId(i);
@@ -246,9 +314,9 @@ namespace TDFende
             }
 
             // o território muda junto com as torres; reconstruir só quando isso acontece
-            if (_lastTerritoryStamp != _sim.TowerCount)
+            if (_lastTerritoryStamp != _sim.TowerVersion)
             {
-                _lastTerritoryStamp = _sim.TowerCount;
+                _lastTerritoryStamp = _sim.TowerVersion;
                 _territory.Rebuild(_sim.Territory, _sim.Map);
             }
         }

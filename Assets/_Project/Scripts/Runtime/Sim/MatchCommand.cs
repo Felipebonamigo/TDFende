@@ -4,7 +4,8 @@ namespace TDFende
     {
         Build,   // torre nova na célula (X,Y) da própria lane
         Upgrade, // sobe a torre da célula (X,Y)
-        Send     // compra o envio SendId e manda na lane adversária
+        Send,    // compra o envio SendId e manda na lane adversária
+        Sell     // vende a torre da célula (X,Y)
     }
 
     /// <summary>
@@ -27,6 +28,9 @@ namespace TDFende
         public static MatchCommand Upgrade(int x, int y) =>
             new MatchCommand { Kind = CommandKind.Upgrade, X = x, Y = y };
 
+        public static MatchCommand Sell(int x, int y) =>
+            new MatchCommand { Kind = CommandKind.Sell, X = x, Y = y };
+
         public static MatchCommand Send(int sendId) =>
             new MatchCommand { Kind = CommandKind.Send, SendId = sendId };
 
@@ -34,6 +38,7 @@ namespace TDFende
         {
             CommandKind.Build => $"build {X} {Y} {TowerType}",
             CommandKind.Upgrade => $"upgrade {X} {Y}",
+            CommandKind.Sell => $"sell {X} {Y}",
             _ => $"send {SendId}"
         };
     }
