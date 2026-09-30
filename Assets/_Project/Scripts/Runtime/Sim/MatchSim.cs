@@ -15,13 +15,17 @@ namespace TDFende
 
         readonly TowerWarsAi _aiA;
         readonly TowerWarsAi _aiB;
+        readonly Random _rng;
+        readonly LaneSim[] _lanes;
 
         public MatchSim(TowerWarsAi.Personality pa, TowerWarsAi.Personality pb, int seed,
             int width = 24, int height = 16)
         {
             var rng = new Random(seed);
-            A = new LaneSim(width, height);
-            B = new LaneSim(width, height);
+            _rng = rng;
+            A = new LaneSim(width, height) { Id = 0, CarryLeaks = true };
+            B = new LaneSim(width, height) { Id = 1, CarryLeaks = true };
+            _lanes = new[] { A, B };
             _aiA = new TowerWarsAi(A, B, pa, rng);
             _aiB = new TowerWarsAi(B, A, pb, rng);
         }
@@ -53,6 +57,7 @@ namespace TDFende
 
                 A.Tick(dt);
                 B.Tick(dt);
+                LeakRouter.Route(_lanes, _rng);
                 Elapsed += dt;
             }
 

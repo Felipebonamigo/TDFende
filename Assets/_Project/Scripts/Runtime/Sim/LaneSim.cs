@@ -36,6 +36,8 @@ namespace TDFende
             public float BurnPct;         // fração da vida-base por segundo enquanto arde
             public float BurnLeft;        // segundos restantes de fogo (a vista desenha chama)
             public float KnockGuard;      // imune a novo empurrão enquanto > 0
+            public int SenderId;          // lane de quem comprou o envio (-1 = ninguém)
+            public int Laps;              // quantas bases já atravessou vivo
             public bool Burning => BurnLeft > 0f;
 
             public float CurrentSpeed => SlowLeft > 0f ? Speed * SlowFactor : Speed;
@@ -143,6 +145,27 @@ namespace TDFende
         /// <summary>Sobe a cada torre construída ou vendida: a vista sabe quando refazer o território.</summary>
         public int TowerVersion { get; private set; }
         public int TotalSold { get; private set; }
+
+        /// <summary>Posição desta lane na partida (0, 1, ...). -1 = lane avulsa, sem adversários.</summary>
+        public int Id = -1;
+
+        /// <summary>
+        /// Quem passa da base volta ao jogo (ver <see cref="LeakRouter"/>): em vez de sumir, o
+        /// inimigo sai para a fila de repasse com a vida que tinha. Desligado numa lane avulsa
+        /// de teste, onde não há ninguém para receber.
+        /// </summary>
+        public bool CarryLeaks;
+        readonly List<SimEnemy> _outgoing = new List<SimEnemy>();
+
+        /// <summary>Tira da lane os inimigos que passaram da base neste tique (para o repasse).</summary>
+        public void DrainLeaks(List<SimEnemy> into)
+        {
+            into.AddRange(_outgoing);
+            _outgoing.Clear();
+        }
+
+        /// <summary>Quantas vezes, somando tudo, um inimigo voltou a correr nesta lane.</summary>
+        public int TotalReentries { get; private set; }
 
         public int TowerCount => _towers.Count;
         public int EnemiesAlive => _enemyCount;
@@ -493,11 +516,11 @@ namespace TDFende
             SendsByType[sendId]++;
 
             for (int i = 0; i < u.Count; i++)
-                target.SpawnIncoming(sendId, rng);
+                target.SpawnIncoming(sendId, rng, Id);
             return true;
         }
 
-        void SpawnIncoming(int sendId, Random rng)
+        void SpawnIncoming(int sendId, Random rng, int senderId = -1)
         {
             var u = SendCatalog.Get(sendId);
             var cell = _spawnCells[rng.Next(_spawnCells.Count)];
@@ -528,7 +551,39 @@ namespace TDFende
             // recompensa acompanha a vida, senão o defensor quebra no fim da partida
             _enemies[slot].Bounty = (int)(u.Bounty * scale);
             _enemies[slot].TypeId = sendId;
+            _enemies[slot].SenderId = senderId;
+            _enemies[slot].Laps = 0;
             _enemyCount++;
+        }
+
+        /// <summary>
+        /// Um inimigo que passou da base de alguém entra de novo, pelo acampamento DESTA lane,
+        /// com a vida que tinha ao cruzar a base. Status (lentidão, fogo, empurrão) zeram:
+        /// é uma corrida nova, só a ferida continua.
+        /// </summary>
+        public void SpawnCarried(in SimEnemy carried, Random rng)
+        {
+            if (Dead) return;
+            var cell = _spawnCells[rng.Next(_spawnCells.Count)];
+            var pos = Map.CellToWorld(cell);
+            pos.x += (float)(rng.NextDouble() * 0.6 - 0.3);
+            pos.z += (float)(rng.NextDouble() * 0.6 - 0.3);
+            pos.y = 0.5f;
+
+            int slot = AllocEnemy();
+            int generation = _enemies[slot].Generation + 1;
+            _enemies[slot] = carried;
+            _enemies[slot].Active = true;
+            _enemies[slot].Generation = generation;
+            _enemies[slot].Pos = pos;
+            _enemies[slot].SlowFactor = 1f;
+            _enemies[slot].SlowLeft = 0f;
+            _enemies[slot].BurnPct = 0f;
+            _enemies[slot].BurnLeft = 0f;
+            _enemies[slot].KnockGuard = 0f;
+            _enemies[slot].Laps = carried.Laps + 1;
+            _enemyCount++;
+            TotalReentries++;
         }
 
         int AllocEnemy()
@@ -604,6 +659,8 @@ namespace TDFende
                     Lives--;
                     TotalLeaked++;
                     EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.Leaked);
+                    // não morreu: segue para a próxima base com a vida que tem
+                    if (CarryLeaks) _outgoing.Add(_enemies[i]);
                     Kill(i);
                 }
             }

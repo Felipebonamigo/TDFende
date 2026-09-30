@@ -25,6 +25,7 @@ namespace TDFende
         readonly TowerWarsAi _foeAi;
         readonly Random _rng;
         readonly Queue<MatchCommand> _pending = new Queue<MatchCommand>();
+        readonly LaneSim[] _lanes;
 
         /// <summary>Tiques já simulados. É o relógio ao qual os comandos são presos.</summary>
         public int TickCount { get; private set; }
@@ -39,8 +40,9 @@ namespace TDFende
             Seed = seed;
             Difficulty = difficulty;
             _rng = new Random(seed);
-            Player = new LaneSim(width, height);
-            Foe = new LaneSim(width, height);
+            Player = new LaneSim(width, height) { Id = 0, CarryLeaks = true };
+            Foe = new LaneSim(width, height) { Id = 1, CarryLeaks = true };
+            _lanes = new[] { Player, Foe };
             _foeAi = new TowerWarsAi(Foe, Player, difficulty, _rng);
         }
 
@@ -62,6 +64,8 @@ namespace TDFende
             _foeAi.Tick(dt);
             Player.Tick(dt);
             Foe.Tick(dt);
+            // quem passou da base volta a correr, na lane do próximo adversário
+            LeakRouter.Route(_lanes, _rng);
             TickCount++;
         }
 

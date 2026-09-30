@@ -782,6 +782,57 @@ class Program
         Check(poorUp.Gold < poorUp.UpgradeCostAt(new Vector2Int(9, 8)),
             "Upgrade do jogador: para quando o ouro acaba");
 
+        // ---------- quem passa da base volta a correr ----------
+        // Não some: volta com a vida que tinha, na lane do próximo adversário (nunca na de
+        // quem enviou). Num 1x1, corre de novo na mesma lane. Cada base cruzada custa uma vida.
+        {
+            var l0 = new LaneSim(24, 16) { Id = 0, CarryLeaks = true };
+            var l1 = new LaneSim(24, 16) { Id = 1, CarryLeaks = true };
+            var two = new[] { l0, l1 };
+            Check(LeakRouter.NextLane(two, 1, 0) == 1 && LeakRouter.NextLane(two, 0, 1) == 0,
+                "Repasse 1x1: sem outro adversário, corre de novo na mesma lane");
+            var l2 = new LaneSim(24, 16) { Id = 2, CarryLeaks = true };
+            var three = new[] { l0, l1, l2 };
+            Check(LeakRouter.NextLane(three, 1, 0) == 2 && LeakRouter.NextLane(three, 2, 0) == 1
+                  && LeakRouter.NextLane(three, 0, 1) == 2,
+                "Repasse com 3: vai para o próximo adversário, pulando quem enviou");
+
+            var leakRng = new Random(5);
+            l0.DebugGrantGold(500);
+            l1.DebugGrantGold(500);
+            l1.TryBuildTower(new Vector2Int(10, 6)); // fere de passagem, sem matar
+            l0.TrySend(5, l1, leakRng);              // Colosso: aguenta a torre
+            var runLanes = new[] { l0, l1 };
+            float hpAtGoal = -1f;
+            int livesStart = l1.Lives;
+            bool reentered = false;
+            float hpBack = -1f;
+            int lapsBack = -1;
+            for (int t = 0; t < 30 * 60 && !reentered; t++)
+            {
+                for (int s = 0; s < l1.EnemySlotCount; s++)
+                    if (l1.TryGetEnemy(s, out var e) && e.Laps == 0) hpAtGoal = e.Hp;
+                l0.Tick(TowerWarsConfig.FixedStep);
+                l1.Tick(TowerWarsConfig.FixedStep);
+                LeakRouter.Route(runLanes, leakRng);
+                for (int s = 0; s < l1.EnemySlotCount; s++)
+                    if (l1.TryGetEnemy(s, out var e) && e.Laps == 1) { reentered = true; hpBack = e.Hp; lapsBack = e.Laps; }
+            }
+            Check(reentered && l1.Lives == livesStart - 1, "Repasse: passou da base, custou 1 vida e voltou a correr");
+            Check(hpAtGoal > 0f && hpAtGoal < 449f && Math.Abs(hpBack - hpAtGoal) < 0.01f,
+                $"Repasse: volta com a vida que tinha ({hpBack:0.0} de {hpAtGoal:0.0})");
+            Check(l0.EnemiesAlive == 0 && l1.EnemiesAlive == 1, "Repasse 1x1: não volta para quem enviou");
+
+            var loose = new LaneSim(24, 16);
+            var looseFeeder = new LaneSim(24, 16);
+            looseFeeder.DebugGrantGold(100);
+            looseFeeder.TrySend(0, loose, leakRng);
+            for (int t = 0; t < 30 * 60; t++) loose.Tick(TowerWarsConfig.FixedStep);
+            var drained = new System.Collections.Generic.List<LaneSim.SimEnemy>();
+            loose.DrainLeaks(drained);
+            Check(loose.TotalLeaked == 1 && drained.Count == 0, "Repasse: lane avulsa (sem partida) não acumula nada");
+        }
+
         // ---------- grid em pé (modo clássico) ----------
         // Só a conversão mundo <-> célula gira: a marcha (+X do grid) desce em -Z de mundo.
         var upGrid = new GridMap(24, 16, 1f, upright: true);
