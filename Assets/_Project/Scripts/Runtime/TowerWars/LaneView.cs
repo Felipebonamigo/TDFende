@@ -29,23 +29,19 @@ namespace TDFende
         readonly bool _isPlayer;
         Camera _cam;
 
-        // inimigos: um rig por slot, com pool por tipo (cada tipo é um modelo diferente)
-        ModelRig[] _enemyBySlot = new ModelRig[0];
-        int[] _enemyGen = new int[0];
+        // Interpolação: a simulação anda a 30 tiques/s e a tela a 60+ quadros. Cada inimigo
+        // e cada tiro tem a sua vista (EnemyView, ProjectileView), que guarda o tique anterior
+        // e o atual e desenha entre eles no próprio Update, lendo o alpha deste relógio.
+        readonly LaneClock _clock = new LaneClock();
+
+        // inimigos: uma vista por slot, bonecos com pool por modelo (cada tipo é um modelo)
+        EnemyView[] _enemyBySlot = new EnemyView[0];
         readonly Dictionary<ModelDef, Stack<ModelRig>> _pool = new Dictionary<ModelDef, Stack<ModelRig>>();
 
-        // tiros: idem, por tipo de torre (bala, bomba, estilhaço de gelo, virote)
-        ModelRig[] _shotBySlot = new ModelRig[0];
-
-        // Interpolação: a simulação anda a 30 tiques/s e a tela a centenas de quadros.
-        // Desenhar a posição crua fazia tudo andar em degraus (e a perna "parava" nos
-        // quadros sem tique). Guardamos o tique anterior e o atual e desenhamos entre eles.
-        Vector3[] _enemyPrev = new Vector3[0], _enemyCur = new Vector3[0];
-        float[] _burnFx = new float[0];
-        Vector3[] _shotPrev = new Vector3[0], _shotCur = new Vector3[0];
-        int[] _shotType = new int[0];
-        float _lastSimTime = -1f;
-        bool _ticked;
+        // tiros: idem, por tipo de torre (bala, bomba, estilhaço de gelo, virote). Um tiro
+        // que a simulação já resolveu continua voando na tela até completar o voo
+        ProjectileView[] _shotBySlot = new ProjectileView[0];
+        readonly System.Action<ProjectileView> _onShotLanded;
         readonly List<float> _brazierFx = new List<float>();
 
         readonly List<ModelRig> _towers = new List<ModelRig>(32);
@@ -79,6 +75,7 @@ namespace TDFende
             _owner = owner;
             _attacker = attacker;
             _isPlayer = isPlayer;
+            _onShotLanded = v => Return(v.Rig);
             _root = new GameObject(name).transform;
             // a lane é montada deitada (marcha em +X local) e girada inteira aqui
             _root.SetPositionAndRotation(offset, rotation ?? Quaternion.identity);
@@ -239,20 +236,26 @@ namespace TDFende
         }
 
         /// <summary>
-        /// Espelha o estado da simulação. Chamar uma vez por frame, depois do Tick.
-        /// <paramref name="alpha"/> = quanto do próximo tique já passou (acumulador / passo):
-        /// é o que deixa o movimento liso entre um tique e outro.
+        /// Chamar DEPOIS DE CADA tique da simulação (dentro do laço de passo fixo). É aqui que
+        /// cada vista recebe o seu "tique atual" — com dois tiques num quadro lento, as duas
+        /// posições continuam sendo de tiques vizinhos, não do quadro anterior.
+        /// </summary>
+        public void OnTick()
+        {
+            TickEnemies();
+            TickProjectiles();
+        }
+
+        /// <summary>
+        /// Uma vez por frame, depois do laço de passo fixo. <paramref name="alpha"/> = quanto do
+        /// próximo tique já passou (acumulador / passo); as vistas leem no Update delas.
         /// </summary>
         public void Sync(float alpha = 1f)
         {
             if (_cam == null) _cam = Camera.main;
             float dt = Time.deltaTime;
-            _ticked = _sim.MatchTime != _lastSimTime;
-            _lastSimTime = _sim.MatchTime;
-            alpha = Mathf.Clamp01(alpha);
+            _clock.Alpha = Mathf.Clamp01(alpha);
             SyncTowers(dt);
-            SyncEnemies(dt, alpha);
-            SyncProjectiles(alpha);
             AnimateKeep();
             AnimateDying(dt);
             AnimateRazing(dt);
@@ -324,17 +327,10 @@ namespace TDFende
 
         // ---------------------------------------------------------------- inimigos
 
-        void SyncEnemies(float dt, float alpha)
+        void TickEnemies()
         {
             int slots = _sim.EnemySlotCount;
-            if (_enemyBySlot.Length != slots)
-            {
-                System.Array.Resize(ref _enemyBySlot, slots);
-                System.Array.Resize(ref _enemyGen, slots);
-                System.Array.Resize(ref _enemyPrev, slots);
-                System.Array.Resize(ref _enemyCur, slots);
-                System.Array.Resize(ref _burnFx, slots);
-            }
+            if (_enemyBySlot.Length != slots) System.Array.Resize(ref _enemyBySlot, slots);
 
             for (int s = 0; s < slots; s++)
             {
@@ -344,58 +340,24 @@ namespace TDFende
                     continue;
                 }
 
+                // atrito se lê em azul-gelo: a vista precisa saber se ele está na fronteira
+                bool drained = e.AttritionScale > 0f && _sim.Territory.Contains(e.Pos);
+
                 // slot reciclado (outro inimigo, talvez outro tipo): boneco novo do tipo certo
-                var rig = _enemyBySlot[s];
-                bool fresh = rig == null || _enemyGen[s] != e.Generation || rig.Def != ModelLib.Enemy(e.TypeId);
-                if (fresh)
+                var view = _enemyBySlot[s];
+                if (view != null && view.Generation == e.Generation && view.Rig.Def == ModelLib.Enemy(e.TypeId))
                 {
-                    ReleaseEnemy(s);
-                    rig = _enemyBySlot[s] = RentEnemy(e.TypeId);
-                    _enemyGen[s] = e.Generation;
-                    // nasce olhando para a base: sem isto o primeiro passo gira o corpo no lugar
-                    rig.transform.localRotation = Quaternion.LookRotation(-DirToSpawn());
-                }
-
-                var simPos = new Vector3(e.Pos.x, 0f, e.Pos.z);
-                if (fresh) _enemyPrev[s] = _enemyCur[s] = simPos;
-                else if (_ticked)
-                {
-                    _enemyPrev[s] = _enemyCur[s];
-                    _enemyCur[s] = simPos;
-                }
-                // empurrão da torre de Ar é um salto de verdade: não desenhar deslizando
-                if ((_enemyCur[s] - _enemyPrev[s]).sqrMagnitude > 0.5f * 0.5f) _enemyPrev[s] = _enemyCur[s];
-                rig.Follow(Vector3.Lerp(_enemyPrev[s], _enemyCur[s], alpha), dt, snap: fresh);
-
-                // cavalo e torre de cerco levantam poeira do chão
-                if (rig.Def.Anim == AnimKind.Horse || rig.Def.Anim == AnimKind.Wheels)
-                {
-                    _burnFx[s] -= dt * 0.35f;
-                    if (_burnFx[s] <= 0f && !e.Burning)
-                    {
-                        _burnFx[s] = 0.1f;
-                        Vfx.Instance?.Footstep(rig.transform.position + Vector3.up * 0.05f);
-                    }
-                }
-
-                // dano se lê na barra; fogo, na chama e no brilho laranja; atrito, no gelado
-                float frac = e.MaxHp > 0f ? e.Hp / e.MaxHp : 1f;
-                rig.SetHealth(frac, _cam);
-                if (e.Burning)
-                {
-                    _burnFx[s] -= dt;
-                    if (_burnFx[s] <= 0f)
-                    {
-                        _burnFx[s] = 0.1f;
-                        Vfx.Instance?.Burn(rig.transform.position + Vector3.up * (rig.Def.Height * 0.45f));
-                    }
-                    rig.SetGlow(Palette.BurnGlow * (0.7f + 0.3f * Mathf.Sin(Time.time * 17f + s * 3f)));
+                    view.PushTick(e, drained);
                     continue;
                 }
-                bool drained = e.AttritionScale > 0f && _sim.Territory.Contains(e.Pos);
-                rig.SetGlow(drained
-                    ? Palette.AttritionGlow * (0.75f + 0.25f * Mathf.Sin(Time.time * 6f + s))
-                    : Color.black);
+
+                ReleaseEnemy(s);
+                var rig = RentEnemy(e.TypeId);
+                view = rig.GetComponent<EnemyView>();
+                if (view == null) view = rig.gameObject.AddComponent<EnemyView>();
+                // nasce olhando para a base: sem isto o primeiro passo gira o corpo no lugar
+                view.Spawn(rig, _clock, s, e, drained, Quaternion.LookRotation(-DirToSpawn()));
+                _enemyBySlot[s] = view;
             }
         }
 
@@ -405,9 +367,11 @@ namespace TDFende
 
         void ReleaseEnemy(int slot)
         {
-            var rig = _enemyBySlot[slot];
+            var view = _enemyBySlot[slot];
             _enemyBySlot[slot] = null;
-            if (rig == null) return;
+            if (view == null) return;
+            view.Stop();
+            var rig = view.Rig;
 
             // quem chegou à fortaleza some (a explosão do vazamento cobre); quem morreu
             // no caminho tomba — sumir do nada é o que mais denuncia "jogo de protótipo"
@@ -473,64 +437,36 @@ namespace TDFende
 
         // ------------------------------------------------------------------ tiros
 
-        void SyncProjectiles(float alpha)
+        void TickProjectiles()
         {
             int slots = _sim.ProjectileSlotCount;
-            if (_shotBySlot.Length != slots)
-            {
-                System.Array.Resize(ref _shotBySlot, slots);
-                System.Array.Resize(ref _shotPrev, slots);
-                System.Array.Resize(ref _shotCur, slots);
-                System.Array.Resize(ref _shotType, slots);
-            }
+            if (_shotBySlot.Length != slots) System.Array.Resize(ref _shotBySlot, slots);
 
             for (int s = 0; s < slots; s++)
             {
-                if (!_sim.TryGetProjectile(s, out var p, out float t, out int towerType, out bool flies))
+                var view = _shotBySlot[s];
+                if (!_sim.TryGetProjectileState(s, out LaneSim.SimProjectile p))
                 {
-                    // o tiro acabou de chegar: é aqui que o jogador tem que VER o acerto
-                    if (_shotBySlot[s] != null)
-                        Vfx.Instance?.Impact(_root.TransformPoint(_shotCur[s]), _shotType[s]);
-                    ReleaseShot(s);
+                    // acerto resolvido: a vista termina o voo e mostra o impacto sozinha
+                    if (view != null) view.Release();
+                    _shotBySlot[s] = null;
                     continue;
                 }
 
-                var rig = _shotBySlot[s];
-                bool fresh = rig == null || rig.Def != ModelLib.Projectile(towerType);
-                if (fresh)
+                if (view != null)
                 {
-                    ReleaseShot(s);
-                    rig = _shotBySlot[s] = RentShot(towerType);
+                    view.PushTick(p);
+                    continue;
                 }
 
-                // a simulação voa em linha reta da altura 0,95 ao pé do alvo; a vista sai
-                // da boca do cano de verdade e chega no peito (ou no planador lá em cima)
-                float muzzleY = ModelLib.Tower(towerType).Muzzle.y;
-                float targetY = flies ? 1.1f : 0.28f;
-                float y = Mathf.Lerp(muzzleY, targetY, t);
-                // bomba de morteiro sobe em arco — é o que faz o morteiro parecer morteiro
-                if (towerType == 1) y += 4f * t * (1f - t) * 1.3f;
-                var target = new Vector3(p.x, y, p.z);
-                _shotType[s] = towerType;
-                if (fresh) _shotPrev[s] = _shotCur[s] = target;
-                else if (_ticked)
-                {
-                    _shotPrev[s] = _shotCur[s];
-                    _shotCur[s] = target;
-                }
-                var pos = Vector3.Lerp(_shotPrev[s], _shotCur[s], alpha);
-
-                // virote e estilhaço apontam para onde voam; no primeiro frame não há
-                // "de onde veio" (a posição antiga é de outro tiro, do pool)
-                var d = pos - rig.transform.localPosition;
-                rig.transform.localPosition = pos;
-                if (fresh)
-                {
-                    // rastro de tiro reciclado riscaria da posição antiga até aqui
-                    var trail = rig.GetComponent<TrailRenderer>();
-                    if (trail != null) trail.Clear();
-                }
-                else if (d.sqrMagnitude > 1e-6f) rig.transform.localRotation = Quaternion.LookRotation(d);
+                // tiro novo: a vista do alvo dá a posição DESENHADA dele, e o tiro mira ali
+                var rig = RentShot(p.TowerTypeId);
+                view = rig.GetComponent<ProjectileView>();
+                if (view == null) view = rig.gameObject.AddComponent<ProjectileView>();
+                var target = p.TargetSlot < _enemyBySlot.Length ? _enemyBySlot[p.TargetSlot] : null;
+                if (target != null && target.Generation != p.TargetGeneration) target = null;
+                view.Launch(rig, _clock, _root, p, ModelLib.Tower(p.TowerTypeId).Muzzle.y, target, _onShotLanded);
+                _shotBySlot[s] = view;
             }
         }
 
@@ -545,12 +481,6 @@ namespace TDFende
             rig.transform.localScale = Vector3.one * 1.5f;
             Vfx.AddTrail(rig.gameObject, towerType);
             return rig;
-        }
-
-        void ReleaseShot(int slot)
-        {
-            Return(_shotBySlot[slot]);
-            _shotBySlot[slot] = null;
         }
 
         /// <summary>Converte ponto do mundo para célula desta lane (desfaz o deslocamento do pai).</summary>

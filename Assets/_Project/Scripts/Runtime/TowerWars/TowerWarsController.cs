@@ -10,6 +10,9 @@ namespace TDFende
     /// As regras estão no LaneSim, que é lógica pura testada headless; trocar a IA
     /// por um adversário de rede depois é substituir quem enfileira os comandos.
     /// </summary>
+    // roda ANTES das vistas (EnemyView, ProjectileView): elas leem neste mesmo quadro o
+    // alpha e os tiques que o laço de passo fixo acabou de produzir
+    [DefaultExecutionOrder(-100)]
     public class TowerWarsController : MonoBehaviour
     {
         const float LaneGap = 6f;      // espaço entre as duas lanes, em unidades de mundo
@@ -222,6 +225,9 @@ namespace TDFende
                 {
                     _accumulator -= TowerWarsConfig.FixedStep;
                     _runner.Step(); // comandos enfileirados valem AQUI, na fronteira do tique
+                    // cada tique vira um "atual" nas vistas: anterior e atual são sempre tiques vizinhos
+                    _playerView.OnTick();
+                    _foeView.OnTick();
                 }
             }
             else

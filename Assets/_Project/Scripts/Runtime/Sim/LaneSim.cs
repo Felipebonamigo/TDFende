@@ -52,7 +52,8 @@ namespace TDFende
             public bool HasAim;
         }
 
-        struct SimProjectile
+        /// <summary>Tiro em voo. Público só para leitura: a vista recebe CÓPIAS (struct).</summary>
+        public struct SimProjectile
         {
             public bool Active;
             public int TargetSlot;
@@ -815,6 +816,28 @@ namespace TDFende
         }
 
         public int ProjectileSlotCount => _projectiles.Length;
+
+        /// <summary>
+        /// Cópia crua do tiro naquele compartimento; false se estiver vazio. Por ser struct,
+        /// quem lê não tem como alterar a simulação — é a porta da camada de vista.
+        /// </summary>
+        public bool TryGetProjectileState(int slot, out SimProjectile projectile)
+        {
+            projectile = _projectiles[slot];
+            return projectile.Active;
+        }
+
+        /// <summary>O maior BurnPct que um inimigo consegue ter com o catálogo atual (camadas cheias).</summary>
+        public static float MaxBurnPct
+        {
+            get
+            {
+                float max = 0f;
+                for (int i = 0; i < TowerCatalog.Count; i++)
+                    max = Math.Max(max, TowerCatalog.Get(i).BurnPctPerSecond * TowerWarsConfig.MaxBurnStacks);
+                return max;
+            }
+        }
 
         /// <summary>
         /// Posição do tiro em voo, interpolada entre a boca do cano e o alvo.
