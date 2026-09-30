@@ -34,7 +34,7 @@ namespace TDFende
             if (layout.River)
             {
                 var water = ArtFactory.Static("Rio", layout.BuildWater(), root, neutral, castShadows: false);
-                water.AddComponent<WaterFlow>();
+                water.AddComponent<WaterFlow>().AlongZ = layout.RiverAlongZ;
             }
 
             ArtFactory.Static("Mureta", layout.BuildCurbs(), root, neutral);
@@ -77,20 +77,19 @@ namespace TDFende
             // barril e caixa de verdade dão escala humana à cena
             foreach (var area in layout.PlayAreas)
             {
-                float x = area.Max.x + 0.75f, z = (area.Min.y + area.Max.y) * 0.5f;
-                float Y(float px, float pz) => layout.GroundHeight != null ? layout.GroundHeight(px, pz) : 0f;
+                // (ao longo da marcha, de través) a partir da ponta da fortaleza
                 var spots = new[]
                 {
-                    ("Barris", new Vector3(x, 0f, z - 1.1f), 0.28f, true),
-                    ("Barris", new Vector3(x + 0.35f, 0f, z - 0.8f), 0.26f, true),
-                    ("Caixas", new Vector3(x + 0.1f, 0f, z + 1.0f), 0.34f, false),
-                    ("Caixas", new Vector3(x + 0.5f, 0f, z + 1.35f), 0.3f, false),
-                    ("Troncos", new Vector3(x + 0.6f, 0f, z + 0.1f), 0.9f, false),
+                    ("Barris", new Vector2(0.75f, -1.1f), 0.28f, true),
+                    ("Barris", new Vector2(1.1f, -0.8f), 0.26f, true),
+                    ("Caixas", new Vector2(0.85f, 1.0f), 0.34f, false),
+                    ("Caixas", new Vector2(1.25f, 1.35f), 0.3f, false),
+                    ("Troncos", new Vector2(1.35f, 0.1f), 0.9f, false),
                 };
                 int n = 0;
                 foreach (var (cat, spot, size, byH) in spots)
                 {
-                    var at = new Vector3(spot.x, Y(spot.x, spot.z), spot.z);
+                    var at = LaneToWorld(layout, area, area.HalfLength + spot.x, spot.y);
                     SceneryModels.Place(cat, models, at, size, 900 + n++ * 13, byH);
                 }
             }
@@ -99,18 +98,33 @@ namespace TDFende
             return root;
         }
 
-        // muralha atrás da fortaleza (Max.x) e acampamento de onde o inimigo sai (Min.x)
+        // muralha atrás da fortaleza e acampamento de onde o inimigo sai, na linha da marcha
         const float WallGap = 2.1f, CampGap = 1.2f;
+
+        /// <summary>
+        /// Ponto de mundo a partir de coordenadas DA LANE: <paramref name="along"/> no sentido
+        /// da marcha (0 = centro, +HalfLength = ponta da fortaleza) e <paramref name="across"/>
+        /// de través. Serve igual para lane deitada e em pé.
+        /// </summary>
+        static Vector3 LaneToWorld(WorldLayout layout, WorldLayout.Area a, float along, float across)
+        {
+            var f = a.Forward;
+            var side = new Vector2(-f.y, f.x);
+            var p = a.Center + f * along + side * across;
+            float y = layout.GroundHeight != null ? layout.GroundHeight(p.x, p.y) : layout.Height(p.x, p.y);
+            return new Vector3(p.x, y, p.y);
+        }
 
         static bool InBackdrop(WorldLayout layout, Vector3 p)
         {
             foreach (var a in layout.PlayAreas)
             {
-                float zc = (a.Min.y + a.Max.y) * 0.5f;
-                if (p.x > a.Max.x + WallGap - 1.0f && p.x < a.Max.x + WallGap + 1.1f
-                    && p.z > a.Min.y - 1.0f && p.z < a.Max.y + 1.0f) return true;
-                if (p.x > a.Min.x - CampGap - 3.4f && p.x < a.Min.x - CampGap + 0.8f
-                    && Mathf.Abs(p.z - zc) < 4.4f) return true;
+                var f = a.Forward;
+                var d = new Vector2(p.x, p.z) - a.Center;
+                float along = Vector2.Dot(d, f), across = Vector2.Dot(d, new Vector2(-f.y, f.x));
+                float L = a.HalfLength, W = a.HalfWidth;
+                if (along > L + WallGap - 1.0f && along < L + WallGap + 1.1f && Mathf.Abs(across) < W + 1.0f) return true;
+                if (along < -L - CampGap + 0.8f && along > -L - CampGap - 3.4f && Mathf.Abs(across) < 4.4f) return true;
             }
             return false;
         }
@@ -118,6 +132,7 @@ namespace TDFende
         /// <summary>
         /// Pano de fundo que conta a história da partida: a muralha do castelo de quem defende,
         /// com o estandarte dele, e o acampamento do exército que ataca, nas cores do atacante.
+        /// As malhas são montadas com a marcha em +X e giradas para o sentido da lane.
         /// </summary>
         static void BuildBackdrop(WorldLayout layout, Transform root)
         {
@@ -127,22 +142,20 @@ namespace TDFende
             {
                 Color owner = a.Owner.a > 0f ? a.Owner : Palette.TeamPlayer;
                 Color attacker = a.Attacker.a > 0f ? a.Attacker : Palette.TeamFoe;
-                float zc = (a.Min.y + a.Max.y) * 0.5f;
-                float Y(float px, float pz) => layout.GroundHeight != null ? layout.GroundHeight(px, pz) : layout.Height(px, pz);
+                var rot = Quaternion.Euler(0f, a.Yaw, 0f);
 
-                float wx = a.Max.x + WallGap;
                 var wall = new MeshBuilder();
-                ModelLib.CastleWall(wall, 0f, a.Min.y - zc, a.Max.y - zc);
+                ModelLib.CastleWall(wall, 0f, -a.HalfWidth, a.HalfWidth);
                 var wgo = ArtFactory.Static("Muralha", wall, root, owner);
-                wgo.transform.position = new Vector3(wx, Y(wx, zc) - 0.05f, zc);
+                wgo.transform.SetPositionAndRotation(
+                    LaneToWorld(layout, a, a.HalfLength + WallGap, 0f) + Vector3.down * 0.05f, rot);
 
-                float cx = a.Min.x - CampGap;
                 var camp = new MeshBuilder();
                 var local = ModelLib.ArmyCamp(camp, 0f, 0f, 31 + i * 17);
                 var cgo = ArtFactory.Static("Acampamento", camp, root, attacker);
-                var basePos = new Vector3(cx, Y(cx, zc) - 0.02f, zc);
-                cgo.transform.position = basePos;
-                foreach (var f in local) fires.Add(basePos + f);
+                cgo.transform.SetPositionAndRotation(
+                    LaneToWorld(layout, a, -a.HalfLength - CampGap, 0f) + Vector3.down * 0.02f, rot);
+                foreach (var f in local) fires.Add(cgo.transform.TransformPoint(f));
                 i++;
             }
             if (fires.Count > 0) root.gameObject.AddComponent<CampFires>().Points = fires.ToArray();
@@ -201,6 +214,7 @@ namespace TDFende
     /// <summary>Correnteza: arrasta a textura da água devagar, rio abaixo.</summary>
     public class WaterFlow : MonoBehaviour
     {
+        public bool AlongZ;
         Material _mat;
 
         void Start() => _mat = GetComponent<MeshRenderer>().sharedMaterial;
@@ -208,7 +222,8 @@ namespace TDFende
         void Update()
         {
             if (_mat == null) return;
-            _mat.mainTextureOffset = new Vector2(Time.time * 0.035f, Mathf.Sin(Time.time * 0.3f) * 0.02f);
+            var flow = new Vector2(Time.time * 0.035f, Mathf.Sin(Time.time * 0.3f) * 0.02f);
+            _mat.mainTextureOffset = AlongZ ? new Vector2(flow.y, flow.x) : flow;
         }
     }
 }

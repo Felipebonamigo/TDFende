@@ -73,14 +73,15 @@ namespace TDFende
         /// Há terreno de verdade por baixo (GroundBuilder): a grade vira linhas de giz dele.
         /// </param>
         public LaneView(LaneSim sim, Vector3 offset, string name, Color owner, Color attacker, bool isPlayer,
-            bool realisticGround = false)
+            bool realisticGround = false, Quaternion? rotation = null)
         {
             _sim = sim;
             _owner = owner;
             _attacker = attacker;
             _isPlayer = isPlayer;
             _root = new GameObject(name).transform;
-            _root.position = offset;
+            // a lane é montada deitada (marcha em +X local) e girada inteira aqui
+            _root.SetPositionAndRotation(offset, rotation ?? Quaternion.identity);
 
             BuildGround(realisticGround);
             _enemyRoot = new GameObject("Inimigos").transform;

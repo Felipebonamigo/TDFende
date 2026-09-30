@@ -14,6 +14,15 @@ namespace TDFende
     {
         const float LaneGap = 6f;      // espaço entre as duas lanes, em unidades de mundo
 
+        /// <summary>
+        /// As lanes ficam EM PÉ, lado a lado: o inimigo desce do acampamento (em cima, longe
+        /// da câmera) até a fortaleza (embaixo, perto). A simulação continua deitada em +X —
+        /// só a vista gira 90°, então regra, IA e balanceamento medido não mudam.
+        /// Euler(0, 90, 0) leva +X local para -Z de mundo.
+        /// </summary>
+        static readonly Quaternion LaneRotation = Quaternion.Euler(0f, 90f, 0f);
+        static readonly Vector2 MarchDir = new Vector2(0f, -1f);
+
         public LaneSim Player => _runner?.Player;
         public LaneSim Foe => _runner?.Foe;
 
@@ -106,11 +115,12 @@ namespace TDFende
             _input = new DesktopInput();
             _ghost = new PlacementGhost();
 
-            // as duas lanes empilhadas ocupam bem mais em Z do que uma só; sem esta
-            // folga a câmera nasceria enquadrando apenas a sua metade do tabuleiro
-            float totalZ = Player.Map.WorldSize.z * 2f + LaneGap;
+            // lanes em pé lado a lado: a largura total é a de duas lanes (a altura do grid)
+            // mais o vão; a profundidade, o comprimento de uma, mais muralha e acampamento
+            float totalX = Player.Map.WorldSize.z * 2f + LaneGap;
+            float depth = Player.Map.WorldSize.x + 6f;
             _cameraRig = new CameraRigDriver(cam, Vector3.zero,
-                new Vector3(Player.Map.WorldSize.x, 0f, totalZ), totalZ * 0.95f);
+                new Vector3(totalX, 0f, depth), totalX * 0.95f);
         }
 
         void NewMatch()
@@ -138,11 +148,12 @@ namespace TDFende
 
             float off = (Player.Map.WorldSize.z + LaneGap) * 0.5f;
             // cada lane tem dono (fortaleza, torres, fronteira) e atacante (acampamento,
-            // inimigos): azul é você, vermelho é a IA — como estandarte de batalha
-            _playerView = new LaneView(Player, new Vector3(0f, 0f, -off), "LaneJogador",
-                Palette.TeamPlayer, Palette.TeamFoe, true, _terrain != null);
-            _foeView = new LaneView(Foe, new Vector3(0f, 0f, off), "LaneAdversario",
-                Palette.TeamFoe, Palette.TeamPlayer, false, _terrain != null);
+            // inimigos): azul é você, vermelho é a IA — como estandarte de batalha.
+            // Você à esquerda, a IA à direita; nas duas o inimigo desce de cima para baixo.
+            _playerView = new LaneView(Player, new Vector3(-off, 0f, 0f), "LaneJogador",
+                Palette.TeamPlayer, Palette.TeamFoe, true, _terrain != null, LaneRotation);
+            _foeView = new LaneView(Foe, new Vector3(off, 0f, 0f), "LaneAdversario",
+                Palette.TeamFoe, Palette.TeamPlayer, false, _terrain != null, LaneRotation);
 
             _accumulator = 0f;
             _selectedSend = 0;
@@ -164,19 +175,20 @@ namespace TDFende
             float w = GameConfig.GridWidth * GameConfig.CellSize;
             float h = GameConfig.GridHeight * GameConfig.CellSize;
             float off = (h + LaneGap) * 0.5f;
-            // Rect.y guarda o Z do mundo
+            // Rect.y guarda o Z do mundo. Lane em pé: largura h em X, comprimento w em Z
             var areas = new[]
             {
-                new Rect(-w * 0.5f, -off - h * 0.5f, w, h), // sua lane
-                new Rect(-w * 0.5f, off - h * 0.5f, w, h)   // lane da IA
+                new Rect(-off - h * 0.5f, -w * 0.5f, h, w), // sua lane (esquerda)
+                new Rect(off - h * 0.5f, -w * 0.5f, h, w)   // lane da IA (direita)
             };
             _terrain = GroundBuilder.Build(areas);
             if (_terrain != null)
                 gameObject.AddComponent<GrassField>().Init(_terrain, areas);
 
-            var layout = new WorldLayout { River = true, RiverZ = 0f };
-            layout.AddPlayArea(new Vector3(0f, 0f, -off), new Vector3(w, 0f, h), Palette.TeamPlayer, Palette.TeamFoe);
-            layout.AddPlayArea(new Vector3(0f, 0f, off), new Vector3(w, 0f, h), Palette.TeamFoe, Palette.TeamPlayer);
+            // rio correndo em Z, no vão entre as duas lanes
+            var layout = new WorldLayout { River = true, RiverZ = 0f, RiverAlongZ = true };
+            layout.AddPlayArea(new Vector3(-off, 0f, 0f), new Vector3(h, 0f, w), Palette.TeamPlayer, Palette.TeamFoe, MarchDir);
+            layout.AddPlayArea(new Vector3(off, 0f, 0f), new Vector3(h, 0f, w), Palette.TeamFoe, Palette.TeamPlayer, MarchDir);
             WorldView.Build(layout, _terrain);
         }
 
@@ -412,7 +424,7 @@ namespace TDFende
             if (sellValue >= 0) hover += $"  |  botão direito: vender por <color=#E8C15A>{sellValue} ouro</color>";
 
             GUI.Box(HelpBoxRect,
-                $"Clique na SUA lane (a de baixo): {TowerCatalog.Get(_selectedTower).Name} " +
+                $"Clique na SUA lane (a da esquerda): {TowerCatalog.Get(_selectedTower).Name} " +
                 $"({TowerCatalog.Get(_selectedTower).Cost} ouro)  |  Q/E troca a torre" +
                 $"  |  clique numa torre sua: subir, botão direito: vender{hover}\n" +
                 "1-6 ou os botões: enviar inimigo para a lane da IA  |  R: reiniciar  |  F9: salvar replay", UiSkin.Panel);

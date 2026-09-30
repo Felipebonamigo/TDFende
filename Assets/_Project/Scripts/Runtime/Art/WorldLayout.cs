@@ -15,12 +15,32 @@ namespace TDFende
             public Vector2 Min, Max; // XZ de mundo
             /// <summary>Cor de quem defende (muralha) e de quem ataca (acampamento). Alfa 0 = padrão.</summary>
             public Color Owner, Attacker;
+            /// <summary>Sentido da marcha no plano XZ, do acampamento para a fortaleza. Zero = +X.</summary>
+            public Vector2 MarchDir;
+
+            public Vector2 Center => (Min + Max) * 0.5f;
+            public Vector2 Forward => MarchDir.sqrMagnitude > 0.0001f ? MarchDir.normalized : Vector2.right;
+            /// <summary>Meio comprimento da lane no sentido da marcha e meia largura de través.</summary>
+            public float HalfLength => Mathf.Abs(Vector2.Dot(Max - Min, Forward)) * 0.5f;
+            public float HalfWidth => Mathf.Abs(Vector2.Dot(Max - Min, new Vector2(-Forward.y, Forward.x))) * 0.5f;
+            /// <summary>Giro em Y que leva +X local para o sentido da marcha.</summary>
+            public float Yaw => -Mathf.Atan2(Forward.y, Forward.x) * Mathf.Rad2Deg;
         }
 
         public readonly List<Area> PlayAreas = new List<Area>();
         /// <summary>Rio correndo em X entre as lanes (Tower Wars). Z do leito.</summary>
         public bool River;
+        /// <summary>Coordenada de través do leito: Z se o rio corre em X, X se corre em Z.</summary>
         public float RiverZ;
+        /// <summary>Rio correndo em Z (lanes lado a lado em X, marcha de cima para baixo).</summary>
+        public bool RiverAlongZ;
+
+        /// <summary>Distância com sinal até o eixo do rio, em qualquer das duas orientações.</summary>
+        public float RiverOffset(float x, float z) =>
+            RiverAlongZ ? x - RiverCenter(z) : z - RiverCenter(x);
+
+        Vector3 RiverPoint(float along, float across, float y) =>
+            RiverAlongZ ? new Vector3(across, y, along) : new Vector3(along, y, across);
         public int Seed = 7;
 
         /// <summary>
@@ -34,11 +54,12 @@ namespace TDFende
         public const float WaterY = -0.16f;
         const float Extent = 80f;
 
-        public void AddPlayArea(Vector3 center, Vector3 size, Color owner = default, Color attacker = default)
+        public void AddPlayArea(Vector3 center, Vector3 size, Color owner = default, Color attacker = default,
+            Vector2 marchDir = default)
         {
             PlayAreas.Add(new Area
             {
-                Owner = owner, Attacker = attacker,
+                Owner = owner, Attacker = attacker, MarchDir = marchDir,
                 Min = new Vector2(center.x - size.x * 0.5f, center.z - size.z * 0.5f),
                 Max = new Vector2(center.x + size.x * 0.5f, center.z + size.z * 0.5f),
             });
@@ -65,7 +86,7 @@ namespace TDFende
             float riverFade = 1f;
             if (River)
             {
-                float d = Mathf.Abs(z - RiverCenter(x));
+                float d = Mathf.Abs(RiverOffset(x, z));
                 h -= 0.42f * (1f - Smooth((d - 1.1f) / 1.4f));
                 riverFade = Smooth((d - 3f) / 5f); // morro não nasce dentro do vale do rio
             }
@@ -98,7 +119,8 @@ namespace TDFende
             for (float x = -Extent; x < Extent; x += 4f)
             {
                 float zc = RiverCenter(x + 2f);
-                mb.GroundQuad(ArtMat.Water, new Vector3(x + 2f, WaterY, zc), 2.02f, 2.5f);
+                if (RiverAlongZ) mb.GroundQuad(ArtMat.Water, RiverPoint(x + 2f, zc, WaterY), 2.5f, 2.02f);
+                else mb.GroundQuad(ArtMat.Water, RiverPoint(x + 2f, zc, WaterY), 2.02f, 2.5f);
             }
             return mb;
         }
@@ -173,7 +195,7 @@ namespace TDFende
                 float z = (ProcNoise.Hash(i, 1, Seed) * 2f - 1f) * (Extent - 6f);
                 float edge = DistanceToPlay(x, z);
                 if (edge < 1.2f) continue;
-                if (River && Mathf.Abs(z - RiverCenter(x)) < 2.9f) continue;
+                if (River && Mathf.Abs(RiverOffset(x, z)) < 2.9f) continue;
                 // chance de existir cresce com a distância: clareira perto, mata fechada longe
                 float chance = Mathf.Min(0.85f, 0.06f + edge / 30f);
                 float roll = ProcNoise.Hash(i, 2, Seed);
@@ -198,9 +220,10 @@ namespace TDFende
             {
                 for (int i = 0; i < 90; i++)
                 {
-                    float x = (ProcNoise.Hash(i, 10, Seed) * 2f - 1f) * (Extent - 10f);
+                    float along = (ProcNoise.Hash(i, 10, Seed) * 2f - 1f) * (Extent - 10f);
                     float side = ProcNoise.Hash(i, 11, Seed) < 0.5f ? -1f : 1f;
-                    float z = RiverCenter(x) + side * (1.7f + 0.8f * ProcNoise.Hash(i, 12, Seed));
+                    var p = RiverPoint(along, RiverCenter(along) + side * (1.7f + 0.8f * ProcNoise.Hash(i, 12, Seed)), 0f);
+                    float x = p.x, z = p.z;
                     if (DistanceToPlay(x, z) < 0.6f) continue;
                     Add(PropKind.Boulder, new Vector3(x, Ground(x, z) - 0.03f, z), 0.1f + 0.14f * ProcNoise.Hash(i, 13, Seed), i + 500);
                 }

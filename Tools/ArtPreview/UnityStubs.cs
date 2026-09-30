@@ -11,6 +11,10 @@ namespace UnityEngine
         public Vector2(float x, float y) { this.x = x; this.y = y; }
         public static Vector2 zero => new Vector2(0, 0);
         public static Vector2 one => new Vector2(1, 1);
+        public static Vector2 right => new Vector2(1, 0);
+        public float sqrMagnitude => x * x + y * y;
+        public static float Dot(Vector2 a, Vector2 b) => a.x * b.x + a.y * b.y;
+        public static Vector2 operator *(float d, Vector2 a) => new Vector2(a.x * d, a.y * d);
         public float magnitude => (float)Math.Sqrt(x * x + y * y);
         public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
         public static Vector2 operator -(Vector2 a, Vector2 b) => new Vector2(a.x - b.x, a.y - b.y);

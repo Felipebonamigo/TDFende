@@ -37,10 +37,11 @@ static class Program
         ModelLib.Bush(sm, new Vector3(1.5f, 0, -0.5f), 1f, 5);
         models.Add(scenery);
 
-        // Tower Wars montado como o jogo monta: duas lanes 24x16, rio no meio, mata em volta
-        var world = new WorldLayout { River = true, RiverZ = 0f };
-        world.AddPlayArea(new Vector3(0, 0, -11), new Vector3(24, 0, 16));
-        world.AddPlayArea(new Vector3(0, 0, 11), new Vector3(24, 0, 16));
+        // Tower Wars montado como o jogo monta: duas lanes EM PÉ (16x24) lado a lado,
+        // rio correndo em Z no vão, mata em volta
+        var world = new WorldLayout { River = true, RiverZ = 0f, RiverAlongZ = true };
+        world.AddPlayArea(new Vector3(-11, 0, 0), new Vector3(16, 0, 24), default, default, new Vector2(0, -1));
+        world.AddPlayArea(new Vector3(11, 0, 0), new Vector3(16, 0, 24), default, default, new Vector2(0, -1));
         foreach (var (name, mb) in new[] { ("Terreno", world.BuildTerrain()), ("Rio", world.BuildWater()),
                      ("Mureta", world.BuildCurbs()), ("Mata", world.BuildScenery()) })
         {
@@ -50,13 +51,14 @@ static class Program
             models.Add(d);
         }
         // pano de fundo como o WorldView monta: muralha atrás da fortaleza, acampamento atrás do spawn
-        foreach (var (lz, tag) in new[] { (-11f, "J"), (11f, "A") })
+        // montados deitados (marcha em +X) em volta da origem; a página gira e posiciona
+        foreach (var tag in new[] { "J", "A" })
         {
             var w = new ModelDef { Name = "Muralha" + tag };
-            ModelLib.CastleWall(w.Part("Body", Vector3.zero).Mesh, 12f + 2.1f, lz - 8f, lz + 8f);
+            ModelLib.CastleWall(w.Part("Body", Vector3.zero).Mesh, 0f, -8f, 8f);
             models.Add(w);
             var c = new ModelDef { Name = "Tendas" + tag };
-            ModelLib.ArmyCamp(c.Part("Body", Vector3.zero).Mesh, -12f - 1.2f, lz, 31);
+            ModelLib.ArmyCamp(c.Part("Body", Vector3.zero).Mesh, 0f, 0f, 31);
             models.Add(c);
         }
         Console.WriteLine($"modelos: {sw.ElapsedMilliseconds} ms");
