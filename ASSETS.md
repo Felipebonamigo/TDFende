@@ -17,18 +17,34 @@ Depois abra o Unity (ele importa sozinho) e faça commit — estes arquivos PODE
 Com a sincronização automática instalada (`Tools\InstalarSincronizacao.ps1`), nada disso é
 preciso: quando o script de download muda, o PC roda de novo sozinho e envia a arte nova.
 
-## 2. Bichos (as tropas que você envia)
+## 2. Bichos de verdade (as tropas que você envia) — 10–20 min, manual
 
-As tropas agora são animais, do rato ao elefante — todos feitos em código
-(`Art/ModelLibAnimals.cs`), sem arquivo para baixar. O passo do Mixamo não vale mais
-(o Mixamo só tem gente).
+Os bichos feitos em código servem de reserva, mas **não parecem animais reais**. Para ficarem
+reais, o jogo usa modelos 3D baixados, com esqueleto e animação. Daqui (nuvem) eu não alcanço
+os sites de modelos; no seu PC eles abrem normalmente.
 
-Para trocar um bicho por um modelo de verdade (ex.: um pacote grátis de animais da Asset
-Store), crie um prefab em `Assets/Resources/TDFende/` com o nome do modelo — ele substitui
-o procedural sozinho:
+1. Na pasta do projeto, rode:
+   `powershell -ExecutionPolicy Bypass -File Tools\BaixarBichos.ps1`
+   Ele abre no navegador uma busca para cada um dos 9 bichos no **Sketchfab**, já filtrada por
+   "baixável" e "animado" (precisa de conta grátis para baixar).
+2. Escolha um modelo **realista com animação de andar**. Confira a licença na página:
+   **CC Attribution** ou **CC0** (evite "NonCommercial" e "NoDerivs").
+3. **Download → FBX** (às vezes aparece como "Original format"). Descompacte.
+4. Coloque o `.fbx` (e a pasta de texturas, se vier) em `Assets/Resources/TDFende/Bichos/`.
+   O nome do arquivo só precisa conter o bicho: `elefante.fbx`, `Tiger_Animated.fbx`...
+5. Abra o Unity: o jogo troca o bicho de código pelo de verdade sozinho, acerta o tamanho,
+   põe um anel com a cor do time no chão e usa as animações de andar/correr/morrer do arquivo.
+6. Me mande o autor e o link de cada um (licença CC Attribution pede crédito).
 
-`Inimigo_Rato`, `Inimigo_Cachorro`, `Inimigo_Lobo`, `Inimigo_Javali`, `Inimigo_Aguia`,
-`Inimigo_Urso`, `Inimigo_Tigre`, `Inimigo_Rinoceronte`, `Inimigo_Elefante`.
+Detalhes:
+- Bicho andando de lado ou de costas: renomeie com `_giro90`, `_giro-90` ou `_giro180`.
+- Só tem **GLB/glTF**? No Unity, *Window → Package Manager → + → Add package by name*,
+  `com.unity.cloud.gltfast`. Depois arraste o `.glb` para a mesma pasta; se a animação não
+  tocar, selecione o arquivo e ponha *Animation Method = Legacy* no Inspector.
+- Outras fontes grátis que funcionam igual: **Unity Asset Store** e **Fab** (filtre por Free,
+  busque "realistic animal animated"); **Quaternius** (CC0, mas estilo low-poly, menos real).
+- Os arquivos dessa pasta **não vão para o GitHub** (cada licença é diferente) — o `.gitignore`
+  já barra; ficam só no seu PC.
 
 ## 3. Unity Asset Store — pacotes gratuitos (opcional)
 

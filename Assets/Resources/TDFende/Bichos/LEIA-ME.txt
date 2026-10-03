@@ -1,0 +1,16 @@
+BICHOS DE VERDADE — coloque aqui os modelos 3D baixados (FBX de preferência).
+
+O nome do arquivo só precisa ter o bicho, em português ou inglês:
+  rato / rat / mouse          cachorro / dog / husky       lobo / wolf
+  javali / boar / pig         aguia / eagle / hawk         urso / bear
+  tigre / tiger               rinoceronte / rhino          elefante / elephant
+Ex.: "Elephant_Animated.fbx", "tigre.fbx", "wolf_rigged.fbx".
+
+As animações podem vir dentro do arquivo. O jogo acha pelo nome do clipe:
+  walk/trot = andar, run/gallop = correr, idle = parado, death/die = morrer, fly = voar.
+Tamanho, altura do chão e cor do time (anel no chão) são acertados sozinhos.
+Se o bicho aparecer andando de lado ou de costas, renomeie o arquivo com
+"_giro90", "_giro-90" ou "_giro180" no fim (ex.: "tigre_giro90.fbx").
+
+Sem arquivo para um bicho, o jogo usa o modelo feito em código.
+Estes arquivos NÃO vão para o GitHub (cada licença é diferente): ficam só no seu PC.

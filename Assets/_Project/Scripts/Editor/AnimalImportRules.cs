@@ -1,0 +1,50 @@
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+namespace TDFende.EditorTools
+{
+    /// <summary>
+    /// Importação dos bichos baixados em Assets/Resources/TDFende/Bichos/. Arrastar o FBX
+    /// basta: Legacy (o AnimalLoader toca o clipe pelo nome, sem AnimatorController),
+    /// materiais do próprio arquivo, e TODOS os clipes embutidos mantidos — os de andar,
+    /// correr, ficar parado e voar em loop; o de morrer para no último quadro.
+    /// </summary>
+    class AnimalImportRules : AssetPostprocessor
+    {
+        internal const string Root = "Assets/Resources/TDFende/Bichos/";
+
+        public override uint GetVersion() => 1;
+
+        void OnPreprocessModel()
+        {
+            if (!assetPath.StartsWith(Root)) return;
+            var mi = (ModelImporter)assetImporter;
+            mi.animationType = ModelImporterAnimationType.Legacy;
+            mi.importAnimation = true;
+            mi.importCameras = false;
+            mi.importLights = false;
+            mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
+        }
+
+        void OnPreprocessAnimation()
+        {
+            if (!assetPath.StartsWith(Root)) return;
+            var mi = (ModelImporter)assetImporter;
+            var clips = mi.defaultClipAnimations;
+            if (clips.Length == 0) return;
+            string file = Path.GetFileNameWithoutExtension(assetPath);
+            bool separate = file.Contains("@");
+            for (int i = 0; i < clips.Length; i++)
+            {
+                // arquivo só de animação ("Elefante@Walk"): o clipe leva o nome do arquivo
+                if (separate && clips.Length == 1) clips[i].name = file;
+                string n = clips[i].name.ToLowerInvariant();
+                bool death = n.Contains("death") || n.Contains("die") || n.Contains("dead");
+                clips[i].loopTime = !death;
+                clips[i].wrapMode = death ? WrapMode.ClampForever : WrapMode.Loop;
+            }
+            mi.clipAnimations = clips;
+        }
+    }
+}

@@ -54,6 +54,7 @@ namespace TDFende
             public float T;
             public float Side;      // tomba para a esquerda ou para a direita
             public Quaternion From;
+            public bool Clip;       // modelo de verdade com animação de morte: não tomba à mão
         }
         readonly List<Dying> _dying = new List<Dying>();
         const float FallTime = 0.45f, LieTime = 1.1f, SinkTime = 0.8f, BuildTime = 0.7f;
@@ -390,6 +391,7 @@ namespace TDFende
             {
                 Rig = rig, T = 0f, From = rig.transform.localRotation,
                 Side = ((slot * 7 + _dying.Count) & 1) == 0 ? 1f : -1f,
+                Clip = rig.PlayDeath(),
             });
         }
 
@@ -403,7 +405,7 @@ namespace TDFende
                 // tomba de lado com aceleração (cai, não gira), fica, e afunda no chão
                 float fall = Mathf.Clamp01(d.T / FallTime);
                 fall *= fall;
-                tr.localRotation = d.From * Quaternion.Euler(0f, 0f, d.Side * 88f * fall);
+                if (!d.Clip) tr.localRotation = d.From * Quaternion.Euler(0f, 0f, d.Side * 88f * fall);
                 var pos = tr.localPosition;
                 float sink = Mathf.Clamp01((d.T - FallTime - LieTime) / SinkTime);
                 pos.y = -sink * d.Rig.Def.Height * 0.6f;

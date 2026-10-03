@@ -249,6 +249,19 @@ namespace TDFende
             if (parent != null) root.transform.SetParent(parent, false);
             var parts = new Dictionary<string, Transform>();
 
+            // bicho de verdade (modelo baixado em Resources/TDFende/Bichos), se houver
+            if (def.Name != null && def.Name.StartsWith("Inimigo_"))
+            {
+                var animal = AnimalLoader.TrySpawn(def, root.transform, team, out var animalClips);
+                if (animal != null)
+                {
+                    var animalRig = root.AddComponent<ModelRig>();
+                    animalRig.Bind(def, parts);
+                    animalRig.UseClips(animalClips);
+                    return animalRig;
+                }
+            }
+
             // personagem com esqueleto e animação de verdade (Mixamo), se houver
             if (def.Anim == AnimKind.Walker)
             {

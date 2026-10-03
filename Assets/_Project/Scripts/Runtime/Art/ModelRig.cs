@@ -200,6 +200,19 @@ namespace TDFende
             if (refSpeed > 0f) _clips[want].speed = Mathf.Clamp(_speedAvg / refSpeed, 0.5f, 2.2f);
         }
 
+        /// <summary>
+        /// Morte com a animação do próprio modelo (bicho baixado que tem clipe "Death").
+        /// False = não tem: quem chamou faz o tombo genérico.
+        /// </summary>
+        public bool PlayDeath()
+        {
+            if (_clips == null || _clips.GetClip("Death") == null) return false;
+            _clips["Death"].speed = 1f;
+            _clips.CrossFade("Death", 0.12f);
+            _clipState = "Death";
+            return true;
+        }
+
         /// <summary>Anima por <paramref name="distance"/> percorrida neste frame.</summary>
         public void Animate(float distance, float dt)
         {
@@ -329,6 +342,13 @@ namespace TDFende
             SetGlow(Color.black);
             _bar?.Hide();
             _recoil = 0f;
+            // saiu do pool depois de morrer com clipe: volta andando, não deitado
+            if (_clips != null && _clipState == "Death")
+            {
+                _clips.Stop();
+                _clipState = null;
+                if (_clips.GetClip("Walk") != null) _clips.Play("Walk");
+            }
         }
     }
 
