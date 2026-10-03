@@ -45,6 +45,8 @@ namespace TDFende
 
         // casca de gelo por cima do bicho congelado: cresce ao congelar, some ao descongelar
         Transform _crust;
+        float _hitFlash;            // clarão branco de quando leva um tiro (segundos restantes)
+        const float HitFlashTime = 0.12f;
         float _crustScale;          // 0 = sem casca, 1 = cobrindo o bicho
         bool _wasFrozen;
 
@@ -70,12 +72,23 @@ namespace TDFende
             _prev = _cur = Flat(e.Pos);
             _snap = true;
             _flameTimer = _dustTimer = _chillTimer = 0f;
+            _hitFlash = 0f;
+            transform.localScale = Vector3.one;
             _wasFrozen = false;
             _crustScale = 0f;
             if (_crust != null) _crust.gameObject.SetActive(false);
             if (_maxBurn < 0f) _maxBurn = Mathf.Max(0.0001f, LaneSim.MaxBurnPct);
             transform.localRotation = facing;
             enabled = true;
+
+            // Voltou depois de cruzar uma base: sai do acampamento numa nuvem de poeira e
+            // avisa que já é volta N — é o bicho que o adversário deixou passar.
+            if (e.Laps > 0)
+            {
+                var at = transform.parent != null ? transform.parent.TransformPoint(_cur) : _cur;
+                Vfx.Instance?.Build(at);
+                FloatingText.Instance?.Show(at + Vector3.up * (_rig.Def.Height + 0.4f), $"volta {e.Laps + 1}", Palette.TextDanger);
+            }
         }
 
         /// <summary>Um tique da simulação passou: o atual vira anterior, o novo vira atual.</summary>
@@ -85,6 +98,9 @@ namespace TDFende
             if (e.Frozen && !_wasFrozen) Vfx.Instance?.Freeze(transform.position + Vector3.up * (_rig.Def.Height * 0.5f));
             else if (!e.Frozen && _wasFrozen) Vfx.Instance?.Thaw(transform.position + Vector3.up * (_rig.Def.Height * 0.5f));
             _wasFrozen = e.Frozen;
+            // Levou tiro (não o fio contínuo de fogo e atrito): clarão branco e um tranco no
+            // corpo. É o que faz o jogador sentir cada acerto.
+            if (e.MaxHp > 0f && _state.Hp - e.Hp > e.MaxHp * 0.012f) _hitFlash = HitFlashTime;
             _state = e;
             _drained = drained;
             _prev = _cur;
@@ -96,6 +112,7 @@ namespace TDFende
         public void Stop()
         {
             enabled = false;
+            transform.localScale = Vector3.one;
             if (_crust != null) _crust.gameObject.SetActive(false);
         }
 
@@ -164,12 +181,22 @@ namespace TDFende
         /// atrito. A cor vai por MaterialPropertyBlock (ModelRig.SetGlow): o material
         /// compartilhado não é tocado nem instanciado, então o batching continua valendo.
         /// </summary>
+        /// <summary>Brilho final = o do estado (fogo, gelo, atrito, volta) + o clarão do acerto.</summary>
+        void Glow(Color c)
+        {
+            float f = _hitFlash > 0f ? _hitFlash / HitFlashTime : 0f;
+            _rig.SetGlow(c + Color.white * (0.75f * f));
+            // tranco: incha um pouco e volta
+            transform.localScale = Vector3.one * (1f + 0.08f * f);
+        }
+
         void UpdateGlow(float dt)
         {
+            if (_hitFlash > 0f) _hitFlash -= dt;
             // congelado vence tudo: branco-azulado forte, o bicho vira estátua de gelo
             if (_state.Frozen)
             {
-                _rig.SetGlow(Palette.Frost * 0.85f);
+                Glow(Palette.Frost * 0.85f);
                 return;
             }
 
@@ -178,7 +205,7 @@ namespace TDFende
                 float intensity = Mathf.Clamp01(_state.BurnPct / _maxBurn);
                 float fade = Mathf.Clamp01(_state.BurnLeft / 0.4f);
                 float flicker = 0.75f + 0.25f * Mathf.Sin(Time.time * 17f + _slot * 3f);
-                _rig.SetGlow(Palette.BurnGlow * ((0.35f + 0.9f * intensity) * fade * flicker));
+                Glow(Palette.BurnGlow * ((0.35f + 0.9f * intensity) * fade * flicker));
 
                 // Pegando fogo de verdade: chama sai de vários pontos do corpo, mais amiúde
                 // quanto mais camadas — e bicho grande queima em mais lugares ao mesmo tempo.
@@ -202,7 +229,7 @@ namespace TDFende
             if (_state.SlowLeft > 0f && _state.SlowFactor < 1f)
             {
                 float cold = Mathf.Clamp01((1f - _state.SlowFactor) / 0.65f);
-                _rig.SetGlow(Palette.Frost * (0.18f + 0.3f * cold));
+                Glow(Palette.Frost * (0.18f + 0.3f * cold));
                 _chillTimer -= dt;
                 if (_chillTimer <= 0f)
                 {
@@ -212,9 +239,13 @@ namespace TDFende
                 return;
             }
 
-            _rig.SetGlow(_drained
-                ? Palette.AttritionGlow * (0.75f + 0.25f * Mathf.Sin(Time.time * 6f + _slot))
-                : Color.black);
+            // quem já cruzou uma base anda com um brilho vermelho fraco, mais forte a cada volta
+            var lap = _state.Laps > 0
+                ? Palette.TextDanger * (0.1f * Mathf.Min(_state.Laps, 3) * (0.8f + 0.2f * Mathf.Sin(Time.time * 4f + _slot)))
+                : Color.black;
+            Glow(_drained
+                ? Palette.AttritionGlow * (0.75f + 0.25f * Mathf.Sin(Time.time * 6f + _slot)) + lap
+                : lap);
         }
 
         static Vector3 Flat(Vector3 p) => new Vector3(p.x, 0f, p.z);

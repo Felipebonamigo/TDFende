@@ -23,6 +23,8 @@ namespace TDFende
             public float NeckUp;       // quanto a cabeça fica acima do meio do tronco
             public ArtMat Coat, Paw, Nose;
             public float Stride;       // chão coberto por ciclo de galope
+            public ArtMat? Belly;      // barriga mais clara (nulo = mesma pelagem)
+            public bool Pillar;        // patas retas de coluna (elefante): sem joelho dobrado
         }
 
         /// <summary>Onde ficaram as peças principais, para cada bicho pendurar o que é dele.</summary>
@@ -40,40 +42,82 @@ namespace TDFende
             var d = new ModelDef { Anim = AnimKind.Horse, Stride = q.Stride };
             var b = d.Part(Body, Vector3.zero).Mesh;
 
-            // tronco: peito, lombo e anca, para não virar um ovo
+            // tronco: peito, lombo e anca, com o pelo irregular (não um ovo liso)
             var torso = new Vector3(0f, q.Hip + q.H * 0.55f, 0f);
-            b.Sphere(q.Coat, torso, new Vector3(q.W, q.H, q.Len), 14, 10);
-            b.Sphere(q.Coat, torso + new Vector3(0f, q.H * 0.08f, q.Len * 0.45f), new Vector3(q.W * 1.02f, q.H * 1.02f, q.Len * 0.55f), 12, 9);
-            b.Sphere(q.Coat, torso + new Vector3(0f, q.H * 0.02f, -q.Len * 0.45f), new Vector3(q.W * 0.98f, q.H * 0.97f, q.Len * 0.55f), 12, 9);
+            b.Sphere(q.Coat, torso, new Vector3(q.W, q.H, q.Len), 16, 11, 0.04f, 11);
+            b.Sphere(q.Coat, torso + new Vector3(0f, q.H * 0.08f, q.Len * 0.45f), new Vector3(q.W * 1.02f, q.H * 1.02f, q.Len * 0.55f), 14, 10, 0.05f, 12);
+            b.Sphere(q.Coat, torso + new Vector3(0f, q.H * 0.02f, -q.Len * 0.45f), new Vector3(q.W * 0.98f, q.H * 0.97f, q.Len * 0.55f), 14, 10, 0.05f, 13);
+            if (q.Belly.HasValue)
+                b.Sphere(q.Belly.Value, torso + new Vector3(0f, -q.H * 0.32f, q.Len * 0.05f),
+                    new Vector3(q.W * 0.82f, q.H * 0.66f, q.Len * 0.8f), 12, 8);
 
             // pescoço e cabeça
             var head = torso + new Vector3(0f, q.NeckUp, q.Len * 0.95f + q.HeadR * 0.55f);
             var neckBase = torso + new Vector3(0f, q.H * 0.2f, q.Len * 0.6f);
             b.Rod(q.Coat, neckBase, head, Mathf.Min(q.W, q.H) * 0.7f, 10);
-            b.Sphere(q.Coat, head, new Vector3(q.HeadR * 0.9f, q.HeadR * 0.88f, q.HeadR), 12, 9);
+            b.Sphere(q.Coat, head, new Vector3(q.HeadR * 0.9f, q.HeadR * 0.88f, q.HeadR), 14, 10, 0.03f, 14);
+            // bochechas: a cabeça alarga atrás dos olhos
+            b.Sphere(q.Coat, head + new Vector3(0f, -q.HeadR * 0.15f, -q.HeadR * 0.1f), new Vector3(q.HeadR * 1.0f, q.HeadR * 0.7f, q.HeadR * 0.75f), 12, 8);
             var tip = head + new Vector3(0f, -q.HeadR * 0.2f, q.HeadR * 0.6f + q.Snout);
             if (q.Snout > 0f)
             {
                 b.Rod(q.Coat, head + new Vector3(0f, -q.HeadR * 0.15f, q.HeadR * 0.4f), tip, q.HeadR * 0.5f, 10);
                 b.Sphere(q.Coat, tip, Vector3.one * q.HeadR * 0.48f, 10, 7);
                 b.Sphere(q.Nose, tip + new Vector3(0f, q.HeadR * 0.12f, q.HeadR * 0.38f), Vector3.one * q.HeadR * 0.2f, 8, 6);
+                // mandíbula por baixo do focinho, boca fechada
+                b.Sphere(q.Belly ?? q.Coat, tip + new Vector3(0f, -q.HeadR * 0.28f, -q.HeadR * 0.25f),
+                    new Vector3(q.HeadR * 0.36f, q.HeadR * 0.17f, q.HeadR * 0.5f), 8, 6);
             }
             foreach (float sx in new[] { -1f, 1f })
-                b.Sphere(ArtMat.Hair, head + new Vector3(sx * q.HeadR * 0.55f, q.HeadR * 0.25f, q.HeadR * 0.62f),
-                    Vector3.one * q.HeadR * 0.13f, 6, 4);
+            {
+                // olho com sobrancelha: lê como olhar, não como botão
+                var eye = head + new Vector3(sx * q.HeadR * 0.55f, q.HeadR * 0.25f, q.HeadR * 0.62f);
+                b.Sphere(ArtMat.Hair, eye, Vector3.one * q.HeadR * 0.13f, 8, 6);
+                b.Sphere(q.Coat, eye + new Vector3(0f, q.HeadR * 0.1f, -q.HeadR * 0.02f),
+                    new Vector3(q.HeadR * 0.18f, q.HeadR * 0.07f, q.HeadR * 0.14f), 6, 4);
+            }
 
-            // quatro patas, pivô no ombro/anca: a vista galopa girando em X
+            // quatro patas, pivô no ombro/anca: a vista galopa girando em X.
+            // Dianteira: ombro musculoso, cotovelo, canela reta. Traseira: coxa grossa, joelho
+            // para a frente e jarrete para trás — é o "Z" que faz um bicho parecer bicho.
             var legs = new[] { ("LegFL", -1f, 1f), ("LegFR", 1f, 1f), ("LegBL", -1f, -1f), ("LegBR", 1f, -1f) };
             foreach (var (name, sx, sz) in legs)
             {
                 var top = new Vector3(sx * q.W * 0.6f, q.Hip + q.H * 0.2f, sz * q.Len * 0.62f);
                 var leg = d.Part(name, top, Body).Mesh;
                 var foot = new Vector3(top.x, 0f, top.z);
-                float h = top.y;
-                leg.Lathe(q.Coat, foot, new[] { q.LegR * 0.62f, q.LegR * 0.6f, q.LegR * 0.8f, q.LegR },
-                    new[] { 0f, h * 0.45f, h * 0.75f, h }, 9);
-                leg.Sphere(q.Paw, foot + new Vector3(0f, q.LegR * 0.3f, q.LegR * 0.15f),
-                    new Vector3(q.LegR * 0.72f, q.LegR * 0.38f, q.LegR * 0.85f), 8, 5);
+                float h = top.y, r = q.LegR;
+                if (q.Pillar)
+                {
+                    leg.Lathe(q.Coat, foot, new[] { r * 0.95f, r * 0.85f, r * 0.9f, r },
+                        new[] { 0f, h * 0.45f, h * 0.75f, h }, 12);
+                }
+                else if (sz > 0f)
+                {
+                    // ombro afundado no tronco (para dentro), não uma bola do lado de fora
+                    leg.Sphere(q.Coat, top + new Vector3(-top.x * 0.4f, -r * 0.5f, 0f), new Vector3(r * 1.05f, r * 1.6f, r * 1.25f), 9, 7, 0.04f, 21);
+                    var elbow = foot + new Vector3(0f, h * 0.52f, -r * 0.25f);
+                    var ankle = foot + new Vector3(0f, r * 0.55f, r * 0.1f);
+                    leg.Rod(q.Coat, top + new Vector3(0f, -r * 1.2f, 0f), elbow, r * 0.85f, 8);
+                    leg.Sphere(q.Coat, elbow, Vector3.one * r * 0.75f, 7, 5);
+                    leg.Rod(q.Coat, elbow, ankle, r * 0.55f, 8);
+                    leg.Sphere(q.Coat, ankle, Vector3.one * r * 0.55f, 6, 4);
+                }
+                else
+                {
+                    leg.Sphere(q.Coat, top + new Vector3(-top.x * 0.4f, -r * 0.6f, -r * 0.1f), new Vector3(r * 1.15f, r * 1.75f, r * 1.5f), 9, 7, 0.04f, 22);
+                    var stifle = foot + new Vector3(0f, h * 0.62f, r * 1.1f);
+                    var hock = foot + new Vector3(0f, h * 0.3f, -r * 0.9f);
+                    var ankle = foot + new Vector3(0f, r * 0.55f, -r * 0.3f);
+                    leg.Rod(q.Coat, top + new Vector3(0f, -r * 1.4f, 0f), stifle, r * 0.9f, 8);
+                    leg.Sphere(q.Coat, stifle, Vector3.one * r * 0.8f, 7, 5);
+                    leg.Rod(q.Coat, stifle, hock, r * 0.62f, 8);
+                    leg.Sphere(q.Coat, hock, Vector3.one * r * 0.55f, 6, 4);
+                    leg.Rod(q.Coat, hock, ankle, r * 0.48f, 8);
+                    leg.Sphere(q.Coat, ankle, Vector3.one * r * 0.5f, 6, 4);
+                }
+                leg.Sphere(q.Paw, foot + new Vector3(0f, r * 0.3f, r * 0.15f),
+                    new Vector3(r * 0.78f, r * 0.38f, r * 0.95f), 8, 5);
             }
 
             d.Height = Mathf.Max(torso.y + q.H, head.y + q.HeadR);
@@ -146,7 +190,7 @@ namespace TDFende
             var q = new Quad
             {
                 Hip = 0.2f, Len = 0.2f, W = 0.085f, H = 0.09f, LegR = 0.03f, HeadR = 0.075f, Snout = 0.07f,
-                NeckUp = 0.11f, Coat = ArtMat.FurTan, Paw = ArtMat.FurTan, Nose = ArtMat.Hair, Stride = 0.3f,
+                NeckUp = 0.11f, Coat = ArtMat.FurTan, Paw = ArtMat.FurTan, Nose = ArtMat.Hair, Stride = 0.3f, Belly = ArtMat.Cloth,
             };
             var p = Quadruped(q);
             Ears(p, q, ArtMat.FurBrown, 0.07f, false, 0.72f, droop: 0.45f);   // orelha caída
@@ -160,7 +204,7 @@ namespace TDFende
             var q = new Quad
             {
                 Hip = 0.26f, Len = 0.26f, W = 0.095f, H = 0.105f, LegR = 0.032f, HeadR = 0.082f, Snout = 0.11f,
-                NeckUp = 0.07f, Coat = ArtMat.FurGray, Paw = ArtMat.FurGray, Nose = ArtMat.Hair, Stride = 0.45f,
+                NeckUp = 0.07f, Coat = ArtMat.FurGray, Paw = ArtMat.FurGray, Nose = ArtMat.Hair, Stride = 0.45f, Belly = ArtMat.Cloth,
             };
             var p = Quadruped(q);
             Ears(p, q, ArtMat.FurGray, 0.08f, true);
@@ -215,12 +259,11 @@ namespace TDFende
             var q = new Quad
             {
                 Hip = 0.3f, Len = 0.4f, W = 0.13f, H = 0.135f, LegR = 0.05f, HeadR = 0.12f, Snout = 0.05f,
-                NeckUp = 0.05f, Coat = ArtMat.FurOrange, Paw = ArtMat.FurOrange, Nose = ArtMat.Skin, Stride = 0.6f,
+                NeckUp = 0.05f, Coat = ArtMat.FurOrange, Paw = ArtMat.FurOrange, Nose = ArtMat.Skin, Stride = 0.6f, Belly = ArtMat.Cloth,
             };
             var p = Quadruped(q);
             Ears(p, q, ArtMat.FurOrange, 0.05f, false, 0.62f);
-            // barriga e focinho claros
-            p.Body.Sphere(ArtMat.Cloth, p.Torso + new Vector3(0f, -q.H * 0.35f, 0f), new Vector3(q.W * 0.85f, q.H * 0.6f, q.Len * 0.85f), 12, 8);
+            // focinho claro (a barriga vem do Belly)
             p.Body.Sphere(ArtMat.Cloth, p.SnoutTip + new Vector3(0f, -0.01f, 0f), Vector3.one * q.HeadR * 0.46f, 8, 6);
             // listras: manchas escuras finas coladas no pelo — no lombo e descendo pelos flancos
             for (int i = 0; i < 7; i++)
@@ -265,7 +308,7 @@ namespace TDFende
             var q = new Quad
             {
                 Hip = 0.55f, Len = 0.5f, W = 0.32f, H = 0.34f, LegR = 0.13f, HeadR = 0.26f, Snout = 0f,
-                NeckUp = 0.14f, Coat = ArtMat.Hide, Paw = ArtMat.Ivory, Nose = ArtMat.Hide, Stride = 0.7f,
+                NeckUp = 0.14f, Coat = ArtMat.Hide, Paw = ArtMat.Ivory, Nose = ArtMat.Hide, Stride = 0.7f, Pillar = true,
             };
             var p = Quadruped(q);
             var b = p.Body;
