@@ -2,7 +2,8 @@
     "name": "TDFende.Editor",
     "rootNamespace": "TDFende.EditorTools",
     "references": [
-        "Unity.RenderPipelines.Universal.Runtime"
+        "Unity.RenderPipelines.Universal.Runtime",
+        "TDFende.Runtime"
     ],
     "includePlatforms": [
         "Editor"
