@@ -55,9 +55,23 @@ namespace TDFende
         }
 
         /// <summary>Qual ModelDef este nome de arquivo representa (null = nenhum bicho reconhecido).</summary>
+        /// <summary>
+        /// Nomes que CONTÊM a palavra de um bicho mas são outro bicho (ou coisa nenhuma):
+        /// "prairie dog" não é cachorro, "hedgehog" não é javali, "pirate" não é rato.
+        /// Pacote grande (100 bichos num arquivo) tem muito disso.
+        /// </summary>
+        static readonly string[] NotThese =
+        {
+            "prairie", "hedgehog", "groundhog", "guinea", "hotdog", "hot dog", "sea lion", "sealion",
+            "pirate", "separate", "crate", "karate", "rattle", "grate", "pirat", "muskrat", "bearded",
+            "dogfish", "catfish", "dragon", "lizard", "aardvark", "aardwolf",
+        };
+
         public static string ModelFor(string fileName)
         {
             string n = Plain(fileName);
+            foreach (var bad in NotThese)
+                if (n.Contains(bad)) return null;
             foreach (var (model, words) in Keywords)
                 foreach (var w in words)
                     if (n.Contains(w)) return model;
@@ -71,8 +85,11 @@ namespace TDFende
             foreach (var go in Resources.LoadAll<GameObject>(Folder))
             {
                 if (go == null || go.name.Contains("@")) continue; // "@Walk" é só animação
-                string model = ModelFor(go.name);
-                if (model != null && !_byModel.ContainsKey(model)) _byModel[model] = go;
+                // prefab já separado de um pacote ("Inimigo_Elefante", pasta Gerados) vence
+                // qualquer outro arquivo do mesmo bicho
+                string model = go.name.StartsWith("Inimigo_") ? go.name : ModelFor(go.name);
+                if (model == null) continue;
+                if (!_byModel.ContainsKey(model) || go.name.StartsWith("Inimigo_")) _byModel[model] = go;
             }
             _clips = Resources.LoadAll<AnimationClip>(Folder);
             if (_byModel.Count > 0)
@@ -150,8 +167,15 @@ namespace TDFende
         /// </summary>
         static void AddClips(Animation anim, string fileName)
         {
-            string model = ModelFor(fileName);
+            string model = fileName.StartsWith("Inimigo_") ? fileName : ModelFor(fileName);
             var mine = new List<AnimationClip>(Resources.LoadAll<AnimationClip>(Folder + "/" + fileName));
+            // prefab separado de um pacote já traz os clipes do bicho no componente Animation:
+            // tira e devolve cada um com o nome do estado (Walk, Run, Idle, Death)
+            var existing = new List<AnimationClip>();
+            foreach (AnimationState st in anim)
+                if (st.clip != null) existing.Add(st.clip);
+            foreach (var c in existing) anim.RemoveClip(c);
+            mine.InsertRange(0, existing);
             foreach (var clip in _clips)
             {
                 if (clip == null || !clip.name.Contains("@")) continue;
