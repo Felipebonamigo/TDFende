@@ -41,6 +41,12 @@ namespace TDFende
         /// </summary>
         internal float ShaftHeight;
 
+        /// <summary>Estágio do modelo baixado em uso (<see cref="TowerStages"/>); 0 = modelo único ou do código.</summary>
+        internal int Stage;
+
+        /// <summary>Nível em que o fuste está no tamanho natural: o modelo do estágio já é maior, só cresce dali.</summary>
+        internal int GrowFromLevel = 1;
+
         internal void Bind(ModelDef def, Dictionary<string, Transform> parts)
         {
             Def = def;
@@ -102,7 +108,7 @@ namespace TDFende
         {
             if (level == _level) return;
             _level = level;
-            float grow = 0.14f * (level - 1);
+            float grow = 0.14f * Mathf.Max(0, level - GrowFromLevel);
             if (_shaft != null) _shaft.localScale = new Vector3(1f, 1f + grow, 1f);
             if (_top != null) _top.localPosition = _topRest + Vector3.up * (ShaftHeight * grow);
             if (_flag != null) _flag.gameObject.SetActive(level >= 2);

@@ -20,6 +20,7 @@
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerCatalog.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LaneSim.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LeakRouter.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Art\TowerStages.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerWarsAi.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchSim.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchCommand.cs" />

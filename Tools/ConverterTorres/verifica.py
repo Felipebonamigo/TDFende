@@ -1,13 +1,19 @@
 # verifica.py <nome>: monta a torre como o jogo monta (corpo do FBX + torreta, cano, base, bandeira e
 # enfeites de nível vindos do código) e desenha no ângulo da câmera do jogo, nível 1 e 6, ao lado da
 # torre toda em código. As peças do código saem do Tools/ArtPreview (rode "dotnet run" lá antes).
-import bpy, bmesh, sys, os, json, math, mathutils
+# Estágio (Torre_Gelo_2): desenha o primeiro e o último nível do estágio, com o crescimento contado
+# a partir do primeiro, como o ModelRig faz. Modelo inteiro (Fortaleza): o FBX sozinho ao lado do código.
+import bpy, bmesh, sys, os, json, math, mathutils, re, tempfile
 from PIL import Image, ImageDraw
 SCR = os.path.dirname(os.path.abspath(__file__))
 nome = sys.argv[-1]
 ART = os.path.join(SCR, '..', 'ArtPreview', 'out')
 art = json.load(open(os.path.join(ART, 'art.json')))
-model = next(m for m in art['models'] if m['name'] == nome)
+_m = re.match(r'^(.*)_(\d)$', nome)
+base_nome, estagio = (_m.group(1), int(_m.group(2))) if _m else (nome, 0)
+primeiro = (estagio - 1) * 2 + 1 if estagio else 1
+TMP = tempfile.gettempdir()
+model = next(m for m in art['models'] if m['name'] == base_nome)
 P = {p['name']: p for p in model['parts']}
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -66,7 +72,9 @@ def monta(ox, nivel, hibrida, mira_graus=35):
         tex = os.path.join(SCR, 'out', 'Textures', nome)
         m = bpy.data.materials.new('corpo'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
         for suf, entrada in (('_cor', 'Base Color'), ('_normal', 'Normal')):
-            src = tex + suf + '.bytes'; jpg = os.path.join('/tmp', f'_{nome}{suf}.jpg')
+            src = tex + suf + '.bytes'
+            if not os.path.exists(src): continue
+            jpg = os.path.join(TMP, f'_{nome}{suf}.jpg')
             open(jpg, 'wb').write(open(src, 'rb').read())
             t = nt.nodes.new('ShaderNodeTexImage'); t.image = bpy.data.images.load(jpg)
             if suf == '_normal':
@@ -79,9 +87,13 @@ def monta(ox, nivel, hibrida, mira_graus=35):
     # matriz de mundo de cada peça, como a hierarquia do ArtFactory/ModelRig: filho fica em
     # (pivô - pivô do pai) dentro do pai; nível estica o fuste e sobe o topo; a torreta gira
     for nm, ob in corpo.items(): obj[nm] = ob
-    hdef = (corpo['Top'].location.z - corpo['Shaft'].location.z) if hibrida \
+    inteiro = 'Corpo' in corpo
+    if inteiro:  # modelo inteiro: troca o do código todo, nada do código entra
+        for ob in corpo.values(): ob.location.x += ox
+        return
+    hdef = 0.0 if 'Top' not in P else (corpo['Top'].location.z - corpo['Shaft'].location.z) if hibrida \
         else P['Top']['pivot'][1] - P['Shaft']['pivot'][1]
-    grow = 0.14 * (nivel - 1)
+    grow = 0.14 * max(0, nivel - (primeiro if hibrida else 1))
     # o importador do Blender põe a conversão de eixo no objeto; no Unity o nó vem limpo
     base_corpo = {nm: ob.matrix_world.translation.copy() for nm, ob in corpo.items()}
     resto = {nm: ob.matrix_world.to_3x3().to_4x4() for nm, ob in corpo.items()}
@@ -101,10 +113,11 @@ def monta(ox, nivel, hibrida, mira_graus=35):
         if nm.startswith('Lv') and int(nm[2]) > nivel: continue
         if nm == 'Flag' and nivel < 2: continue
         if hibrida and nm.startswith('Lv') and P[nm]['parent'] == 'Shaft': continue  # como o ArtFactory
+        if hibrida and estagio and nm.startswith('Lv') and P[nm]['parent'] == 'Top': continue  # idem, estágio
         ob = obj[nm] if nm in corpo else peca_codigo(p, nm)
         ob.matrix_world = mundo(nm) @ resto[nm] if nm in corpo else mundo(nm)
 
-L = [(1.3, 1, False), (0, 1, True), (-1.3, 6, True)]  # +X do Blender fica à esquerda nesta câmera
+L = [(1.3, primeiro, False), (0, primeiro, True), (-1.3, primeiro + 1 if estagio else 6, True)]  # +X do Blender fica à esquerda nesta câmera
 for ox, nv, hb in L: monta(ox, nv, hb)
 sun = bpy.data.objects.new('sol', bpy.data.lights.new('sol', 'SUN')); sun.data.energy = 3.5
 sun.rotation_euler = (math.radians(50), 0, math.radians(-150)); sc.collection.objects.link(sun)
@@ -125,10 +138,10 @@ def foto(alvo, pitch, dist, lente, rot, rotulo, larg=900, alt=500):
     d.rotate(mathutils.Euler((0, 0, math.radians(rot))))
     cam.location = mathutils.Vector(alvo) + d * dist
     cam.rotation_euler = (mathutils.Vector(alvo) - cam.location).to_track_quat('-Z', 'Y').to_euler()
-    p = f'/tmp/_vt_{nome}_{len(tiles)}.png'; sc.render.filepath = p; bpy.ops.render.render(write_still=True)
+    p = os.path.join(TMP, f'_vt_{nome}_{len(tiles)}.png'); sc.render.filepath = p; bpy.ops.render.render(write_still=True)
     tiles.append((p, rotulo))
-foto((0, 0, 0.35), 50, 5.0, 50, 0, 'jogo, 50 graus: codigo nv1 | Meshy nv1 | Meshy nv6')
-foto((0, 0, 0.35), 36, 2.6, 50, 20, 'zoom perto, 36 graus')
+foto((0, 0, 0.6), 50, 6.0, 50, 0, f'jogo, 50 graus: codigo nv{L[0][1]} | Meshy nv{L[1][1]} | Meshy nv{L[2][1]}')
+foto((0, 0, 0.6), 36, 3.4, 50, 20, 'zoom perto, 36 graus')
 im = Image.new('RGB', (900, 1000)); d = ImageDraw.Draw(im)
 for i, (p, l) in enumerate(tiles):
     im.paste(Image.open(p).convert('RGB'), (0, i * 500)); d.text((8, i * 500 + 6), l, fill='yellow')

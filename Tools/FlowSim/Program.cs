@@ -145,6 +145,23 @@ class Program
         Console.WriteLine();
         TowerWarsTests();
 
+        // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
+        Console.WriteLine();
+        Check(TowerStages.ForLevel(1) == 1 && TowerStages.ForLevel(2) == 1,
+            "Estágio: níveis 1-2 usam o modelo 1");
+        Check(TowerStages.ForLevel(3) == 2 && TowerStages.ForLevel(4) == 2,
+            "Estágio: níveis 3-4 usam o modelo 2");
+        Check(TowerStages.ForLevel(5) == 3 && TowerStages.ForLevel(6) == 3,
+            "Estágio: níveis 5-6 usam o modelo 3");
+        Check(TowerStages.ForLevel(0) == 1 && TowerStages.ForLevel(99) == TowerStages.Count,
+            "Estágio: nível fora da faixa fica no primeiro ou no último modelo");
+        Check(TowerStages.FirstLevel(1) == 1 && TowerStages.FirstLevel(2) == 3 && TowerStages.FirstLevel(3) == 5,
+            "Estágio: primeiro nível de cada modelo (o crescimento recomeça nele)");
+        Check(TowerStages.ModelName("Torre_Gelo", 2) == "Torre_Gelo_2",
+            "Estágio: nome do modelo do estágio (Resources/TDFende/Torres/Torre_Gelo_2)");
+        Check(TowerStages.ForLevel(TowerWarsConfig.MaxTowerLevel) == TowerStages.Count,
+            "Estágio: o nível máximo cai no último modelo");
+
         Console.WriteLine();
         Console.WriteLine(_failed == 0 ? ">>> TODOS OS TESTES PASSARAM" : $">>> {_failed} TESTE(S) FALHARAM");
         return _failed;

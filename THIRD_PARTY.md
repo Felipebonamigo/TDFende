@@ -59,6 +59,13 @@ leve correção de tom (`Tools/ConverterTorres`). Licença pelos termos do Meshy
 asset é de quem gerou (uso comercial livre, sem crédito obrigatório); em plano grátis, sai em
 CC BY 4.0 e precisa de crédito ao Meshy. **Conferir o plano da conta antes de publicar.**
 
+**Torres em 3 estágios, fortaleza e acampamento da comunidade do Meshy**
+(`Assets/Resources/TDFende/Torres/Torre_*_1..3`, `Fortaleza`, `Acampamento`): modelos prontos da
+galeria pública, todos com licença **CC0** (domínio público: sem crédito obrigatório), baixados pelo
+site em 04/10/2026. 18 são do autor **Karrades**; a fortaleza é de **Matson** e o acampamento de
+**nathi.mashabane**. Link e autor de cada um em `Tools/ConverterTorres/comunidade.json`. Alterações
+nossas: escala, corte em Shaft/Top (torres), texturas em 1024 px (`Tools/ConverterTorres`).
+
 **Personagens do Mixamo** (`Assets/Resources/TDFende/Personagens/`): licença da Adobe —
 uso em jogo liberado, redistribuição do arquivo cru não. Por isso não entram no Git.
 

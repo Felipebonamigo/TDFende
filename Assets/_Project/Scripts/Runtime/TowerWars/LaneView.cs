@@ -270,24 +270,40 @@ namespace TDFende
 
         // ------------------------------------------------------------------ torres
 
+        /// <summary>Rig da torre <paramref name="i"/> no modelo do estágio do nível dela, na célula dela.</summary>
+        ModelRig SpawnTower(int i)
+        {
+            int type = _sim.TowerTypeId(i);
+            var def = ModelLib.Tower(type);
+            var rig = ArtFactory.Spawn(def, _owner, _towerRoot, $"Torre_{TowerCatalog.Get(type).Name}",
+                ArtFactory.StageFor(def, _sim.TowerLevel(i)));
+            rig.transform.localPosition = _sim.Map.CellToWorld(_sim.TowerCell(i));
+            // torreta nasce virada para o acampamento: é de lá que o inimigo vem
+            rig.AimAt(_root.TransformPoint(_sim.Map.CellToWorld(_sim.SpawnCells.Count > 0 ? _sim.SpawnCells[0] : _sim.GoalCell)), 1f, 1f);
+            return rig;
+        }
+
         void SyncTowers(float dt)
         {
             // torres novas entram no fim da lista; as vendidas saem em OnTowerSold
             for (int i = _drawnTowers; i < _sim.TowerCount; i++)
             {
-                int type = _sim.TowerTypeId(i);
-                var rig = ArtFactory.Spawn(ModelLib.Tower(type), _owner, _towerRoot,
-                    $"Torre_{TowerCatalog.Get(type).Name}");
-                rig.transform.localPosition = _sim.Map.CellToWorld(_sim.TowerCell(i));
-                // torreta nasce virada para o acampamento: é de lá que o inimigo vem
-                rig.AimAt(_root.TransformPoint(_sim.Map.CellToWorld(_sim.SpawnCells.Count > 0 ? _sim.SpawnCells[0] : _sim.GoalCell)), 1f, 1f);
-                _towers.Add(rig);
+                _towers.Add(SpawnTower(i));
                 _towerAge.Add(0f);
             }
             _drawnTowers = _sim.TowerCount;
 
             for (int i = 0; i < _towers.Count; i++)
             {
+                // subiu de estágio: troca pelo modelo seguinte (a mesma torre, mais forte)
+                var def = _towers[i].Def;
+                if (_towers[i].Stage != ArtFactory.StageFor(def, _sim.TowerLevel(i)))
+                {
+                    var old = _towers[i];
+                    _towers[i] = SpawnTower(i);
+                    _towers[i].transform.localPosition = old.transform.localPosition;
+                    Object.Destroy(old.gameObject);
+                }
                 var rig = _towers[i];
                 if (_towerAge[i] < BuildTime)
                 {

@@ -1,5 +1,5 @@
 {
-  "_comentario": "Uma torre por chave (= nome do modelo no ModelLib). meshy: id da tarefa de refine (text-to-3d) com textura. raio: raio do pé da torre no jogo (1 = uma célula). base/topo/piso_turret: alturas do ModelLib (y0 do fuste, e o quanto a torreta fica acima do pivô do Top). giro: graus em Z para a porta olhar para a câmera. tom: ganho por canal na cor, para casar com a paleta.",
+  "_comentario": "Um modelo por chave (= nome do arquivo em Resources/TDFende/Torres). Torre: o FBX vira Shaft e Top (modelo híbrido) e a torreta do código assenta no piso do topo. meshy: id da tarefa de refine (só nos gerados). raio: raio do pé no jogo (1 = uma célula). altura: altura do corpo no jogo (estágio: manda na escala; o raio só limita o pé). base: y0 do fuste no ModelLib. piso_turret: quanto a torreta fica acima do pivô do Top (art.json do ArtPreview). piso: auto (maior piso plano perto do topo; sem piso, o topo do modelo) ou topo. giro: graus em Z para a porta olhar para a câmera. tom: ganho por canal na cor. modo inteiro (fortaleza, acampamento): o modelo troca o do código inteiro; largura = maior lado do pé no jogo.",
   "Torre_Canhao": {
     "meshy": "01a104bb-05d0-72f1-af81-a4033f72ad91",
     "prompt": "medieval round defensive tower made of weathered cut stone blocks, crenellated battlements on top, a bronze cannon on a wooden carriage on the top platform, small arrow slit windows, wooden door at the base",
@@ -7,6 +7,164 @@
     "base": 0.104,
     "piso_turret": 0.062,
     "giro": 180,
-    "tom": [1.06, 1.0, 0.95]
+    "tom": [
+      1.06,
+      1,
+      0.95
+    ]
+  },
+  "Torre_Canhao_1": {
+    "raio": 0.377,
+    "base": 0.104,
+    "piso_turret": 0.062,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 0.924
+  },
+  "Torre_Canhao_2": {
+    "raio": 0.41,
+    "base": 0.104,
+    "piso_turret": 0.062,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.109
+  },
+  "Torre_Canhao_3": {
+    "raio": 0.443,
+    "base": 0.104,
+    "piso_turret": 0.062,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.294
+  },
+  "Torre_Morteiro_1": {
+    "raio": 0.414,
+    "base": 0.104,
+    "piso_turret": 0.012,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 0.714
+  },
+  "Torre_Morteiro_2": {
+    "raio": 0.45,
+    "base": 0.104,
+    "piso_turret": 0.012,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 0.857
+  },
+  "Torre_Morteiro_3": {
+    "raio": 0.486,
+    "base": 0.104,
+    "piso_turret": 0.012,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1
+  },
+  "Torre_Gelo_1": {
+    "raio": 0.285,
+    "base": 0.104,
+    "piso_turret": 0.16,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.579
+  },
+  "Torre_Gelo_2": {
+    "raio": 0.31,
+    "base": 0.104,
+    "piso_turret": 0.16,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.895
+  },
+  "Torre_Gelo_3": {
+    "raio": 0.335,
+    "base": 0.104,
+    "piso_turret": 0.16,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 2.211
+  },
+  "Torre_Sentinela_1": {
+    "raio": 0.331,
+    "base": 0.104,
+    "piso_turret": 0.04,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.604
+  },
+  "Torre_Sentinela_2": {
+    "raio": 0.36,
+    "base": 0.104,
+    "piso_turret": 0.04,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.925
+  },
+  "Torre_Sentinela_3": {
+    "raio": 0.389,
+    "base": 0.104,
+    "piso_turret": 0.04,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 2.246
+  },
+  "Torre_Fogo_1": {
+    "raio": 0.377,
+    "base": 0.104,
+    "piso_turret": 0.05,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 0.854
+  },
+  "Torre_Fogo_2": {
+    "raio": 0.41,
+    "base": 0.104,
+    "piso_turret": 0.05,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.025
+  },
+  "Torre_Fogo_3": {
+    "raio": 0.443,
+    "base": 0.104,
+    "piso_turret": 0.05,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.196
+  },
+  "Torre_Ar_1": {
+    "raio": 0.294,
+    "base": 0.104,
+    "piso_turret": 0.04,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.314
+  },
+  "Torre_Ar_2": {
+    "raio": 0.32,
+    "base": 0.104,
+    "piso_turret": 0.04,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.577
+  },
+  "Torre_Ar_3": {
+    "raio": 0.346,
+    "base": 0.104,
+    "piso_turret": 0.04,
+    "piso": "auto",
+    "giro": 0,
+    "altura": 1.84
+  },
+  "Fortaleza": {
+    "modo": "inteiro",
+    "largura": 1.1,
+    "giro": 0
+  },
+  "Acampamento": {
+    "modo": "inteiro",
+    "largura": 0.95,
+    "giro": 0
   }
 }

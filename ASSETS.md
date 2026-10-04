@@ -59,8 +59,17 @@ Custo: 30 créditos por torre (20 do modelo, 10 da textura).
 **Antes de gerar, procure pronto.** `Tools/ComunidadeMeshy/busca.py` vasculha a galeria pública da
 comunidade do Meshy (só modelos CC0) com os termos de `buscas.json` e monta uma folha de miniaturas
 numeradas por peça (`out/<peça>.jpg`, com autor, triângulos e link). O GLB se baixa pelo site, logado
-na conta (conta na cota do plano); depois é o mesmo caminho do `ConverterTorres`. Gerar no Meshy só
-em último caso, e perguntando antes de gastar crédito.
+na conta (em 04/10/2026 não gastou crédito); depois é o mesmo caminho do `ConverterTorres`. Gerar no
+Meshy só em último caso, e perguntando antes de gastar crédito. Modelo antigo da galeria às vezes
+vem sem o botão de download: aí não tem como baixar, escolha outro.
+
+**Estágios (já no projeto):** cada torre tem 3 modelos da comunidade, `Torre_<tipo>_1` (níveis 1-2),
+`_2` (3-4) e `_3` (5-6), e o jogo troca o modelo quando a torre sobe de estágio (`TowerStages`,
+`ArtFactory.StageFor`). Dentro do estágio o fuste ainda cresce um pouco. A torreta do código vai no
+piso do topo; em modelo de telhado pontudo, cristal ou braseiro, vai em cima do modelo. Fortaleza e
+acampamento entram inteiros (modo `inteiro` no `torres.json`). Lista e autores em
+`Tools/ConverterTorres/comunidade.json`. Para voltar ao modelo anterior, apague os `_1/_2/_3`.
+Porta virada para o lado errado: ajuste `giro` no `torres.json`, rode `converte.py` e `verifica.py`.
 
 ## 4. Unity Asset Store — pacotes gratuitos (opcional)
 

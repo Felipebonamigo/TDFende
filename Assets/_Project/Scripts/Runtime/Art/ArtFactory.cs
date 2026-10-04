@@ -247,8 +247,26 @@ namespace TDFende
 
         // -------------------------------------------------------------- objetos
 
-        /// <summary>Instancia um modelo (procedural, ou o prefab que o substitui) e devolve o rig.</summary>
-        public static ModelRig Spawn(ModelDef def, Color team, Transform parent, string name = null)
+        /// <summary>
+        /// Estágio cujo modelo baixado existe para a torre neste nível (Torres/&lt;torre&gt;_&lt;estágio&gt;),
+        /// ou 0 se não houver — aí vale o modelo único ou o do código.
+        /// </summary>
+        public static int StageFor(ModelDef def, int level)
+        {
+            int stage = TowerStages.ForLevel(level);
+            string key = TowerStages.ModelName(def.Name, stage);
+            if (!StageModels.TryGetValue(key, out bool has))
+                StageModels[key] = has = Resources.Load<GameObject>(TowerPath + key) != null;
+            return has ? stage : 0;
+        }
+
+        static readonly Dictionary<string, bool> StageModels = new Dictionary<string, bool>();
+
+        /// <summary>
+        /// Instancia um modelo (procedural, ou o prefab que o substitui) e devolve o rig.
+        /// <paramref name="stage"/> &gt; 0 pede o modelo daquele estágio da torre (ver <see cref="StageFor"/>).
+        /// </summary>
+        public static ModelRig Spawn(ModelDef def, Color team, Transform parent, string name = null, int stage = 0)
         {
             var root = new GameObject(name ?? def.Name);
             if (parent != null) root.transform.SetParent(parent, false);
@@ -280,15 +298,21 @@ namespace TDFende
                 }
             }
 
-            var prefab = Resources.Load<GameObject>("TDFende/" + def.Name);
-            if (prefab == null) prefab = Resources.Load<GameObject>(TowerPath + def.Name);
+            GameObject prefab = null;
+            if (stage > 0) prefab = Resources.Load<GameObject>(TowerPath + TowerStages.ModelName(def.Name, stage));
+            if (prefab == null)
+            {
+                stage = 0;
+                prefab = Resources.Load<GameObject>("TDFende/" + def.Name);
+                if (prefab == null) prefab = Resources.Load<GameObject>(TowerPath + def.Name);
+            }
             var fromPrefab = new HashSet<string>();
             if (prefab != null)
             {
                 var inst = Object.Instantiate(prefab, root.transform, false);
                 foreach (var t in inst.GetComponentsInChildren<Transform>(true))
                     if (def.Find(t.name) != null && fromPrefab.Add(t.name)) parts[t.name] = t;
-                SkinBody(def.Name, inst);
+                SkinBody(prefab.name, inst); // textura pelo nome do arquivo: cada estágio tem a sua
             }
             if (prefab == null || fromPrefab.Count > 0)
             {
@@ -300,6 +324,9 @@ namespace TDFende
                     // torre cresce. Os do topo e da base servem como estão.
                     if (part.Parent == ModelLib.Shaft && fromPrefab.Contains(ModelLib.Shaft)
                         && part.Name.StartsWith("Lv")) continue;
+                    // modelo de estágio: a evolução já está no modelo (o seguinte é outro), e os
+                    // enfeites do topo, medidos para o topo do código, cobririam o dele
+                    if (stage > 0 && part.Parent == ModelLib.Top && part.Name.StartsWith("Lv")) continue;
                     var go = new GameObject(part.Name);
                     Transform parentT = root.transform;
                     var parentPivot = Vector3.zero;
@@ -322,6 +349,8 @@ namespace TDFende
 
             var rig = root.AddComponent<ModelRig>();
             rig.Bind(def, parts);
+            rig.Stage = stage;
+            if (stage > 0) rig.GrowFromLevel = TowerStages.FirstLevel(stage);
             // fuste do modelo baixado tem a altura dele: o topo sobe na medida certa ao crescer
             if (fromPrefab.Contains(ModelLib.Shaft) && parts.TryGetValue(ModelLib.Top, out var topT))
             {
