@@ -1,0 +1,185 @@
+{
+ "_comentario": "Modelos prontos da comunidade do Meshy (licença CC0), baixados pelo site em GLB para glb/<arquivo>.glb (fora do Git). Três estágios por torre: 1 = níveis 1-2, 2 = níveis 3-4, 3 = níveis 5-6. CC0 não exige crédito; fica registrado de onde veio cada um.",
+ "modelos": [
+  {
+   "arquivo": "Torre_Canhao_1",
+   "peca": "Canhao",
+   "estagio": 1,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 56874,
+   "link": "https://www.meshy.ai/posts/0196d11d-3599-7b70-8f8e-e6a28d7ff2fb"
+  },
+  {
+   "arquivo": "Torre_Canhao_2",
+   "peca": "Canhao",
+   "estagio": 2,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 47695,
+   "link": "https://www.meshy.ai/posts/0196d123-4168-7b70-af30-d236c36a97e1"
+  },
+  {
+   "arquivo": "Torre_Canhao_3",
+   "peca": "Canhao",
+   "estagio": 3,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 50821,
+   "link": "https://www.meshy.ai/posts/0196d120-afca-7245-a903-93cf8eea5859"
+  },
+  {
+   "arquivo": "Torre_Morteiro_1",
+   "peca": "Morteiro",
+   "estagio": 1,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 41989,
+   "link": "https://www.meshy.ai/posts/0196eb6f-bf01-7694-9256-8af08f04a19b"
+  },
+  {
+   "arquivo": "Torre_Morteiro_2",
+   "peca": "Morteiro",
+   "estagio": 2,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 73470,
+   "link": "https://www.meshy.ai/posts/0196eb27-c03d-72b9-b24a-edbab7772722"
+  },
+  {
+   "arquivo": "Torre_Morteiro_3",
+   "peca": "Morteiro",
+   "estagio": 3,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 73474,
+   "link": "https://www.meshy.ai/posts/0196eb28-83fb-768d-8d73-600b9507239e"
+  },
+  {
+   "arquivo": "Torre_Gelo_1",
+   "peca": "Gelo",
+   "estagio": 1,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 10576,
+   "link": "https://www.meshy.ai/posts/0195b5e8-ef56-7797-b75a-c95e4097097e"
+  },
+  {
+   "arquivo": "Torre_Gelo_2",
+   "peca": "Gelo",
+   "estagio": 2,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 63458,
+   "link": "https://www.meshy.ai/posts/0195b5e8-80e5-7c4f-9d05-485670cf70fb"
+  },
+  {
+   "arquivo": "Torre_Gelo_3",
+   "peca": "Gelo",
+   "estagio": 3,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 95078,
+   "link": "https://www.meshy.ai/posts/0198cf42-cdd1-7e79-915d-4f9361b12a22"
+  },
+  {
+   "arquivo": "Torre_Sentinela_1",
+   "peca": "Sentinela",
+   "estagio": 1,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 29670,
+   "link": "https://www.meshy.ai/posts/0195b183-5b65-7bd6-95b9-f1ced30c476a"
+  },
+  {
+   "arquivo": "Torre_Sentinela_2",
+   "peca": "Sentinela",
+   "estagio": 2,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 50136,
+   "link": "https://www.meshy.ai/posts/0195b184-d3a5-7bd6-a84a-7276babc1525"
+  },
+  {
+   "arquivo": "Torre_Sentinela_3",
+   "peca": "Sentinela",
+   "estagio": 3,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 42383,
+   "link": "https://www.meshy.ai/posts/01993651-8ab0-7422-a4d7-3f816ca68d2a"
+  },
+  {
+   "arquivo": "Torre_Fogo_1",
+   "peca": "Fogo",
+   "estagio": 1,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 48508,
+   "link": "https://www.meshy.ai/posts/01968ebf-2658-7143-ae45-7b0860f1306f"
+  },
+  {
+   "arquivo": "Torre_Fogo_2",
+   "peca": "Fogo",
+   "estagio": 2,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 50858,
+   "link": "https://www.meshy.ai/posts/01968ec1-1603-7143-a89e-3e8e35a754dc"
+  },
+  {
+   "arquivo": "Torre_Fogo_3",
+   "peca": "Fogo",
+   "estagio": 3,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 56160,
+   "link": "https://www.meshy.ai/posts/01968ec2-efd3-7411-b372-cddccfc159e3"
+  },
+  {
+   "arquivo": "Torre_Ar_1",
+   "peca": "Ar",
+   "estagio": 1,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 49606,
+   "link": "https://www.meshy.ai/posts/0196d669-1c66-7c06-b4c1-d6dc21d8e954"
+  },
+  {
+   "arquivo": "Torre_Ar_2",
+   "peca": "Ar",
+   "estagio": 2,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 38009,
+   "link": "https://www.meshy.ai/posts/0196f062-cbe6-76c3-9d8d-5f1c5942e127"
+  },
+  {
+   "arquivo": "Torre_Ar_3",
+   "peca": "Ar",
+   "estagio": 3,
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "triangulos": 85514,
+   "link": "https://www.meshy.ai/posts/0196d66d-75b9-77dc-95fb-c9654be19573"
+  },
+  {
+   "arquivo": "Fortaleza",
+   "peca": "Fortaleza",
+   "estagio": null,
+   "autor": "Matson",
+   "licenca": "CC0",
+   "triangulos": 92577,
+   "link": "https://www.meshy.ai/posts/01964efc-a77f-73fd-b7b1-bbc7bc5c3d91"
+  },
+  {
+   "arquivo": "Acampamento",
+   "peca": "Acampamento",
+   "estagio": null,
+   "autor": "nathi.mashabane",
+   "licenca": "CC0",
+   "triangulos": 9994,
+   "link": "https://www.meshy.ai/posts/019741d2-5909-7308-9462-a123fe58f217"
+  }
+ ]
+}

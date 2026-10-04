@@ -59,6 +59,12 @@
     <Reference Include="UnityEditor.CoreModule"><HintPath>$(UnityManaged)\UnityEditor.CoreModule.dll</HintPath></Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime"><HintPath>$(ScriptAssemblies)\Unity.RenderPipelines.Core.Runtime.dll</HintPath></Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Runtime"><HintPath>$(ScriptAssemblies)\Unity.RenderPipelines.Universal.Runtime.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(UnityManaged)\UnityEngine.AnimationModule.dll</HintPath></Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- o TDFende.Editor.asmdef referencia TDFende.Runtime (AnimalPackSplitter usa o AnimalLoader) -->
+    <ProjectReference Include="..\CompileCheck\CompileCheck.csproj" />
   </ItemGroup>
 
 </Project>

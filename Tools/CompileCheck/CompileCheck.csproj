@@ -104,6 +104,14 @@
     <Reference Include="UnityEngine.TerrainPhysicsModule">
       <HintPath>$(UnityManaged)\UnityEngine.TerrainPhysicsModule.dll</HintPath>
     </Reference>
+    <!-- Animation/AnimationClip dos bichos e personagens baixados (AnimalLoader, CharacterLoader, ModelRig) -->
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(UnityManaged)\UnityEngine.AnimationModule.dll</HintPath>
+    </Reference>
+    <!-- Texture2D.LoadImage das texturas .bytes (ArtFactory) -->
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(UnityManaged)\UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
