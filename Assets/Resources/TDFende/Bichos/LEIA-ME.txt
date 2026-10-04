@@ -1,7 +1,8 @@
 BICHOS DE VERDADE — modelos 3D com esqueleto e animação, no lugar dos feitos em código.
 
-Os 9 do jogo já estão aqui (rato.fbx ... elefante.fbx, texturas em Textures/): Sketchfab, CC BY,
-créditos no THIRD_PARTY.md. Foram gerados por Tools/ConverterBichos — para trocar um, mude o
+Sete do jogo já estão aqui (rato, cachorro, lobo, aguia, urso, rinoceronte, elefante; texturas em
+Textures/): Sketchfab, CC BY, créditos no THIRD_PARTY.md. Javali e tigre usam o modelo em código
+(não achei versão realista com origem comprovada). Foram gerados por Tools/ConverterBichos — para trocar um, mude o
 bichos.json de lá e rode de novo.
 
 Para pôr um seu: o nome do arquivo só precisa ter o bicho, em português ou inglês:
@@ -18,4 +19,4 @@ Se o bicho aparecer andando de lado ou de costas, renomeie o arquivo com
 Textura com "_alfa" no nome = pelo/pena recortado; "_normal" = mapa de normal.
 
 Sem arquivo para um bicho, o jogo usa o modelo feito em código.
-Arquivos seus nesta pasta NÃO vão para o GitHub; só os 9 de cima.
+Arquivos seus nesta pasta NÃO vão para o GitHub; só os 7 de cima.

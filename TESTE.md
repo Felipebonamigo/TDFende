@@ -25,8 +25,8 @@ Está em ordem de valor: se der errado no passo 0 ou 1, pare e me mande o erro.
    - Gelo: o bicho fica azul, solta geada e, depois de alguns tiros, **congela** (casca de gelo, parado). Fogo: chama saindo de vários pontos do corpo
    - Suba uma torre até o nível 6: a cada nível aparece peça nova (bronze, contrafortes, pontas, runas acesas, remate)
    - Os bichos **andam** (quatro patas galopando) e **viram** para onde vão? A águia bate as asas?
-   - Bichos de verdade (rato, pastor-alemão, lobo, javali, gavião, urso, tigre, rinoceronte, elefante):
-     o Console mostra `[TDFende] bichos de verdade: ...` com os 9? Algum andando **de lado/de costas**,
+   - Bichos de verdade (rato, pastor-alemão, lobo, gavião, urso, rinoceronte, elefante; javali e tigre
+     seguem feitos em código): o Console mostra `[TDFende] bichos de verdade: ...` com os 7? Algum andando **de lado/de costas**,
      **flutuando** ou enterrado? O pelo do rato, do cão e do lobo aparece como **franja recortada** ou
      como placas sólidas? Algum bicho **transparente/fantasma**?
    - O céu aparece? Tem **sombra**? O bronze do canhão **brilha** um pouco?

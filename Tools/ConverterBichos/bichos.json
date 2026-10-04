@@ -31,20 +31,6 @@
   },
   "tris": 14000
  },
- "javali": {
-  "uid": "a1480d3816e6477abdf133f3719837c0",
-  "keep": [
-   "Object_42",
-   "Object_43"
-  ],
-  "acoes": {
-   "Walk": "Walk",
-   "Run": "Run",
-   "Idle": "IdleBreathe",
-   "Death": "Death"
-  },
-  "tris": 14000
- },
  "aguia": {
   "uid": "4abcab5af9044a939fb5a55bff9e5000",
   "keep": [
@@ -64,19 +50,6 @@
    "Death": "Death_Stand_R01"
   },
   "tris": 16000
- },
- "tigre": {
-  "uid": "6b5d14b2de984ffcb00ee00e404ad208",
-  "acoes": {
-   "Walk": "Walk",
-   "Run": "Run"
-  },
-  "tris": 16000,
-  "frente": [
-   -1,
-   0,
-   0
-  ]
  },
  "rinoceronte": {
   "uid": "5626816de2734e748f68cb0c00151d3b",
