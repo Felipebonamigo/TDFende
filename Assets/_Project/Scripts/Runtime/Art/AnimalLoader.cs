@@ -151,6 +151,10 @@ namespace TDFende
             // animação que anda para a frente sozinha ("root motion") faria o bicho escorregar e
             // voltar: quem anda é a simulação, então o osso-raiz fica preso no lugar
             inst.AddComponent<RootLock>();
+            // modelo sem animação de andar (só malha): balanço de passada no lugar da perna,
+            // para não deslizar pelo campo feito estátua
+            if (anim.GetClip("Walk") == null && anim.GetClip("Run") == null)
+                holder.gameObject.AddComponent<GaitBob>().Init(Mathf.Max(def.Height, 0.2f));
             if (anim.GetClip("Idle") != null) anim.Play("Idle");
             else if (anim.GetClip("Walk") != null) anim.Play("Walk");
 
@@ -268,6 +272,42 @@ namespace TDFende
             if (_bone == null) return;
             var p = _bone.localPosition;
             _bone.localPosition = new Vector3(_rest.x, p.y, _rest.z);
+        }
+    }
+
+    /// <summary>
+    /// Passada fingida para bicho sem clipe de andar: sobe e desce a cada passo e balança de
+    /// leve, no ritmo do quanto o bicho andou (parado, fica parado).
+    /// </summary>
+    public sealed class GaitBob : MonoBehaviour
+    {
+        float _height, _phase, _speed;
+        Vector3 _restPos;
+        Quaternion _restRot;
+        Vector3 _lastWorld;
+
+        public void Init(float height)
+        {
+            _height = height;
+            _restPos = transform.localPosition;
+            _restRot = transform.localRotation;
+            _lastWorld = transform.parent != null ? transform.parent.position : transform.position;
+        }
+
+        void LateUpdate()
+        {
+            var p = transform.parent != null ? transform.parent.position : transform.position;
+            float dt = Mathf.Max(Time.deltaTime, 1e-4f);
+            float moved = new Vector2(p.x - _lastWorld.x, p.z - _lastWorld.z).magnitude;
+            _lastWorld = p;
+            _speed = Mathf.Lerp(_speed, moved / dt, Mathf.Clamp01(8f * dt));
+            float stride = _height * 0.9f;
+            _phase += moved / Mathf.Max(0.05f, stride) * Mathf.PI * 2f;
+            float amp = Mathf.Clamp01(_speed / (_height * 1.5f));
+            float bob = Mathf.Abs(Mathf.Sin(_phase)) * _height * 0.035f * amp;
+            transform.localPosition = _restPos + Vector3.up * bob;
+            transform.localRotation = _restRot * Quaternion.Euler(Mathf.Sin(_phase * 2f) * 2.5f * amp, 0f,
+                Mathf.Sin(_phase) * 3f * amp);
         }
     }
 }
