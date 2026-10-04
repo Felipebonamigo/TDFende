@@ -1,0 +1,100 @@
+{
+ "rato": {
+  "uid": "3db3acb4140d4de8bd62a171212bad9c",
+  "acoes": {
+   "Walk": "Mammals|walk_A1",
+   "Run": "Mammals|run_A1",
+   "Idle": "Mammals|idle_A1"
+  },
+  "tris": 9000
+ },
+ "cachorro": {
+  "uid": "414a3970c7674bc0bedbab32350f56b6",
+  "drop": [
+   "Object_11"
+  ],
+  "acoes": {
+   "Walk": "Dog Walk 1_55",
+   "Run": "Dog run 1_18"
+  },
+  "tris": 14000,
+  "opacos": [
+   "body"
+  ]
+ },
+ "lobo": {
+  "uid": "5d55506494e5460eaadf04370e07cd5c",
+  "acoes": {
+   "Walk": "Wolf_Walk_cycle_",
+   "Run": "Wolf_Run_Cycle_",
+   "Idle": "Wolf_Idle_"
+  },
+  "tris": 14000
+ },
+ "javali": {
+  "uid": "a1480d3816e6477abdf133f3719837c0",
+  "keep": [
+   "Object_42",
+   "Object_43"
+  ],
+  "acoes": {
+   "Walk": "Walk",
+   "Run": "Run",
+   "Idle": "IdleBreathe",
+   "Death": "Death"
+  },
+  "tris": 14000
+ },
+ "aguia": {
+  "uid": "4abcab5af9044a939fb5a55bff9e5000",
+  "keep": [
+   "Object_35"
+  ],
+  "acoes": {
+   "Walk": "Wings Flapping"
+  },
+  "tris": 14000
+ },
+ "urso": {
+  "uid": "bffc3c87d2d148ff8533e1cc8a11c9f1",
+  "acoes": {
+   "Walk": "Walk",
+   "Run": "Run",
+   "Idle": "Stand_Idle_01",
+   "Death": "Death_Stand_R01"
+  },
+  "tris": 16000
+ },
+ "tigre": {
+  "uid": "6b5d14b2de984ffcb00ee00e404ad208",
+  "acoes": {
+   "Walk": "Walk",
+   "Run": "Run"
+  },
+  "tris": 16000,
+  "frente": [
+   -1,
+   0,
+   0
+  ]
+ },
+ "rinoceronte": {
+  "uid": "5626816de2734e748f68cb0c00151d3b",
+  "acoes": {
+   "Walk": "walking",
+   "Run": "running",
+   "Idle": "idle"
+  },
+  "tris": 16000
+ },
+ "elefante": {
+  "uid": "b960467b14f34cfc84feeb3361a21f54",
+  "acoes": {
+   "Walk": "Loco_WalkSlow",
+   "Run": "Loco_Run",
+   "Idle": "Stand_00",
+   "Death": "Death"
+  },
+  "tris": 16000
+ }
+}

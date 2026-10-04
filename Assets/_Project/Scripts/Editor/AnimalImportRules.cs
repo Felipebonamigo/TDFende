@@ -9,12 +9,14 @@ namespace TDFende.EditorTools
     /// basta: Legacy (o AnimalLoader toca o clipe pelo nome, sem AnimatorController),
     /// materiais do próprio arquivo, e TODOS os clipes embutidos mantidos — os de andar,
     /// correr, ficar parado e voar em loop; o de morrer para no último quadro.
+    /// Texturas dos bichos que vêm com o projeto (pasta Textures, ver Tools/ConverterBichos):
+    /// "_normal" vira mapa de normal, "_alfa" tem recorte de pelo/pena no canal alfa.
     /// </summary>
     class AnimalImportRules : AssetPostprocessor
     {
         internal const string Root = "Assets/Resources/TDFende/Bichos/";
 
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         void OnPreprocessModel()
         {
@@ -25,6 +27,20 @@ namespace TDFende.EditorTools
             mi.importCameras = false;
             mi.importLights = false;
             mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
+        }
+
+        void OnPreprocessTexture()
+        {
+            if (!assetPath.StartsWith(Root)) return;
+            var ti = (TextureImporter)assetImporter;
+            string file = Path.GetFileNameWithoutExtension(assetPath);
+            if (file.EndsWith("_normal")) ti.textureType = TextureImporterType.NormalMap;
+            if (file.EndsWith("_alfa"))
+            {
+                ti.alphaSource = TextureImporterAlphaSource.FromInput;
+                ti.alphaIsTransparency = true;
+            }
+            ti.maxTextureSize = Mathf.Min(ti.maxTextureSize, 1024);
         }
 
         void OnPreprocessAnimation()

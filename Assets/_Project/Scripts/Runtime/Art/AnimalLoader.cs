@@ -228,11 +228,44 @@ namespace TDFende
                 foreach (var m in r.materials)
                 {
                     if (m == null) continue;
+                    FixSurface(m);
                     m.EnableKeyword("_EMISSION");
                     if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", Color.black);
                     m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
                 }
             }
+        }
+
+        /// <summary>
+        /// Pelo e pena dos bichos realistas são cartões com textura recortada: a textura de cor
+        /// termina em "_alfa" (Tools/ConverterBichos). Esses viram recorte (alpha clip, as duas
+        /// faces); o resto fica opaco à força — o FBX às vezes chega marcado como transparente e
+        /// o bicho sairia fantasma, com ordem de desenho errada. Brilho baixo: bicho não é vidro.
+        /// </summary>
+        static void FixSurface(Material m)
+        {
+            var tex = m.HasProperty("_BaseMap") ? m.GetTexture("_BaseMap")
+                : m.HasProperty("_MainTex") ? m.GetTexture("_MainTex") : null;
+            bool cut = tex != null && tex.name.EndsWith("_alfa");
+            // URP Lit
+            if (m.HasProperty("_Surface")) m.SetFloat("_Surface", 0f);
+            if (m.HasProperty("_AlphaClip")) m.SetFloat("_AlphaClip", cut ? 1f : 0f);
+            if (m.HasProperty("_Cull")) m.SetFloat("_Cull", cut ? 0f : 2f);
+            // Built-in Standard: 0 = opaco, 1 = recorte
+            if (m.HasProperty("_Mode")) m.SetFloat("_Mode", cut ? 1f : 0f);
+            if (m.HasProperty("_Cutoff")) m.SetFloat("_Cutoff", 0.45f);
+            if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", 1f);
+            if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", 0f);
+            if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 1f);
+            m.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.DisableKeyword("_ALPHABLEND_ON");
+            m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            if (cut) m.EnableKeyword("_ALPHATEST_ON"); else m.DisableKeyword("_ALPHATEST_ON");
+            m.SetOverrideTag("RenderType", cut ? "TransparentCutout" : "Opaque");
+            m.renderQueue = cut ? (int)UnityEngine.Rendering.RenderQueue.AlphaTest : -1;
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", Mathf.Min(m.GetFloat("_Smoothness"), 0.25f));
+            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", Mathf.Min(m.GetFloat("_Glossiness"), 0.25f));
         }
 
         static Bounds Bounds(GameObject go)

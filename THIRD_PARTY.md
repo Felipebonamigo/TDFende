@@ -17,6 +17,36 @@ CC0 não exige crédito; fica registrado para saber de onde veio cada coisa.
 **Baixados pelo `Tools/BaixarArte.ps1`** (`Assets/Resources/TDFende/Cenario/`, `RoofTile_*`,
 `Slate_*`): Poly Haven, CC0. Cada pasta leva o id do asset na Poly Haven.
 
+**Bichos 3D** (`Assets/Resources/TDFende/Bichos/*.fbx` e `Bichos/Textures/`): Sketchfab, licença
+**CC BY 4.0** (https://creativecommons.org/licenses/by/4.0/) — uso comercial liberado, **crédito
+obrigatório** nos créditos do jogo. Alterações nossas, em todos: convertidos de GLB para FBX,
+malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer,
+ossos sem uso removidos (`Tools/ConverterBichos`). No cão, o colete "POLICE" foi tirado.
+
+| Bicho no jogo | Modelo | Autor | Link |
+|---|---|---|---|
+| Rato | *Black Rat (Free download)* | Nestaeric | https://sketchfab.com/3d-models/black-rat-free-download-3db3acb4140d4de8bd62a171212bad9c |
+| Cachorro | *Police Dog* | Chenchanchong | https://sketchfab.com/3d-models/police-dog-414a3970c7674bc0bedbab32350f56b6 |
+| Lobo | *Animated Wolf Scene* | Roo (roo3d) | https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c |
+| Javali | *Boar_PBR_M* | selvapandi95 | https://sketchfab.com/3d-models/boar-pbr-m-a1480d3816e6477abdf133f3719837c0 |
+| Águia | *Red-tailed Hawk - in Flight* (gavião-de-cauda-vermelha) | osuecampus (OSU.Multimedia) | https://sketchfab.com/3d-models/red-tailed-hawk-in-flight-4abcab5af9044a939fb5a55bff9e5000 |
+| Urso | *Realistic Animated Bear 3D Model* | WildMesh 3D | https://sketchfab.com/3d-models/realistic-animated-bear-3d-model-bffc3c87d2d148ff8533e1cc8a11c9f1 |
+| Tigre | *Tiger rebuilt* | kenchoo (a partir de *White Tiger (RIGGED ANIMATED)*, MotionStreamStudios, CC BY) | https://sketchfab.com/3d-models/tiger-rebuilt-6b5d14b2de984ffcb00ee00e404ad208 |
+| Rinoceronte | *Rhino Rebuilt* | kenchoo (a partir de *Gray Rhino*, AIUM2, CC BY) | https://sketchfab.com/3d-models/rhino-rebuilt-5626816de2734e748f68cb0c00151d3b |
+| Elefante | *African Elephant* | jimmyho905 | https://sketchfab.com/3d-models/african-elephant-b960467b14f34cfc84feeb3361a21f54 |
+
+Texto pronto para a tela de créditos (formato pedido pela CC BY):
+"Black Rat" by Nestaeric; "Police Dog" by Chenchanchong; "Animated Wolf Scene" by Roo;
+"Boar_PBR_M" by selvapandi95; "Red-tailed Hawk - in Flight" by osuecampus; "Realistic Animated
+Bear 3D Model" by WildMesh 3D; "Tiger rebuilt" by kenchoo; "Rhino Rebuilt" by kenchoo; "African
+Elephant" by jimmyho905 — all from sketchfab.com, licensed under CC BY 4.0, modified.
+
+Cuidado anotado na escolha: a licença de cada um foi conferida na página do Sketchfab, e ficaram
+de fora modelos com "personal use only" na descrição, versões NonCommercial e reenvios evidentes
+de pacotes pagos ou de jogos. Não dá para provar a origem de tudo: o javali (*Boar_PBR_M*) não
+tem descrição e o autor publicou outros bichos no padrão de pacote de jogo; os originais do tigre
+não existem mais no site. Antes de lançar na Steam vale trocar esses dois se aparecer coisa melhor.
+
 **Personagens do Mixamo** (`Assets/Resources/TDFende/Personagens/`): licença da Adobe —
 uso em jogo liberado, redistribuição do arquivo cru não. Por isso não entram no Git.
 

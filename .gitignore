@@ -37,7 +37,24 @@ Tools/.baixararte.hash
 
 # Bichos baixados (Sketchfab, Asset Store, Fab...): cada um com sua licença, muitas proíbem
 # redistribuir o arquivo. Ficam só no PC; o LEIA-ME da pasta vai para o repositório.
+# Exceção: os 9 bichos CC-BY que vêm com o projeto (créditos no THIRD_PARTY.md) e as
+# texturas deles. Os .meta continuam fora (o Unity gera; nada referencia por GUID).
 Assets/Resources/TDFende/Bichos/*
 Assets/Resources/TDFende/Bichos/*.meta
 !Assets/Resources/TDFende/Bichos/LEIA-ME.txt
 !Assets/Resources/TDFende/Bichos/LEIA-ME.txt.meta
+!Assets/Resources/TDFende/Bichos/rato.fbx
+!Assets/Resources/TDFende/Bichos/cachorro.fbx
+!Assets/Resources/TDFende/Bichos/lobo.fbx
+!Assets/Resources/TDFende/Bichos/javali.fbx
+!Assets/Resources/TDFende/Bichos/aguia.fbx
+!Assets/Resources/TDFende/Bichos/urso.fbx
+!Assets/Resources/TDFende/Bichos/tigre.fbx
+!Assets/Resources/TDFende/Bichos/rinoceronte.fbx
+!Assets/Resources/TDFende/Bichos/elefante.fbx
+!Assets/Resources/TDFende/Bichos/Textures/
+Assets/Resources/TDFende/Bichos/Textures/*.meta
+# conversor dos bichos: GLB baixado e saída ficam fora
+Tools/ConverterBichos/glb/
+Tools/ConverterBichos/out/
+Tools/ConverterBichos/v_*.jpg
