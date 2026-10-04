@@ -50,12 +50,15 @@ Assets/Resources/TDFende/Bichos/*.meta
 !Assets/Resources/TDFende/Bichos/urso.fbx
 !Assets/Resources/TDFende/Bichos/rinoceronte.fbx
 !Assets/Resources/TDFende/Bichos/elefante.fbx
+!Assets/Resources/TDFende/Bichos/javali.fbx
+!Assets/Resources/TDFende/Bichos/tigre.fbx
 !Assets/Resources/TDFende/Bichos/Textures/
 Assets/Resources/TDFende/Bichos/Textures/*.meta
 # conversor dos bichos: GLB baixado e saída ficam fora
 Tools/ConverterBichos/glb/
 Tools/ConverterBichos/out/
 Tools/ConverterBichos/v_*.jpg
+Tools/ConverterBichos/v_*.png
 # Torres do Meshy (Tools/ConverterTorres): o FBX e as texturas vão; o .meta do FBX o Unity gera
 # (nada referencia por GUID, e ele reescreve o arquivo inteiro ao importar). GLB e saída ficam fora.
 Assets/Resources/TDFende/Torres/*.fbx.meta

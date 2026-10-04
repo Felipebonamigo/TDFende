@@ -48,8 +48,19 @@ descrição e vem no padrão de pacote de jogo; o tigre usa o mesmo esqueleto (B
 as mesmas animações (Attack, Eat, Howl, Walk Fast...) de outros envios do mesmo tigre, sinal de
 um pacote de terceiros. Em 04/10/2026 não havia no Sketchfab javali nem tigre realista, animado
 e com autoria clara; o que tem autoria clara é estilizado (*Stylized Bengal Tiger*, Jungle Jim,
-desenho animado) ou simples demais (*Wild Boar*, jbnotjeebe, 2017, low-poly). Até aparecer um
-bom, esses dois usam o modelo feito em código (nosso).
+desenho animado) ou simples demais (*Wild Boar*, jbnotjeebe, 2017, low-poly).
+
+**Javali e tigre agora** (`Bichos/javali.fbx`, `Bichos/tigre.fbx`): gerados no Meshy pela conta do
+Felipe (imagem para 3D, 03/10/2026), sem esqueleto: andam com o balanço de passada do jogo.
+Convertidos com `Tools/ConverterBichos/estatico.py` (malha reduzida a 15 mil triângulos, texturas
+em 1024 px). Licença pelos termos do Meshy: no plano pago o modelo é de quem gerou; uma das gerações
+daquela noite foi às 23:06, ainda no plano grátis (CC BY 4.0, crédito ao Meshy), e não dá para saber
+qual dos dois arquivos é. **Na dúvida, pôr "3D models generated with Meshy (meshy.ai)" nos créditos.**
+
+**Pacote "Realistic Animated Pack": fora do projeto.** Era a origem do lobo, urso e javali que o
+`AnimalPackSplitter` gerava em `Bichos/Gerados/` (só no PC, nunca foi para o Git), e não tem licença
+comprovada. Em 04/10/2026 o pacote, as texturas dele e os prefabs gerados foram para
+`C:\Users\Felip\TDFende-quarentena`; lobo e urso voltaram aos modelos CC BY acima.
 
 **Torres geradas no Meshy** (`Assets/Resources/TDFende/Torres/`): geradas por IA no Meshy
 (https://www.meshy.ai), na conta do Felipe, pela API. A de Canhão saiu das tarefas
