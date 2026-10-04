@@ -51,6 +51,14 @@ e com autoria clara; o que tem autoria clara é estilizado (*Stylized Bengal Tig
 desenho animado) ou simples demais (*Wild Boar*, jbnotjeebe, 2017, low-poly). Até aparecer um
 bom, esses dois usam o modelo feito em código (nosso).
 
+**Torres geradas no Meshy** (`Assets/Resources/TDFende/Torres/`): geradas por IA no Meshy
+(https://www.meshy.ai), na conta do Felipe, pela API. A de Canhão saiu das tarefas
+`01a104b8-2063-7663-baf7-42c6a6d83e9e` (modelo) e `01a104bb-05d0-72f1-af81-a4033f72ad91` (textura).
+Alterações nossas: canhão do modelo removido, escala e corte em Shaft/Top, texturas em 1024 px com
+leve correção de tom (`Tools/ConverterTorres`). Licença pelos termos do Meshy: em plano pago, o
+asset é de quem gerou (uso comercial livre, sem crédito obrigatório); em plano grátis, sai em
+CC BY 4.0 e precisa de crédito ao Meshy. **Conferir o plano da conta antes de publicar.**
+
 **Personagens do Mixamo** (`Assets/Resources/TDFende/Personagens/`): licença da Adobe —
 uso em jogo liberado, redistribuição do arquivo cru não. Por isso não entram no Git.
 

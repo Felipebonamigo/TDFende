@@ -56,3 +56,9 @@ Assets/Resources/TDFende/Bichos/Textures/*.meta
 Tools/ConverterBichos/glb/
 Tools/ConverterBichos/out/
 Tools/ConverterBichos/v_*.jpg
+# Torres do Meshy (Tools/ConverterTorres): o FBX e as texturas vão; o .meta do FBX o Unity gera
+# (nada referencia por GUID, e ele reescreve o arquivo inteiro ao importar). GLB e saída ficam fora.
+Assets/Resources/TDFende/Torres/*.fbx.meta
+Tools/ConverterTorres/glb/
+Tools/ConverterTorres/out/
+Tools/ConverterTorres/v_*.jpg

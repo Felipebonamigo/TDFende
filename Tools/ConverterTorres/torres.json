@@ -1,0 +1,12 @@
+{
+  "_comentario": "Uma torre por chave (= nome do modelo no ModelLib). meshy: id da tarefa de refine (text-to-3d) com textura. raio: raio do pé da torre no jogo (1 = uma célula). base/topo/piso_turret: alturas do ModelLib (y0 do fuste, e o quanto a torreta fica acima do pivô do Top). giro: graus em Z para a porta olhar para a câmera. tom: ganho por canal na cor, para casar com a paleta.",
+  "Torre_Canhao": {
+    "meshy": "01a104bb-05d0-72f1-af81-a4033f72ad91",
+    "prompt": "medieval round defensive tower made of weathered cut stone blocks, crenellated battlements on top, a bronze cannon on a wooden carriage on the top platform, small arrow slit windows, wooden door at the base",
+    "raio": 0.41,
+    "base": 0.104,
+    "piso_turret": 0.062,
+    "giro": 180,
+    "tom": [1.06, 1.0, 0.95]
+  }
+}

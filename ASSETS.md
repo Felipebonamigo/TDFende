@@ -39,7 +39,24 @@ Trocar à mão continua valendo: qualquer `.fbx` com o nome do bicho na pasta (`
 sem critério. Bicho andando de lado: `_giro90`, `_giro-90` ou `_giro180` no nome. Arquivo seu
 nessa pasta **não vai para o GitHub** (o `.gitignore` só deixa passar os nossos).
 
-## 3. Unity Asset Store — pacotes gratuitos (opcional)
+## 3. Torres geradas no Meshy (IA) — a de Canhão já vem no projeto
+
+`Assets/Resources/TDFende/Torres/Torre_Canhao.fbx`: corpo de pedra gerado no Meshy (meshy.ai,
+texto para 3D). O jogo usa só o **corpo** (fuste, adarve e ameias); o canhão de bronze, a base,
+a bandeira e os enfeites de nível continuam vindo do código — o canhão do Meshy saía torto e
+grudado na malha, e o nosso gira para mirar e dá coice. É o modelo "híbrido" do `ArtFactory`.
+
+Abra o Unity e dê Play: a torre de Canhão troca sozinha. Para voltar à feita em código, apague
+o FBX. Para refazer ou gerar outra torre: `Tools/ConverterTorres` (Python + Blender sem janela,
+`pip install bpy pillow`). Em `torres.json` fica o id da tarefa no Meshy e as medidas do jogo;
+`baixa.py` baixa o GLB (precisa de `MESHY_API_KEY`), `converte.py` tira o que não é corpo, põe na
+escala, corta em Shaft/Top e gera as texturas; `verifica.py` desenha a torre montada com as peças
+do código, nível 1 e 6 (rode `dotnet run` em `Tools/ArtPreview` antes). Copie `out/` para
+`Assets/Resources/TDFende/Torres/`.
+
+Custo: 30 créditos por torre (20 do modelo, 10 da textura).
+
+## 4. Unity Asset Store — pacotes gratuitos (opcional)
 
 Em https://assetstore.unity.com filtre por **Free** e busque "medieval", "castle",
 "siege", "horse". Ao importar um pacote, me diga o nome e o que veio dentro: eu ligo os

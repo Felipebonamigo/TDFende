@@ -35,9 +35,16 @@ namespace TDFende
         int _level = 1;
         HealthBar _bar;
 
+        /// <summary>
+        /// Altura do fuste: quanto o topo sobe por "unidade" de crescimento. Vem do ModelDef; o
+        /// ArtFactory troca pela medida do modelo baixado quando o fuste é dele.
+        /// </summary>
+        internal float ShaftHeight;
+
         internal void Bind(ModelDef def, Dictionary<string, Transform> parts)
         {
             Def = def;
+            ShaftHeight = def.ShaftHeight;
             Transform Get(string n) => parts.TryGetValue(n, out var t) ? t : null;
             _shaft = Get(ModelLib.Shaft);
             _top = Get(ModelLib.Top);
@@ -97,7 +104,7 @@ namespace TDFende
             _level = level;
             float grow = 0.14f * (level - 1);
             if (_shaft != null) _shaft.localScale = new Vector3(1f, 1f + grow, 1f);
-            if (_top != null) _top.localPosition = _topRest + Vector3.up * (Def.ShaftHeight * grow);
+            if (_top != null) _top.localPosition = _topRest + Vector3.up * (ShaftHeight * grow);
             if (_flag != null) _flag.gameObject.SetActive(level >= 2);
             // cada nível acende o seu conjunto de enfeites (e os de baixo continuam)
             foreach (var (t, lvl) in _tiers) t.gameObject.SetActive(level >= lvl);

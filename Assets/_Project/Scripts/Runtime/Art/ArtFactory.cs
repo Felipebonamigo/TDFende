@@ -10,11 +10,13 @@ namespace TDFende
     /// gerada uma vez, cada malha uma vez, cada material uma vez por cor de time.
     ///
     /// Porta de saída para asset de verdade: se existir um prefab em
-    /// Resources/TDFende/&lt;nome do modelo&gt; (ex.: Resources/TDFende/Torre_Canhao),
-    /// ele é usado no lugar do modelo procedural. Basta os filhos terem os mesmos
-    /// nomes de peça (Turret, Barrel, Shaft, Top, Flag, LegL...) para a animação
-    /// continuar funcionando. Assim dá para trocar peça por peça por modelo comprado
-    /// sem mexer em código.
+    /// Resources/TDFende/&lt;nome do modelo&gt; ou Resources/TDFende/Torres/&lt;nome&gt;
+    /// (ex.: Resources/TDFende/Torres/Torre_Canhao), ele entra no lugar do modelo procedural.
+    /// Prefab sem nenhuma peça com nome conhecido substitui o modelo inteiro. Prefab com
+    /// peças nomeadas (Turret, Barrel, Shaft, Top, Flag, LegL...) é híbrido: troca só essas,
+    /// e as que ele não trouxe saem do código — a torre do Meshy traz Shaft e Top (o corpo de
+    /// pedra) e continua com a torreta, o cano, a base e os enfeites de nível daqui.
+    /// Assim dá para trocar peça por peça sem mexer em código.
     /// </summary>
     public static class ArtFactory
     {
@@ -23,6 +25,9 @@ namespace TDFende
         /// <summary>Materiais que acharam textura fotográfica em Resources (escala própria).</summary>
         static readonly Dictionary<ArtMat, float> ExternalTile = new Dictionary<ArtMat, float>();
         const string TexturePath = "TDFende/Textures/";
+        const string TowerPath = "TDFende/Torres/";
+        /// <summary>Material do corpo de cada modelo baixado (null: não tem textura própria).</summary>
+        static readonly Dictionary<string, Material> BodyMats = new Dictionary<string, Material>();
         static readonly Dictionary<(ArtMat, Color), Material> Mats = new Dictionary<(ArtMat, Color), Material>();
         static readonly Dictionary<string, Mesh> Meshes = new Dictionary<string, Mesh>();
 
@@ -276,16 +281,25 @@ namespace TDFende
             }
 
             var prefab = Resources.Load<GameObject>("TDFende/" + def.Name);
+            if (prefab == null) prefab = Resources.Load<GameObject>(TowerPath + def.Name);
+            var fromPrefab = new HashSet<string>();
             if (prefab != null)
             {
                 var inst = Object.Instantiate(prefab, root.transform, false);
                 foreach (var t in inst.GetComponentsInChildren<Transform>(true))
-                    if (def.Find(t.name) != null && !parts.ContainsKey(t.name)) parts[t.name] = t;
+                    if (def.Find(t.name) != null && fromPrefab.Add(t.name)) parts[t.name] = t;
+                SkinBody(def.Name, inst);
             }
-            else
+            if (prefab == null || fromPrefab.Count > 0)
             {
                 foreach (var part in def.Parts)
                 {
+                    if (parts.ContainsKey(part.Name)) continue;
+                    // enfeite de nível no fuste do modelo baixado: foi medido para o fuste do
+                    // código (raio, altura) e sobraria dentro da parede ou flutuando quando a
+                    // torre cresce. Os do topo e da base servem como estão.
+                    if (part.Parent == ModelLib.Shaft && fromPrefab.Contains(ModelLib.Shaft)
+                        && part.Name.StartsWith("Lv")) continue;
                     var go = new GameObject(part.Name);
                     Transform parentT = root.transform;
                     var parentPivot = Vector3.zero;
@@ -308,7 +322,76 @@ namespace TDFende
 
             var rig = root.AddComponent<ModelRig>();
             rig.Bind(def, parts);
+            // fuste do modelo baixado tem a altura dele: o topo sobe na medida certa ao crescer
+            if (fromPrefab.Contains(ModelLib.Shaft) && parts.TryGetValue(ModelLib.Top, out var topT))
+            {
+                var r = root.transform;
+                rig.ShaftHeight = r.InverseTransformPoint(topT.position).y
+                                  - r.InverseTransformPoint(parts[ModelLib.Shaft].position).y;
+            }
             return rig;
+        }
+
+        /// <summary>
+        /// Veste o modelo baixado com a textura dele, se houver em Resources/TDFende/Torres/Textures
+        /// (&lt;nome&gt;_cor e &lt;nome&gt;_normal, JPG em .bytes — o Unity não recomprime, como as
+        /// fotos de TDFende/Textures). Material do mesmo shader dos procedurais, com emissão
+        /// ligada: é por ela que passa o brilho de <see cref="ModelRig.SetGlow"/>.
+        /// </summary>
+        static void SkinBody(string name, GameObject inst)
+        {
+            if (!BodyMats.TryGetValue(name, out var mat))
+            {
+                mat = null;
+                var cor = Resources.Load<TextAsset>(TowerPath + "Textures/" + name + "_cor");
+                var albedo = cor != null ? LoadBodyTex(cor, name + "_cor", false) : null;
+                if (albedo != null)
+                {
+                    EnsureShader();
+                    mat = new Material(_lit) { name = name, enableInstancing = true };
+                    mat.SetTexture(_baseMap, albedo);
+                    mat.SetColor(_baseColor, Color.white);
+                    var nrm = Resources.Load<TextAsset>(TowerPath + "Textures/" + name + "_normal");
+                    var normal = nrm != null ? LoadBodyTex(nrm, name + "_normal", true) : null;
+                    if (normal != null)
+                    {
+                        mat.SetTexture("_BumpMap", normal);
+                        mat.SetFloat("_BumpScale", 1f);
+                        mat.EnableKeyword("_NORMALMAP");
+                    }
+                    mat.SetFloat(_smoothness, 0.15f); // pedra velha: quase fosca
+                    mat.SetFloat("_Metallic", 0f);
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor(_emission, Color.black);
+                    mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                }
+                BodyMats[name] = mat;
+            }
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true))
+            {
+                if (mat != null)
+                {
+                    var arr = r.sharedMaterials;
+                    for (int i = 0; i < arr.Length; i++) arr[i] = mat;
+                    r.sharedMaterials = arr;
+                }
+                r.shadowCastingMode = ShadowCastingMode.On;
+            }
+        }
+
+        static Texture2D LoadBodyTex(TextAsset bytes, string texName, bool linear)
+        {
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true, linear) { name = texName };
+            if (!tex.LoadImage(bytes.bytes, false))
+            {
+                Debug.LogWarning($"[TDFende] textura {texName} não abriu");
+                return null;
+            }
+            tex.wrapMode = TextureWrapMode.Clamp; // atlas: repetir só traria a borda do outro lado
+            tex.filterMode = FilterMode.Trilinear;
+            tex.anisoLevel = 8;
+            tex.Apply(true, true);
+            return tex;
         }
 
         /// <summary>Objeto estático de uma malha só (chão, cenário, mureta), sem rig.</summary>
