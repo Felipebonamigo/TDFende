@@ -62,3 +62,5 @@ Assets/Resources/TDFende/Torres/*.fbx.meta
 Tools/ConverterTorres/glb/
 Tools/ConverterTorres/out/
 Tools/ConverterTorres/v_*.jpg
+# busca na comunidade do Meshy (Tools/ComunidadeMeshy): folhas de miniaturas, refeitas a cada busca
+Tools/ComunidadeMeshy/out/

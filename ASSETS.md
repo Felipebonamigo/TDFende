@@ -56,6 +56,12 @@ do código, nível 1 e 6 (rode `dotnet run` em `Tools/ArtPreview` antes). Copie 
 
 Custo: 30 créditos por torre (20 do modelo, 10 da textura).
 
+**Antes de gerar, procure pronto.** `Tools/ComunidadeMeshy/busca.py` vasculha a galeria pública da
+comunidade do Meshy (só modelos CC0) com os termos de `buscas.json` e monta uma folha de miniaturas
+numeradas por peça (`out/<peça>.jpg`, com autor, triângulos e link). O GLB se baixa pelo site, logado
+na conta (conta na cota do plano); depois é o mesmo caminho do `ConverterTorres`. Gerar no Meshy só
+em último caso, e perguntando antes de gastar crédito.
+
 ## 4. Unity Asset Store — pacotes gratuitos (opcional)
 
 Em https://assetstore.unity.com filtre por **Free** e busque "medieval", "castle",

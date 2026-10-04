@@ -1,0 +1,11 @@
+{
+  "_comentario": "Uma lista de buscas (em inglês: é a língua dos prompts da comunidade) por peça do jogo.",
+  "Torre_Canhao": ["cannon tower", "stone tower cannon", "round stone tower", "artillery tower"],
+  "Torre_Morteiro": ["mortar", "siege mortar", "stone bastion", "mortar tower"],
+  "Torre_Gelo": ["ice tower", "frost tower", "ice crystal tower", "frozen tower"],
+  "Torre_Sentinela": ["watchtower", "archer tower", "guard tower", "ballista tower"],
+  "Torre_Fogo": ["fire tower", "brazier tower", "flame tower", "beacon tower"],
+  "Torre_Ar": ["windmill", "medieval windmill", "wind tower", "stone windmill"],
+  "Fortaleza": ["castle keep", "medieval fortress", "castle", "stone keep"],
+  "Acampamento": ["medieval tent", "army camp", "war tent", "military camp"]
+}
