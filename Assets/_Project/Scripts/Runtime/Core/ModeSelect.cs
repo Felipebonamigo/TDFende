@@ -11,6 +11,15 @@ namespace TDFende
     {
         bool _started;
 
+        void Start()
+        {
+            // teste de fumaça do executável: entra direto, tira print e fecha
+            var capture = SmokeCapture.RequestedPath();
+            if (capture == null) return;
+            SmokeCapture.Begin(capture);
+            LaunchWars(TowerWarsAi.Personality.Normal);
+        }
+
         void OnGUI()
         {
             if (_started) return;

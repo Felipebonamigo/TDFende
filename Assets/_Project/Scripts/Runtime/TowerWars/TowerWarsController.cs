@@ -29,6 +29,8 @@ namespace TDFende
         public LaneSim Player => _runner?.Player;
         public LaneSim Foe => _runner?.Foe;
         internal MatchRunner Runner => _runner;
+        internal CameraRigDriver CameraRig => _cameraRig;
+        internal const float LaneGapForTests = LaneGap;
 
         MatchRunner _runner;
         Replay _replay;

@@ -39,6 +39,7 @@ namespace TDFende.EditorTools
             ("Universal Render Pipeline/Terrain/Lit", new[]
             {
                 new string[0],
+                new[] { "_TERRAIN_INSTANCED_PERPIXEL_NORMAL" }, // o que o GroundBuilder liga
                 new[] { "_NORMALMAP" },
                 new[] { "_NORMALMAP", "_TERRAIN_INSTANCED_PERPIXEL_NORMAL" },
             }),
@@ -103,6 +104,10 @@ namespace TDFende.EditorTools
                     }
                     mat.shader = shader;
                     mat.shaderKeywords = kws;
+                    // o projeto descarta variante de instancing que nenhum material usa
+                    // (GraphicsSettings: Instancing Variants = Strip Unused), e a grama
+                    // (RenderMeshInstanced) e o terreno (drawInstanced) só desenham com ela
+                    mat.enableInstancing = true;
                     if (System.Array.IndexOf(kws, "_ALPHATEST_ON") >= 0 && mat.HasProperty("_AlphaClip"))
                         mat.SetFloat("_AlphaClip", 1f);
                     EditorUtility.SetDirty(mat);

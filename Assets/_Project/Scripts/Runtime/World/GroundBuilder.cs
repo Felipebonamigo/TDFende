@@ -137,7 +137,11 @@ namespace TDFende
                 mat.EnableKeyword("_TERRAIN_INSTANCED_PERPIXEL_NORMAL");
                 terrain.materialTemplate = mat;
             }
-            terrain.drawInstanced = true;
+            // Sem instancing: no executável o terreno instanciado sai todo PRETO (no editor não),
+            // e nenhuma variante guardada no build resolveu (BuildJogo/ShaderKeep). Visto com o
+            // print do "-captura" (SmokeCapture), 06/10/2026. O custo é a luz pela normal por
+            // vértice, que só aparece no relevo longe das lanes — perto delas o chão é plano.
+            terrain.drawInstanced = false;
             terrain.basemapDistance = 1000f;   // textura cheia em todo o campo visível
             terrain.heightmapPixelError = 2f;
             return terrain;

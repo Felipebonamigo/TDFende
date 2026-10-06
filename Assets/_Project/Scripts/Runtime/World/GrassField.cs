@@ -208,7 +208,7 @@ namespace TDFende
         {
             var m = new Material(lit) { name = "Grama", enableInstancing = true };
             m.SetTexture("_BaseMap", tex);
-            m.SetColor("_BaseColor", new Color(0.92f, 0.95f, 0.9f));
+            m.SetColor("_BaseColor", new Color(1.15f, 1.35f, 0.95f)); // a foto é oliva-escuro: puxa para o verde vivo
             m.SetFloat("_AlphaClip", 1f);
             m.SetFloat("_Cutoff", 0.5f);
             m.EnableKeyword("_ALPHATEST_ON"); // vale para todas as passadas, sombra e profundidade inclusas

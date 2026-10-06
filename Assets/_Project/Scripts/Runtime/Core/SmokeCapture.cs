@@ -14,7 +14,8 @@ namespace TDFende
 
         string _path;
         float _t;
-        bool _shot;
+        bool _shot, _close, _closeShot;
+        float _closeAt;
 
         /// <summary>Caminho pedido em "-captura", ou null se o jogo abriu normal.</summary>
         public static string RequestedPath()
@@ -105,7 +106,50 @@ namespace TDFende
                 LogMovement();
                 Debug.Log($"[TDFende] captura: {_path}");
             }
-            else if (_shot && _t >= Wait + Record + 2f) Application.Quit(); // o print é gravado no fim do quadro
+            else if (_shot && !_close && _t >= Wait + Record + 1f)
+            {
+                // segundo print: câmera colada na grama, logo à esquerda da sua lane
+                var tw = Object.FindFirstObjectByType<TowerWarsController>();
+                if (tw != null && tw.CameraRig != null)
+                {
+                    float w = tw.Player.Map.WorldSize.z;
+                    float laneX = -(w + TowerWarsController.LaneGapForTests) * 0.5f;
+                    tw.CameraRig.Focus(new Vector3(laneX - w * 0.5f - 2.5f, 0f, 0f), 4f);
+                    // com bicho na tela, a câmera vai nele: é o que mais some num build
+                    foreach (var v in Object.FindObjectsByType<EnemyView>(FindObjectsSortMode.None))
+                        if (v.enabled && v.Rig != null)
+                        {
+                            tw.CameraRig.Focus(v.transform.position, 3f);
+                            LogEnemy(v);
+                            break;
+                        }
+                }
+                _close = true;
+                _closeAt = _t;
+            }
+            else if (_close && !_closeShot && _t >= _closeAt + 0.5f)
+            {
+                ScreenCapture.CaptureScreenshot(System.IO.Path.ChangeExtension(_path, null) + "_grama.png");
+                _closeShot = true;
+            }
+            else if (_closeShot && _t >= _closeAt + 2f) Application.Quit(); // o print é gravado no fim do quadro
+        }
+
+        /// <summary>O bicho fotografado: renderers, materiais, tamanho e se está ligado.</summary>
+        static void LogEnemy(EnemyView v)
+        {
+            var sb = new System.Text.StringBuilder($"[TDFende] captura, bicho {v.Rig.Def.Name} em {v.transform.position}, escala {v.transform.lossyScale}:\n");
+            foreach (var r in v.Rig.GetComponentsInChildren<Renderer>(true))
+            {
+                sb.Append($"  {r.GetType().Name} '{r.name}' ativo={r.gameObject.activeInHierarchy} ligado={r.enabled} " +
+                          $"visível={r.isVisible} limites={r.bounds.size} escala={r.transform.lossyScale}\n");
+                foreach (var m in r.sharedMaterials)
+                    sb.Append(m == null ? "    material NULO\n"
+                        : $"    '{m.name}' shader '{m.shader.name}' suportado={m.shader.isSupported} fila={m.renderQueue} " +
+                          $"keywords=[{string.Join(" ", m.shaderKeywords)}] " +
+                          $"cor={(m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor").ToString() : "-")}\n");
+            }
+            Debug.Log(sb.ToString());
         }
 
         /// <summary>O que mais some num build: shader, keyword, textura, céu e luz ambiente.</summary>
