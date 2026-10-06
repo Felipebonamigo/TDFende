@@ -69,5 +69,31 @@
    "Death": "Death"
   },
   "tris": 16000
+ },
+ "tigre": {
+  "uid": "meshy_tigre",
+  "acoes": {
+   "Walk": "baselayer"
+  },
+  "tris": 10500,
+  "frente": [
+   0,
+   -1,
+   0
+  ],
+  "giro": 11
+ },
+ "javali": {
+  "uid": "meshy_javali",
+  "acoes": {
+   "Walk": "baselayer"
+  },
+  "tris": 10000,
+  "cabeca": [
+   "chest"
+  ],
+  "rabo": [
+   "hips"
+  ]
  }
 }

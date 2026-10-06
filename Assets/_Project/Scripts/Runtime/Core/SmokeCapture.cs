@@ -61,7 +61,14 @@ namespace TDFende
                 float off = 0f;
                 var rs = v.Rig.GetComponentsInChildren<SkinnedMeshRenderer>();
                 if (rs.Length > 0 && rs[0].rootBone != null) off = Vector3.Dot(rs[0].rootBone.position - p, v.transform.forward);
-                if (!_track.TryGetValue(v, out var tr)) { _track[v] = (p, 0f, 0, 0, 0f, v.Rig.Def.Name, off, off); continue; }
+                if (!_track.TryGetValue(v, out var tr))
+                {
+                    // animação de verdade tocando (bicho com esqueleto) ou só o balanço de passada
+                    var anim = v.Rig.GetComponentInChildren<Animation>();
+                    string how = anim != null && anim.isPlaying ? "animado" : anim != null ? "animação parada" : "sem animação";
+                    _track[v] = (p, 0f, 0, 0, 0f, v.Rig.Def.Name + " (" + how + ")", off, off);
+                    continue;
+                }
                 tr.offMin = Mathf.Min(tr.offMin, off); tr.offMax = Mathf.Max(tr.offMax, off);
                 float d = Vector3.Distance(p, tr.pos);
                 // passo "normal" = média móvel; salto = mais de 4x o normal e mais de 0,05 unidade

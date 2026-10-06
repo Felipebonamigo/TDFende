@@ -103,6 +103,7 @@ d.z = 0
 ang = math.atan2(d.x, -d.y)  # quanto girar em Z para levar d até -Y
 snap = round(ang / (math.pi / 2)) * (math.pi / 2)
 if abs(ang - snap) > math.radians(12): snap = ang  # modelo torto de fábrica: giro exato
+if 'giro' in c: snap = math.radians(c['giro'])  # acertado a olho no verifica.py (torto de poucos graus)
 print('FRENTE', tuple(round(x, 3) for x in d), 'rabo' if tail is not None else 'centro', 'giro', round(math.degrees(snap), 1))
 R = mathutils.Matrix.Rotation(-snap, 4, 'Z')
 arm.matrix_world = R @ arm.matrix_world

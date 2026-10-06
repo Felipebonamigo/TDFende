@@ -51,9 +51,9 @@ e com autoria clara; o que tem autoria clara é estilizado (*Stylized Bengal Tig
 desenho animado) ou simples demais (*Wild Boar*, jbnotjeebe, 2017, low-poly).
 
 **Javali e tigre agora** (`Bichos/javali.fbx`, `Bichos/tigre.fbx`): gerados no Meshy pela conta do
-Felipe (imagem para 3D, 03/10/2026), sem esqueleto: andam com o balanço de passada do jogo.
-Convertidos com `Tools/ConverterBichos/estatico.py` (malha reduzida a 15 mil triângulos, texturas
-em 1024 px). Licença pelos termos do Meshy: no plano pago o modelo é de quem gerou; uma das gerações
+Felipe (imagem para 3D, 03/10/2026). Em 06/10/2026 ganharam esqueleto e a animação de andar no
+próprio Meshy (malha reduzida a ~10 mil triângulos, Rig de quadrúpede, animação "Andando") e
+passaram pelo `Tools/ConverterBichos/converte.py` como os outros bichos. Licença pelos termos do Meshy: no plano pago o modelo é de quem gerou; uma das gerações
 daquela noite foi às 23:06, ainda no plano grátis (CC BY 4.0, crédito ao Meshy), e não dá para saber
 qual dos dois arquivos é. **Na dúvida, pôr "3D models generated with Meshy (meshy.ai)" nos créditos.**
 
