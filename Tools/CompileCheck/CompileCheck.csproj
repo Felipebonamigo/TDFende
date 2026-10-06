@@ -108,6 +108,10 @@
     <Reference Include="UnityEngine.AnimationModule">
       <HintPath>$(UnityManaged)\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>
+    <!-- ScreenCapture do teste de fumaça do executável (SmokeCapture) -->
+    <Reference Include="UnityEngine.ScreenCaptureModule">
+      <HintPath>$(UnityManaged)\UnityEngine.ScreenCaptureModule.dll</HintPath>
+    </Reference>
     <!-- Texture2D.LoadImage das texturas .bytes (ArtFactory) -->
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>$(UnityManaged)\UnityEngine.ImageConversionModule.dll</HintPath>
