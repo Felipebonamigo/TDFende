@@ -45,6 +45,16 @@ namespace TDFende
             Apply();
         }
 
+        /// <summary>Põe a câmera sobre um ponto (dentro dos limites), a uma distância, na hora.</summary>
+        public void Focus(Vector3 point, float dist)
+        {
+            point.x = Mathf.Clamp(point.x, _boundsMin.x, _boundsMax.x);
+            point.z = Mathf.Clamp(point.z, _boundsMin.z, _boundsMax.z);
+            _rig.position = point;
+            _dist = _targetDist = Mathf.Clamp(dist, MinDist, _maxDist);
+            Apply();
+        }
+
         public void Tick(IGameInput input, float dt)
         {
             float zoomScale = _dist / 16f;

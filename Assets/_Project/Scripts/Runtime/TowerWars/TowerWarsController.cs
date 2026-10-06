@@ -124,6 +124,10 @@ namespace TDFende
             float depth = Player.Map.WorldSize.x + 6f;
             _cameraRig = new CameraRigDriver(cam, Vector3.zero,
                 new Vector3(totalX, 0f, depth), totalX * 0.95f);
+            // começa perto, na SUA lane (a da esquerda), puxada para o lado da fortaleza; as
+            // duas lanes inteiras continuam a um scroll de distância
+            float laneOff = (Player.Map.WorldSize.z + LaneGap) * 0.5f;
+            _cameraRig.Focus(new Vector3(-laneOff, 0f, -depth * 0.12f), depth * 0.62f);
         }
 
         void NewMatch()
