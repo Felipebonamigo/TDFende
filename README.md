@@ -12,6 +12,16 @@ Projeto-treino antes do RTS — alvo: Steam, com arquitetura mobile-ready desde 
    (acompanhe as mensagens `[TDFende]` no Console).
 4. Aperte **Play**. Não precisa abrir cena nenhuma — o jogo se monta sozinho em qualquer cena vazia.
 
+### Executável, sem abrir o Unity
+
+```bash
+powershell -ExecutionPolicy Bypass -File Tools\GerarExecutavel.ps1
+```
+
+Gera `Builds\Windows\TDFende.exe` (o Unity precisa estar fechado; ~2 min). No editor, o mesmo
+está em **TDFende → Gerar executável**. Log do jogo rodando:
+`%USERPROFILE%\AppData\LocalLow\DefaultCompany\TDFende\Player.log`.
+
 Aparece um seletor com dois modos:
 
 - **TD clássico** — uma lane, ondas infinitas (a fase 0).
