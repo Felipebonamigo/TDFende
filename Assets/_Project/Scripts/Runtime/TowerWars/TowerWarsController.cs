@@ -28,6 +28,7 @@ namespace TDFende
 
         public LaneSim Player => _runner?.Player;
         public LaneSim Foe => _runner?.Foe;
+        internal MatchRunner Runner => _runner;
 
         MatchRunner _runner;
         Replay _replay;

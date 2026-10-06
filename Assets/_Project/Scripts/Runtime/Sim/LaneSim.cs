@@ -90,6 +90,9 @@ namespace TDFende
 
         // ---- economia ----
         public int Gold { get; private set; }
+
+        /// <summary>Só o teste de fumaça do executável (SmokeCapture): ouro para mandar um de cada bicho.</summary>
+        internal void GrantGoldForSmokeTest(int amount) => Gold += amount;
         public int Income { get; private set; }
         public int Lives { get; private set; }
         float _incomeTimer;

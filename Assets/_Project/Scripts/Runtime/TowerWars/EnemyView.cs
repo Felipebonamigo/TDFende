@@ -29,8 +29,13 @@ namespace TDFende
     [DisallowMultipleComponent]
     public sealed class EnemyView : MonoBehaviour
     {
-        // empurrão da torre de Ar é um salto de verdade: acima disto, não desenhar deslizando
+        // Num tique, mais que isto não é andar. Até KnockbackMax é o empurrão da torre de Ar
+        // (0,7 célula): desenhado como um deslize para trás em KnockbackTime — desenhado como
+        // salto, parecia tranco. Acima, é teletransporte de verdade (voltou para o
+        // acampamento da outra lane, LeakRouter): aparece no lugar novo.
         const float TeleportDistance = 0.5f;
+        const float KnockbackMax = 2.5f;
+        const float KnockbackTime = 0.2f;
 
         ModelRig _rig;
         LaneClock _clock;
@@ -38,6 +43,8 @@ namespace TDFende
         int _slot;
 
         Vector3 _prev, _cur;        // posição (local da lane, Y = 0) nos tiques N-1 e N
+        Vector3 _push;              // empurrão ainda por desenhar: some em KnockbackTime
+        float _pushLeft;
         LaneSim.SimEnemy _state;    // cópia do tique N
         bool _drained;              // dentro da fronteira inimiga (atrito), no tique N
         bool _snap;                 // primeiro quadro: aparece no lugar, sem virar nem andar
@@ -58,7 +65,8 @@ namespace TDFende
         public ModelRig Rig => _rig;
 
         /// <summary>Posição desenhada num alpha qualquer (local da lane). O tiro mira aqui.</summary>
-        public Vector3 PositionAt(float alpha) => Vector3.Lerp(_prev, _cur, Mathf.Clamp01(alpha));
+        public Vector3 PositionAt(float alpha) =>
+            Vector3.Lerp(_prev, _cur, Mathf.Clamp01(alpha)) + _push * (_pushLeft / KnockbackTime);
 
         /// <summary>Liga a vista a um boneco recém-tirado do pool, para um inimigo novo.</summary>
         public void Spawn(ModelRig rig, LaneClock clock, int slot, in LaneSim.SimEnemy e, bool drained,
@@ -70,6 +78,8 @@ namespace TDFende
             _state = e;
             _drained = drained;
             _prev = _cur = Flat(e.Pos);
+            _push = Vector3.zero;
+            _pushLeft = 0f;
             _snap = true;
             _flameTimer = _dustTimer = _chillTimer = 0f;
             _hitFlash = 0f;
@@ -103,9 +113,17 @@ namespace TDFende
             if (e.MaxHp > 0f && _state.Hp - e.Hp > e.MaxHp * 0.012f) _hitFlash = HitFlashTime;
             _state = e;
             _drained = drained;
+            var drawn = PositionAt(_clock != null ? _clock.Alpha : 1f);
             _prev = _cur;
             _cur = Flat(e.Pos);
-            if ((_cur - _prev).sqrMagnitude > TeleportDistance * TeleportDistance) _prev = _cur;
+            float jump = (_cur - _prev).magnitude;
+            if (jump > TeleportDistance)
+            {
+                _prev = _cur;
+                // empurrão: sai de onde estava desenhado e desliza até o lugar novo
+                if (jump <= KnockbackMax) { _push = drawn - _cur; _pushLeft = KnockbackTime; }
+                else { _push = Vector3.zero; _pushLeft = 0f; }
+            }
         }
 
         /// <summary>O inimigo saiu da simulação: a LaneView assume o boneco (queda, pool).</summary>
@@ -124,7 +142,10 @@ namespace TDFende
 
             // movimento: interpolação pura entre dois tiques; ModelRig.Follow vira o corpo
             // para onde andou e anima a perna pela distância percorrida
-            _rig.Follow(PositionAt(_clock.Alpha), dt, _snap);
+            // durante o empurrão não vira nem anda: é arrastado para trás pela rajada
+            bool pushed = _pushLeft > 0f;
+            _pushLeft = Mathf.Max(0f, _pushLeft - dt);
+            _rig.Follow(PositionAt(_clock.Alpha), dt, _snap || pushed);
             _snap = false;
 
             float frac = _state.MaxHp > 0f ? _state.Hp / _state.MaxHp : 1f;

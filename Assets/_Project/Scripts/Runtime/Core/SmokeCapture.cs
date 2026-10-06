@@ -32,17 +32,73 @@ namespace TDFende
             new GameObject("== captura ==").AddComponent<SmokeCapture>()._path = path;
         }
 
+        // movimento dos bichos: posição desenhada de cada um, quadro a quadro, entre Wait e o fim
+        const float Record = 12f;
+        readonly System.Collections.Generic.Dictionary<EnemyView, (Vector3 pos, float step, int frames, int jumps, float worst, string name, float offMin, float offMax)> _track =
+            new System.Collections.Generic.Dictionary<EnemyView, (Vector3, float, int, int, float, string, float, float)>();
+
+        int _sent;
+
+        /// <summary>Manda um de cada bicho na lane da IA, um por segundo, para medir todos.</summary>
+        void SendOneOfEach()
+        {
+            if (_sent >= SendCatalog.Count || _t < 1f + _sent) return;
+            var tw = Object.FindFirstObjectByType<TowerWarsController>();
+            if (tw == null || tw.Runner == null) return;
+            tw.Player.GrantGoldForSmokeTest(SendCatalog.Get(_sent).Cost);
+            tw.Runner.Enqueue(MatchCommand.Send(_sent));
+            _sent++;
+        }
+
+        void TrackEnemies()
+        {
+            foreach (var v in Object.FindObjectsByType<EnemyView>(FindObjectsSortMode.None))
+            {
+                if (!v.enabled || v.Rig == null) continue;
+                var p = v.transform.position;
+                // corpo desenhado x posição do bicho, ao longo da direção em que ele olha: se a
+                // animação carrega o corpo para frente e volta no fim do ciclo, isto oscila
+                float off = 0f;
+                var rs = v.Rig.GetComponentsInChildren<SkinnedMeshRenderer>();
+                if (rs.Length > 0 && rs[0].rootBone != null) off = Vector3.Dot(rs[0].rootBone.position - p, v.transform.forward);
+                if (!_track.TryGetValue(v, out var tr)) { _track[v] = (p, 0f, 0, 0, 0f, v.Rig.Def.Name, off, off); continue; }
+                tr.offMin = Mathf.Min(tr.offMin, off); tr.offMax = Mathf.Max(tr.offMax, off);
+                float d = Vector3.Distance(p, tr.pos);
+                // passo "normal" = média móvel; salto = mais de 4x o normal e mais de 0,05 unidade
+                if (tr.frames > 5 && d > 0.05f && d > 4f * tr.step) { tr.jumps++; tr.worst = Mathf.Max(tr.worst, d); }
+                tr.step = tr.frames == 0 ? d : Mathf.Lerp(tr.step, d, 0.2f);
+                tr.frames++; tr.pos = p;
+                _track[v] = tr;
+            }
+        }
+
+        static float v_height(EnemyView v) => v.Rig != null ? v.Rig.Def.Height : 0f;
+
+        void LogMovement()
+        {
+            var sb = new System.Text.StringBuilder($"[TDFende] captura, movimento ({Record:0} s, fps médio {Time.frameCount / Mathf.Max(0.01f, Time.realtimeSinceStartup):0}):\n");
+            foreach (var kv in _track)
+            {
+                var tr = kv.Value;
+                sb.Append($"  {tr.name}: quadros={tr.frames} passo={tr.step:0.0000} saltos={tr.jumps} maior={tr.worst:0.000} corpo_vai_e_volta={tr.offMax - tr.offMin:0.000} altura={v_height(kv.Key):0.00}\n");
+            }
+            Debug.Log(sb.ToString());
+        }
+
         void Update()
         {
             _t += Time.unscaledDeltaTime;
-            if (!_shot && _t >= Wait)
+            SendOneOfEach();
+            if (_t >= Wait && _t < Wait + Record) TrackEnemies();
+            if (!_shot && _t >= Wait + Record)
             {
                 ScreenCapture.CaptureScreenshot(_path);
                 _shot = true;
                 LogScene();
+                LogMovement();
                 Debug.Log($"[TDFende] captura: {_path}");
             }
-            else if (_shot && _t >= Wait + 2f) Application.Quit(); // o print é gravado no fim do quadro
+            else if (_shot && _t >= Wait + Record + 2f) Application.Quit(); // o print é gravado no fim do quadro
         }
 
         /// <summary>O que mais some num build: shader, keyword, textura, céu e luz ambiente.</summary>
