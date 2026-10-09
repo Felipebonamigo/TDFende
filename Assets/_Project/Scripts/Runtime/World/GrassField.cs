@@ -79,6 +79,8 @@ namespace TDFende
         /// <summary>false se a arte não estiver presente — aí simplesmente não há grama 3D.</summary>
         public bool Init(Terrain terrain, IReadOnlyList<Rect> playAreas, int seed = 11)
         {
+            // "-sem-grama": mede quanto a grama custa (Tools\Captura.ps1 -Extra -sem-grama)
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-sem-grama") >= 0) return false;
             // TODO(build): Shader.Find sofre stripping em build (ver GroundBuilder).
             var lit = Shader.Find("Universal Render Pipeline/Lit");
             if (lit == null) return false;
@@ -216,6 +218,10 @@ namespace TDFende
             m.SetFloat("_Smoothness", 0.12f);
             m.SetOverrideTag("RenderType", "TransparentCutout");
             m.renderQueue = (int)RenderQueue.AlphaTest;
+            // atalho: grama fora da passada de profundidade+normal do SSAO, que desenhava os
+            // ~4 M triângulos de novo (sem contato escurecido na base do tufo). Teto: 4 M
+            // triângulos de grama. Saída: a VIS-11 (chão novo, Fase 4) refaz a grama inteira.
+            m.SetShaderPassEnabled("DepthNormals", false);
             return m;
         }
 

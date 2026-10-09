@@ -33,7 +33,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] BUG-01 — Bichos invisíveis no executável (primeiro item)
 - [x] TEC-04 — Captura v2 (núcleo) com código de saída e estresse
 - [x] BUG-02 — Clipe padrão dos bichos
-- [ ] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
+- [x] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
 - [ ] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
 - [ ] TEC-01 — Base limpa: o executável sai da main
 - [ ] TEC-34 — Repositório: LFS, histórico e público × privado
@@ -213,7 +213,14 @@ O Player.log do -captura fica sem nenhuma linha 'Default clip could not be found
 
 ### VIS-11a — Grama: rarear ou desligar por flag até o chão novo
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "VIS-11a" na mensagem: `git log --grep=VIS-11a`).
+  - Densidade já estava de volta (orçamento de 4 M triângulos, a mudança de 06/10 foi revertida)
+    e a grama já ficava fora das lanes. Novo: material da grama sem a passada `DepthNormals`
+    (comentário de atalho com teto e saída no `GrassField.MakeFoliageMaterial`) e a flag
+    `-sem-grama`.
+  - **Medido (1600×900, -captura):** triângulos por quadro 24 M → 14,3 M (sem grama: 7,2 M).
+    p95 normal 7,0 ms antes e depois (acima dos 104 fps pedidos). No estresse o p95 fica em
+    41,7 ms **com ou sem grama**: o gargalo do fim de partida é outro (fica para o TEC-06).
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**

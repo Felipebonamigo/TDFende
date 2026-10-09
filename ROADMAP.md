@@ -89,7 +89,7 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 - [x] **BUG-01** — Bichos invisíveis no executável (primeiro item) — 09/10/2026
 - [x] **TEC-04** — Captura v2 (núcleo) com código de saída e estresse — 09/10/2026
 - [x] **BUG-02** — Clipe padrão dos bichos — 09/10/2026
-- [ ] **VIS-11a** — Grama: rarear ou desligar por flag até o chão novo
+- [x] **VIS-11a** — Grama: rarear ou desligar por flag até o chão novo — 09/10/2026
 - [ ] **TEC-11** — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
 - [ ] **TEC-01** — Base limpa: o executável sai da main
 - [ ] **TEC-34** — Repositório: LFS, histórico e público × privado

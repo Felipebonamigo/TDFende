@@ -92,9 +92,11 @@ bicho que não apareceu, shader não suportado ou material nulo num bicho, exce�
 da lista `SmokeCapture.LogLint` no log (aviso que já foi defeito; acrescente lá), mais de 60 s
 sem terminar. Tempo de quadro e triângulos **só são medidos** (o orçamento é o TEC-06).
 
-`-Estresse` (no exe: `-estresse`) monta um fim de partida: as 6 torres no nível máximo em cada
-lane e 4 rodadas de todos os bichos nas duas lanes. Referência de 09/10/2026 (1600×900): normal
-p95 7,0 ms, ~25 milhões de triângulos; estresse p95 41,7 ms com 60 bichos, ~27-30 milhões.
+`-Extra` passa argumentos a mais para o jogo (ex.: `-Extra -sem-grama`, que desliga a grama 3D
+para medir quanto ela custa). `-Estresse` (no exe: `-estresse`) monta um fim de partida: as 6 torres no nível máximo em cada
+lane e 4 rodadas de todos os bichos nas duas lanes. Referência de 09/10/2026 (1600×900), depois
+do VIS-11a: normal p95 7,0 ms, ~14 milhões de triângulos; estresse p95 41,7 ms com 60 bichos,
+~23 milhões (sem grama o p95 do estresse é o mesmo: o gargalo não é a grama).
 
 Arquivos ao lado do print: `print_bicho_<Nome>.png` e `print_bicho_<Nome>_simples.png` (retrato
 com o material do bicho e com um material simples) e `print_metricas.json` (resultado, falhas,
