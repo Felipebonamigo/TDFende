@@ -54,10 +54,10 @@ Candidatos ao inventário: natureza/expedição, fantasia realista 'baixa' e med
 - Elenco coerente com o bioma, e no máximo um papel especial por espécie. Reaproveitar modelo é bom, mas não pode sobrecarregar Rinoceronte e Elefante.
 - A simulação é pura e determinística. Ids só são acrescentados no fim e o conteúdo é referenciado por chave estável. Toda regra nova vem com teste visto falhar, campo na assinatura do replay e BalanceLab verde. O fingerprint com hash quantizado de posições vem antes de ser usado como prova. A decisão float × ponto fixo sai antes do conteúdo caro.
 - A interface nunca muda regra: tudo passa por MatchCommand e IGameInput. Loja e mercado são montados a partir de Count, com abas e mais de 9 envios previstos. Os mockups em HTML são aprovados antes do UI Toolkit.
-- Desempenho medido no pior caso: -captura -estresse de fim de partida, num perfil de hardware mínimo além da 4070 Ti. O orçamento começa como aviso e vira reprovação quando a arte assentar. URP é o teto; o HDRP está descartado por causa do mobile.
+- Desempenho medido no pior caso: -captura -estresse de fim de partida, num perfil de hardware mínimo além da 4070 Ti. O orçamento começa como aviso e vira reprovação quando a arte assentar. Pipeline (09/10/2026): celular fora da meta, HDRP pretendido se ganhar a comparação VIS-29 no início da Fase 2, Unreal 5 só como plano B; até lá, URP (MANUAL, seção 9).
 - O Felipe é recurso escasso. As aprovações vão para uma caixa semanal (prints, sons, lotes Meshy, cada um com sim ou não), e o que não depende de aprovação segue em paralelo. O ROADMAP.md registra por fase as sessões reais × estimadas, o custo de Opus e o que a fase ensinou para o RTS.
 - Git: commit e push na main, sempre com pull --rebase --autostash. Assets regravados pelo Unity só entram com OK do Felipe. Cada bloco fecha com DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT ou BLOCKED.
-- Steam primeiro, e cedo: página 'Em breve' e Steam Playtest antes do Portão 2. O caminho mobile é preservado e verificado por builds Android de fumaça (só relatório), mas o porte fica para depois.
+- Steam primeiro, e cedo: página 'Em breve' e Steam Playtest antes do Portão 2. Celular fora da meta desde 09/10/2026: os builds Android de fumaça (TEC-36 e TEC-36b) foram cancelados.
 
 ## Fases
 
@@ -66,7 +66,7 @@ Candidatos ao inventário: natureza/expedição, fantasia realista 'baixa' e med
 | 0 | Fase 0 — Bichos visíveis e executável confiável | 5-6 | 14 | 0 | [abrir](docs/roadmap/fase-00-bichos-visiveis-e-executavel-confiavel.md) |
 | 1 | Trilha S — Simulação em paralelo (headless, worktree, sem Unity) | 12-16, em paralelo (fora do caminho crítico) | 16 | 0 | [abrir](docs/roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md) |
 | 2 | Fase 1 — Fundação de arte, mercado e escolha do tema | 2-3 (sem Unity, em paralelo à Fase 0) | 7 | 0 (só o plano de gasto) | [abrir](docs/roadmap/fase-01-fundacao-de-arte-mercado-e-escolha-do-tema.md) |
-| 3 | Fase 2 — Fatia de beleza e Portão Visual | 5-7 | 11 | 0 (piloto só com aprovação, e só se falt | [abrir](docs/roadmap/fase-02-fatia-de-beleza-e-portao-visual.md) |
+| 3 | Fase 2 — Fatia de beleza e Portão Visual | 7-10 (inclui a VIS-29) | 12 | 0 (piloto só com aprovação, e só se falt | [abrir](docs/roadmap/fase-02-fatia-de-beleza-e-portao-visual.md) |
 | 4 | Fase 3 — Tese à vista e Portão 1 (antes da UI) | 3-4 | 8 | 0 | [abrir](docs/roadmap/fase-03-tese-a-vista-e-portao-1-antes-da-ui.md) |
 | 5 | Fase 4 — Mundo realista completo | 6-8 | 12 | 0 | [abrir](docs/roadmap/fase-04-mundo-realista-completo.md) |
 | 6 | Fase 5 — Interface nova: mockups, menu, HUD e fluxo | 6-8 | 10 | 0 | [abrir](docs/roadmap/fase-05-interface-nova-mockups-menu-hud-e-fluxo.md) |
@@ -142,6 +142,7 @@ _Antes de qualquer download ou crédito: licença, camada privada, auditoria e i
 
 _Uma lane que já parece jogo, com arte real no tema favorito, medida contra os jogos-régua e dentro do orçamento. Resolve já os problemas 4 e 5 do Felipe (chão e cenário) na versão 1._
 
+- [ ] **VIS-29** — Comparação de pipeline: URP no máximo × HDRP (Unreal 5 só se os dois reprovarem) — sessão no PC
 - [ ] **VIS-04** — Faxina de coerência
 - [ ] **VIS-05** — Grade só ao construir
 - [ ] **VIS-09** — Câmera teleobjetiva
@@ -182,7 +183,7 @@ _Os ~80% da tela passam a parecer fotografados em todo o mapa, e os bichos param
 - [ ] **VIS-24** — Vida ambiente e morte súbita barata
 - [ ] **BICHO-11** — Elenco coerente
 - [ ] **VIS-26** — Animal crível
-- [ ] **TEC-36** — Build Android de fumaça nº 1 (relatório)
+- [x] ~~**TEC-36** — Build Android de fumaça nº 1 (relatório)~~ — cancelada: celular fora da meta (09/10/2026)
 
 ### [Fase 5 — Interface nova: mockups, menu, HUD e fluxo](docs/roadmap/fase-05-interface-nova-mockups-menu-hud-e-fluxo.md)
 
@@ -256,7 +257,7 @@ _Página 'Em breve' juntando wishlists, Steam Playtest como canal, e um build qu
 - [ ] **UX-23m** — Primeira partida guiada mínima
 - [ ] **UX-24** — Cartões de primeiro encontro
 - [ ] **META-14b** — Inglês e pseudo-idioma
-- [ ] **TEC-36b** — Build Android de fumaça nº 2 (relatório)
+- [x] ~~**TEC-36b** — Build Android de fumaça nº 2 (relatório)~~ — cancelada: celular fora da meta (09/10/2026)
 - [ ] **META-01** — Playtest pelo Steam Playtest e Portão 2
 
 ### [Fase 11 — Segundo mercado completo: elites e chefe](docs/roadmap/fase-11-segundo-mercado-completo-elites-e-chefe.md)
@@ -341,6 +342,9 @@ _Levar o jogo à venda e cuidar dele depois._
 - [x] Fase 0: manter ou reverter cada configuração regravada — manter todas (Felipe, 09/10/2026).
 - [x] Fase 0: repositório público + arte pesada no PC, sem LFS (Felipe, 09/10/2026). Licença do código: em aberto até a página da Steam.
 - [x] Fase 0: critério de 'architectural' aprovado; Sincronizar.ps1 aposentado; backup no D: (Felipe, 09/10/2026).
+- [x] Plataforma e pipeline: Steam no PC, celular fora da meta; HDRP pretendido se ganhar a VIS-29, Unreal 5 só como plano B; a 4070 Ti é a referência do nível Ultra (Felipe, 09/10/2026).
+- [x] Trabalho dividido: sessão na nuvem (simulação, ferramentas, downloads automáticos, documentação) e sessão no PC (Unity, Unreal, executável, prints, downloads com login) (Felipe, 09/10/2026; MANUAL, seção 10).
+- [ ] Fase 2: pipeline final (URP ou HDRP) pela folha da VIS-29; se os dois reprovarem, abrir a comparação com o Unreal 5.
 - [ ] Fase 1: tema e bioma pela matriz (natureza/expedição, fantasia realista baixa ou medieval com kit pago), confirmados na fatia de beleza.
 - [ ] Fase 1: o elenco segue o bioma, e cada espécie tem no máximo um papel especial; manter os 9 bichos ou migrar para uma fonte única.
 - [ ] Fase 1: verba para pacotes pagos e para a cápsula, com teto.
@@ -353,7 +357,7 @@ _Levar o jogo à venda e cuidar dele depois._
 - [ ] Fase 6: escolher torres e bichos antes da partida, ou só dentro dela?
 - [ ] Fase 8: música e sons comprados ou só CC0/CC BY (sempre fora do Content ID).
 - [ ] Fase 10: Steam Direct, verificação de identidade, nome em inglês, nome do estúdio e testadores (há 10? se não, 5 mais o diário).
-- [ ] Fase 10: só Windows com Proton, ou Linux nativo; Android primeiro, com iOS só se houver Mac.
+- [ ] Fase 10: só Windows com Proton, ou Linux nativo. (Android e iOS fora desde 09/10/2026.)
 - [ ] Fases 7 a 14: cada lote de créditos Meshy, com o número antes e piloto primeiro. Teto acumulado sugerido de 600, com reserva de pelo menos 200 para bichos e tier 2.
 - [ ] Fase 12: parâmetros do cerco e se entra o comando Reparar.
 - [ ] Fase 17-18: cápsula, data do Next Fest, preço, CPF ou CNPJ.
@@ -365,6 +369,8 @@ _Levar o jogo à venda e cuidar dele depois._
 - Quarta troca de direção de arte. A mitigação agora é a fatia de beleza com jogos-régua, não só uma promessa.
 - Rejeição a assets de IA por parte do público da Steam. As torres atuais são IA de terceiros, com CC0 declarado pelo autor do upload. Mitigação: kit não-IA nas torres e nos assets da cápsula, e o campo de IA no manifesto.
 - Teste num único hardware (4070 Ti). Mitigação: perfil mínimo desde a Fase 2.
+- HDRP: a Unity diz que mantém URP e HDRP por bastante tempo e vai unificando aos poucos, mas o futuro do HDRP depende dela. Com HDRP, o Steam Deck e PCs fracos podem não alcançar. Mitigação: a VIS-29 mede o custo e o perfil mínimo antes de migrar.
+- Unreal como plano B: reescrever em C++ custa por volta de 25-40 sessões e tira a verificação da sessão na nuvem (tudo passa a depender do PC). Só entra se URP e HDRP reprovarem no Portão Visual.
 - Perda de dados fora do Git (camada privada, GLBs do Meshy, builds) num disco único. Mitigação: TEC-26 com restauração testada.
 - O Felipe é gargalo de aprovação, com mais de 30 pontos. Mitigação: caixa semanal e trabalho que segue em paralelo.
 - O gênero vive de multiplayer, e o EA sai só contra a IA. Mitigação: MKT-01, liga de rivais e lockstep virtual cedo.

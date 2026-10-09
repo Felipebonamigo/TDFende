@@ -16,7 +16,7 @@ Os ~80% da tela passam a parecer fotografados em todo o mapa, e os bichos param 
 - Teste cego da fronteira repetido sobre o chão novo (8 de 10).
 - AuditaAssets reprovando arte nova fora do orçamento.
 - p95 no perfil mínimo.
-- Relatório Android.
+- ~~Relatório Android.~~ (cancelado em 09/10/2026)
 
 ## Decisões do Felipe nesta fase
 
@@ -38,7 +38,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [ ] VIS-24 — Vida ambiente e morte súbita barata
 - [ ] BICHO-11 — Elenco coerente
 - [ ] VIS-26 — Animal crível
-- [ ] TEC-36 — Build Android de fumaça nº 1 (relatório)
+- [x] ~~TEC-36 — Build Android de fumaça nº 1 (relatório)~~ — cancelada: celular fora da meta (Felipe, 09/10/2026)
 
 ---
 
@@ -410,7 +410,7 @@ Pata patinando, clones marchando em sincronia e curvas secas são o que mais den
 
 ### TEC-36 — Build Android de fumaça nº 1 (relatório)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** cancelada em 09/10/2026: o Felipe tirou o celular da meta (MANUAL, seção 9)  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**

@@ -2,7 +2,7 @@
 
 [← cronograma](../../ROADMAP.md) · como trabalhar: [MANUAL](../MANUAL.md)
 
-- **Duração estimada:** 5-7 sessões
+- **Duração estimada:** 7-10 sessões (5-7 + 2-3 da VIS-29)
 - **Créditos Meshy estimados:** 0 (piloto só com aprovação, e só se faltar peça) _(sempre perguntar ao Felipe antes de gastar)_
 
 ## Objetivo
@@ -14,6 +14,7 @@ Uma lane que já parece jogo, com arte real no tema favorito, medida contra os j
 - Fatia aprovada contra os jogos-régua e registrada no MANUAL como tema definitivo.
 - Exe com câmera tele, grade só ao construir, régua de escala (FlowSim verde), disco de contato e sem plastic.
 - Desfile enviado; p95 e -estresse dentro do aviso no perfil mínimo.
+- Pipeline decidido pela VIS-29 (URP ou HDRP; Unreal só se os dois reprovarem) e registrado no MANUAL.
 - Decisões de AA, GI e enquadramento registradas.
 
 ## Decisões do Felipe nesta fase
@@ -22,11 +23,13 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 - [ ] Portão Visual: o Felipe diz 'é isso' com a fatia ao lado dos jogos-régua, e o p95 fica dentro do aviso? Se falhar, o segundo tema vira fatia.
 - [ ] Enquadramento: morre, foge ou cai exausto.
-- [ ] TAA/STP ou SMAA; assar a parte estática com APV e probes ou só skybox + SSAO.
-- [ ] Hardware mínimo: GTX 1060, Iris Xe ou Steam Deck.
+- [ ] Pipeline: URP ou HDRP, pela comparação da VIS-29. Se o HDRP reprovar, abrir a comparação com o Unreal 5?
+- [ ] TAA/STP/DLSS ou SMAA; assar a parte estática com APV e probes ou só skybox + SSAO (no HDRP: SSGI ou ray tracing).
+- [ ] Hardware mínimo: GTX 1060, Iris Xe ou Steam Deck (com o HDRP, o Deck pode não alcançar).
 
 ## Tarefas, em ordem
 
+- [ ] VIS-29 — Comparação de pipeline: URP no máximo × HDRP (Unreal 5 só se os dois reprovarem)
 - [ ] VIS-04 — Faxina de coerência
 - [ ] VIS-05 — Grade só ao construir
 - [ ] VIS-09 — Câmera teleobjetiva
@@ -38,6 +41,37 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [ ] VIS-02p — Protótipo de enquadramento: morre, foge ou cai exausto
 - [ ] TEC-33 — Perfil de hardware mínimo (aviso)
 - [ ] MKT-02 — Hábito de captura para divulgação
+
+---
+
+### VIS-29 — Comparação de pipeline: URP no máximo × HDRP (Unreal 5 só se os dois reprovarem)
+
+- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- **Categoria:** VIS · **Esforço:** M (2-3 sessões) · **Onde:** sessão no PC do Felipe (precisa do editor e da 4070 Ti)
+- **Origem:** decisão do Felipe em 09/10/2026: visual máximo, celular fora da meta, 4070 Ti como referência.
+
+**Por que, e nesta fase:**
+
+O "URP é o teto" existia por causa do celular. Sem o celular, o HDRP oferece o que o URP não tem: céu físico, nuvens e neblina volumétricas, luz indireta em tela (SSGI) ou por ray tracing, sombras e reflexos por ray tracing e DLSS. Isso precisa ser decidido antes da fatia de beleza e da compra de arte, porque materiais, shaders próprios e orçamento mudam com o pipeline. Fica no início da fase para que o resto da fase já seja feito no pipeline escolhido.
+
+**O que é:**
+
+A mesma lane, com a mesma câmera, os mesmos modelos e o mesmo chão, montada duas vezes:
+- **URP no máximo:** STP ou TAA, APV, SSAO, sombras finas, pós e grading caprichados.
+- **HDRP:** numa cópia local do projeto (pasta ao lado, fora do git até a decisão), com céu físico, nuvens volumétricas, neblina volumétrica, SSGI ou RTGI, sombras de contato e DLSS.
+O que precisa portar no HDRP: os nomes de propriedade e o `Shader.Find` do `ArtFactory` e do `AnimalLoader` (`Universal Render Pipeline/Lit` vira `HDRP/Lit`, `_BaseMap` vira `_BaseColorMap`), o shader da fronteira (`TerritoryOverlay`), a grama instanciada e o volume de pós. Contar o que mais quebra, porque esse é o custo real da migração.
+
+**Pronto quando:**
+
+Folha lado a lado URP × HDRP × jogos-régua, em 3 ângulos (câmera de jogo, zoom e plano aberto), mais p95 e -estresse dos dois executáveis na 4070 Ti e no perfil mínimo. O Felipe escolhe, e o MANUAL (seção 9) registra o pipeline. Se o HDRP vencer: plano de migração com o número de sessões e o que muda no CompileCheck (as DLLs do HDRP, como hoje as do URP, só existem depois que o Unity abre o projeto).
+
+**Se os dois reprovarem no Portão Visual:**
+
+Antes de qualquer porte, uma fatia igual no Unreal 5 (Lumen, Nanite, sombras virtuais), também só na sessão do PC, com a mesma folha de comparação. O porte para o Unreal reescreve o jogo em C++ (simulação, interface, ferramentas) e custa por volta de 25-40 sessões; só entra com o Felipe aprovando esse número.
+
+**Como verificar:**
+
+Os dois `-captura` saindo com 0, a folha e as métricas commitadas em `docs/`, e a decisão do Felipe anotada nesta fase.
 
 ---
 

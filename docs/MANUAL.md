@@ -158,7 +158,7 @@ Referência: RTX 4070 Ti, janela 1600×900, qualidade padrão, `-Estresse`. Medi
 | Bicho | 15 k | 1,6 k (águia) a 25,5 k (rato); acima: rato, cachorro 17,6 k, rinoceronte 16 k | 3 acima |
 
 \* o p95 normal pula entre 7,0 e 13,9 ms porque o quadro trava no sincronismo vertical (144 Hz:
-um quadro perdido vira dois). Nível Baixo/celular, quando existir: ≤ 300 k triângulos na cena.
+um quadro perdido vira dois). Nível Baixo, quando existir: ≤ 300 k triângulos na cena (meta antiga do celular; recalibrar na VIS-29).
 Os tetos por asset pressupõem LOD (TEC-10): de perto o modelo cheio, de longe o reduzido.
 
 Arquivos ao lado do print: `print_bicho_<Nome>.png` e `print_bicho_<Nome>_simples.png` (retrato
@@ -322,9 +322,14 @@ conta do Felipe) a formas procedurais. Todo ganho visual tem que caber no orçam
 
 ## 9. Tetos e políticas (TEC-35)
 
-- **URP é o teto.** HDRP está descartado: o jogo precisa rodar em PC comum, Steam Deck e,
-  depois, celular. "Última geração" aqui é arte, luz, pós-processamento e animação dentro do
-  URP — nenhuma sessão propõe trocar de pipeline.
+- **Plataforma e pipeline (Felipe, 09/10/2026; substitui "URP é o teto").** O alvo é a Steam
+  no PC (Windows). **Celular saiu da meta**; Steam Deck só se der, em qualidade baixa, sem
+  compromisso. Com isso o teto sobe: o **HDRP** passa a ser o pipeline pretendido, desde que
+  ganhe do URP na comparação **VIS-29** (início da Fase 2), medida no executável contra os
+  jogos-régua. **Unreal 5 é plano B**: só entra se nem o HDRP passar no Portão Visual, e aí com
+  uma fatia de comparação própria antes de qualquer porte. Até a VIS-29 decidir, o projeto
+  continua em URP e nenhuma sessão troca de pipeline fora dela. O hardware de referência é a
+  RTX 4070 Ti do Felipe (nível Ultra), sem largar o perfil mínimo do TEC-33.
 - **Patch do Unity:** o projeto fica na linha 6000.3 (hoje 6000.3.11f1). Antes de cada build
   **público** (Steam, itch, demo), atualize para o último 6000.3.x pelo Hub, rode o pre-commit,
   gere o executável e a captura. Motivo concreto: a CVE-2025-59489 (carregamento de arquivo
@@ -341,7 +346,23 @@ conta do Felipe) a formas procedurais. Todo ganho visual tem que caber no orçam
   "bounded".
 - **Repositório:** público, arte pesada no PC, nada acima de 10 MB no git (seção 2, item 9).
 
-## 10. Como o Felipe trabalha
+## 10. Nuvem × PC: quem faz o quê (09/10/2026)
+
+Duas sessões do Claude trabalham no mesmo repositório, sempre pela `main`:
+
+- **Sessão na nuvem** (claude.ai/code): simulação e Trilha S, ferramentas, conversão no Blender
+  sem janela, downloads automáticos (Sketchfab pela API, Poly Haven), busca na comunidade do
+  Meshy (`Tools/ComunidadeMeshy`), documentação e cronograma. Não tem Unity aberto nem Unreal:
+  verifica com FlowSim e CompileCheck (DLLs do Unity vindas do NuGet, quando faltar o editor).
+- **Sessão no PC do Felipe** (Claude Desktop, pasta do projeto): Unity e Unreal com as skills
+  instaladas lá, executável e `-captura` na qualidade da 4070 Ti, prints para aprovação, e
+  downloads que pedem login (GLB da comunidade do Meshy pelo Chrome do Felipe, já logado;
+  cada download conta na cota do plano). Toda tarefa que precisa do editor ou do executável vai
+  para esta sessão.
+
+Uma tarefa que passa de uma sessão para a outra deixa no commit o que falta e onde parou.
+
+## 11. Como o Felipe trabalha
 
 - Respostas em português, resultado primeiro, curtas. Fechar com `DONE`,
   `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT` ou `BLOCKED`.

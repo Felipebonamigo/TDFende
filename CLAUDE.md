@@ -21,6 +21,9 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
   pre-commit bloqueia); fonte de modelo e GLB original ficam no PC com backup no D:.
 - **Direção de arte (06/10/2026):** realista e de última geração, não low-poly nem cartoon; não
   precisa ser medieval.
+- **Plataforma (09/10/2026):** Steam no PC; celular fora da meta. HDRP é o pipeline pretendido se
+  ganhar a comparação VIS-29 (Fase 2); Unreal 5 só como plano B. Até lá, URP. Divisão entre a
+  sessão na nuvem e a do PC: MANUAL, seção 10.
 - **Modelos 3D (pedido do Felipe, 04/10/2026):** primeiro procurar pronto na comunidade para
   baixar (Sketchfab, galeria do Meshy...), conferindo licença e autoria. Gerar no Meshy só em
   último caso, e **sempre perguntar ao Felipe antes** de gastar créditos (dizer quantos: ~30 por

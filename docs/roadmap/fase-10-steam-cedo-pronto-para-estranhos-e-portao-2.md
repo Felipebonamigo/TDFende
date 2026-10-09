@@ -15,7 +15,7 @@ Página 'Em breve' juntando wishlists, Steam Playtest como canal, e um build que
 - Relatórios tabulados e critério de comportamento avaliado.
 - Tabela dos 3 presets no hardware mínimo.
 - Save e crash testados.
-- Relatório Android.
+- ~~Relatório Android.~~ (cancelado em 09/10/2026)
 
 ## Decisões do Felipe nesta fase
 
@@ -23,7 +23,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 - [ ] Pagar o Steam Direct (ação do Felipe), fazer a verificação de identidade e escolher o nome em inglês.
 - [ ] Nome do estúdio e quem são os testadores (5 ou 10 ou mais).
-- [ ] Repositório público ou privado antes da página; só Windows com Proton ou Linux nativo; Android primeiro (iOS só com Mac).
+- [ ] Repositório público ou privado antes da página; só Windows com Proton ou Linux nativo. (Android e iOS fora da meta desde 09/10/2026.)
 - [ ] Se o Portão 2 falhar: o que corrigir e em que ordem. O conteúdo pedido continua.
 
 ## Tarefas, em ordem
@@ -39,7 +39,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [ ] UX-23m — Primeira partida guiada mínima
 - [ ] UX-24 — Cartões de primeiro encontro
 - [ ] META-14b — Inglês e pseudo-idioma
-- [ ] TEC-36b — Build Android de fumaça nº 2 (relatório)
+- [x] ~~TEC-36b — Build Android de fumaça nº 2 (relatório)~~ — cancelada: celular fora da meta (Felipe, 09/10/2026)
 - [ ] META-01 — Playtest pelo Steam Playtest e Portão 2
 
 ---
@@ -191,7 +191,7 @@ Notebook e Steam Deck precisam rodar.
 
 **O que é:**
 
-Três URP assets gerados por script (Alto, Médio, Baixo/mobile) e ligados ao QualitySettings; hoje os 6 níveis usam o asset de PC. Cada nível define cascatas e distância de sombra, SSAO, densidade de grama, renderScale e HDR. Também liga o gpuSkinning e aceita o argumento -qualidade.
+Atualizado em 09/10/2026: os níveis são do pipeline escolhido na VIS-29, com um **Ultra** para a 4070 Ti (ray tracing e DLSS, se o HDRP vencer) e sem nível de celular. Texto original: três URP assets gerados por script (Alto, Médio, Baixo/mobile) e ligados ao QualitySettings; hoje os 6 níveis usam o asset de PC. Cada nível define cascatas e distância de sombra, SSAO, densidade de grama, renderScale e HDR. Também liga o gpuSkinning e aceita o argumento -qualidade.
 
 **Valor para o jogador:**
 
@@ -203,7 +203,7 @@ Alto, Médio e Baixo gerados por script. O Baixo é calibrado no hardware mínim
 
 **Como verificar:**
 
-Captura nos 3 níveis com folhas de contato e métricas: o Baixo dentro do orçamento mobile.
+Captura em cada nível com folhas de contato e métricas: o Baixo dentro do orçamento do perfil mínimo (TEC-33).
 
 <details><summary>Parecer dos avaliadores</summary>
 
@@ -322,7 +322,7 @@ Tradução EN, teste de chaves no pre-commit e print em pseudo-idioma sem corte.
 
 ### TEC-36b — Build Android de fumaça nº 2 (relatório)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** cancelada em 09/10/2026: o Felipe tirou o celular da meta (MANUAL, seção 9)  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**
