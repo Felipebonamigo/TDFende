@@ -130,13 +130,13 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 
 _Antes de qualquer download ou crédito: licença, camada privada, auditoria e inventário real de arte por tema (bichos inclusive), elenco por bioma e posição de mercado. Sai daqui o tema favorito para a fatia de beleza._
 
-- [ ] **TEC-22** — Manifesto de licenças com auditoria no commit e no build
-- [ ] **TEC-23** — Camada privada de arte e som
-- [ ] **TEC-10a** — AuditaAssets em modo aviso (adiantado)
-- [ ] **VIS-01** — Inventário por tema e bíblia de arte
-- [ ] **DES-23** — Meta de elenco do Early Access (rascunho)
-- [ ] **MKT-01** — Spike de mercado do gênero
-- [ ] **TEC-24** — Plano de gasto dos créditos Meshy
+- [ ] **TEC-22** — Manifesto de licenças com auditoria no commit e no build (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **TEC-23** — Camada privada de arte e som (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **TEC-10a** — AuditaAssets em modo aviso (adiantado) (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **VIS-01** — Inventário por tema e bíblia de arte (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **DES-23** — Meta de elenco do Early Access (rascunho) (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **MKT-01** — Spike de mercado do gênero (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **TEC-24** — Plano de gasto dos créditos Meshy (reservado: sessão na nuvem, 09/10/2026)
 
 ### [Fase 2 — Fatia de beleza e Portão Visual](docs/roadmap/fase-02-fatia-de-beleza-e-portao-visual.md)
 
