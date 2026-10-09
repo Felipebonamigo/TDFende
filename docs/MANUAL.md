@@ -187,6 +187,9 @@ script, a janela nasce sem foco e o Unity pausa o jogo.
   arquivo só precisa conter o bicho (`AnimalLoader.Keywords`). Para ir ao Git, acrescente a
   exceção `!Assets/Resources/TDFende/Bichos/<nome>.fbx` no `.gitignore` **só** se a licença
   permitir redistribuir.
+- GLB original (o que o Meshy entrega, antes de converter) **nunca** em `Resources`: fica em
+  `Tools/ConverterBichos/glb/` (fora do git). Os do tigre e do javali feitos pelo Felipe
+  (image-to-3d, 270 MB) estão em `glb/originais-meshy/`.
 
 ### Poly Haven (CC0)
 - API: `https://api.polyhaven.com/assets?t=models|textures`, `.../files/<id>`; mande

@@ -302,7 +302,24 @@ Remover uma combinação de propósito reprova o build de diagnóstico, e a cole
 
 ### TEC-01 — Base limpa: o executável sai da main
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [ ] **Status:** quase pronto (09/10/2026), falta a decisão do Felipe sobre os arquivos regravados.
+  - Feito: os 8 `.meta` soltos entraram no commit do BUG-01; os 2 GLBs originais do Meshy (270 MB)
+    saíram de `Resources/TDFende/Bichos/Gerados` para `Tools/ConverterBichos/glb/originais-meshy/`
+    (fora do git; nunca entraram no build, eram só importação lenta); `ROADMAP.md` existe.
+  - **Idempotência medida:** dois builds seguidos não mudam nada no git além dos 6 arquivos que o
+    Unity/URP regrava + `ProjectSettings/SceneTemplateSettings.json`. Todos os executáveis testados
+    desde 06/10 foram gerados **com** essas versões regravadas.
+  - **O que cada um é** (para a decisão): `GraphicsSettings` m_LightsUseLinearIntensity 0→1 (o
+    URP liga isso sozinho ao iniciar em espaço linear, então o valor salvo não muda o jogo);
+    `URP_Asset` prefiltering (recalculado pelo URP a cada build a partir das opções do asset; o
+    build estrito do TEC-11 não acusa variante faltando com ele); `URP_Renderer` com o SSAO (posto
+    pelo `Editor/SsaoSetup.cs`, de propósito, desde 92325c5); `DefaultVolumeProfile` com os
+    efeitos do URP 6 em valor neutro (o Unity preenche sozinho); `UniversalRenderPipelineGlobalSettings`
+    (registro interno); `ProjectSettings` com static batching do Standalone (padrão do Unity).
+    Reverter não adianta: o Unity regrava no próximo build. **Recomendação: commitar os 7.**
+  - Fica: o `Torre_Canhao.fbx` antigo (sem estágio, 1,2 MB no build) é o modelo do modo clássico
+    (`GameController`, estágio 0). Tirar troca o visual do clássico, que a captura não testa;
+    fica para quando o clássico for revisto.
 - **Categoria:** TEC · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 4 · custo 2,5 · risco 2,5 · prioridade 5
 
