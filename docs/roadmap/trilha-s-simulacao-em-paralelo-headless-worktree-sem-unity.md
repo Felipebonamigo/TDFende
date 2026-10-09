@@ -25,7 +25,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 ## Tarefas, em ordem
 
-- [ ] TEC-31 — Fingerprint com hash quantizado de posições
+- [x] TEC-31 — Fingerprint com hash quantizado de posições — 09/10/2026 (52accc2)
 - [ ] BUG-04 — SendCatalog completa por nome e valida id
 - [ ] BUG-05 — Assinatura do replay cobre todos os campos
 - [ ] TEC-12 — Conteúdo por chave estável
@@ -46,7 +46,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 ### TEC-31 — Fingerprint com hash quantizado de posições
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026, commit 52accc2. `StateHash` (FNV-1a 64), `SimFingerprint` (inimigos, torres e tiros pelas portas públicas) e `CountingRandom`; 14 testes novos vistos falhar antes; FlowSim todo verde; BalanceLab (`match 12`) idêntico antes e depois; Runtime compila contra o Unity 2021 do NuGet. Não cobre os temporizadores da IA (MANUAL, seção 4).  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**
