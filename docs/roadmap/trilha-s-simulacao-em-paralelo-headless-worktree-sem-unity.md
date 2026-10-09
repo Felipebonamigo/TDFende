@@ -61,7 +61,7 @@ O hash inclui posições quantizadas, vidas, torres e rng. Um teste visto falhar
 
 ### BUG-04 — SendCatalog completa por nome e valida id
 
-- [ ] **Status:** a fazer. **Design escrito em 09/10/2026, aguardando a aprovação do Felipe:** [`docs/designs/bug-04-catalogo-de-envios.md`](../designs/bug-04-catalogo-de-envios.md) (tarefa "architectural": nenhum código antes do aval).  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [ ] **Status:** a fazer. **Design aprovado pelo Felipe em 09/10/2026 (tudo como recomendado):** [`docs/designs/bug-04-catalogo-de-envios.md`](../designs/bug-04-catalogo-de-envios.md) (tarefa "architectural": nenhum código antes do aval).  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** BUG · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 2,5 · custo 1,5 · risco 1,5 · prioridade 4
 
@@ -98,7 +98,7 @@ Teste FlowSim, visto falhar antes: com 10 envios de fábrica e um envios.txt de 
 
 ### BUG-05 — Assinatura do replay cobre todos os campos
 
-- [ ] **Status:** a fazer. **Design escrito em 09/10/2026, aguardando a aprovação do Felipe:** [`docs/designs/bug-05-assinatura-do-replay.md`](../designs/bug-05-assinatura-do-replay.md) (tarefa "architectural": nenhum código antes do aval).  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [ ] **Status:** a fazer. **Design aprovado pelo Felipe em 09/10/2026 (tudo como recomendado):** [`docs/designs/bug-05-assinatura-do-replay.md`](../designs/bug-05-assinatura-do-replay.md) (tarefa "architectural": nenhum código antes do aval).  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** BUG · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 1,5 · custo 2 · risco 1,5 · prioridade 3,5
 

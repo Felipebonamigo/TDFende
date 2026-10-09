@@ -2,8 +2,8 @@
 
 [← cronograma](../../ROADMAP.md) · cartão: [Trilha S, BUG-05](../roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md)
 
-**Estado:** escrito em 09/10/2026, **aguardando a aprovação do Felipe** (tarefa "architectural": mexe no formato do
-replay). Nenhuma linha de código foi escrita. Esforço estimado: uma sessão. Vem **depois** do BUG-04 (a assinatura tem
+**Estado:** escrito e **aprovado pelo Felipe em 09/10/2026, com D1 a D5 como recomendado** (tarefa "architectural": mexe no
+formato do replay). Implementação depois do BUG-04. Esforço estimado: uma sessão. Vem **depois** do BUG-04 (a assinatura tem
 que ler os catálogos já completados e na ordem de fábrica) e usa o `StateHash` do TEC-31.
 
 ## 1. O problema, visto rodando no código de hoje
