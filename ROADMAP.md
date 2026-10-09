@@ -135,7 +135,7 @@ _Antes de qualquer download ou crédito: licença, camada privada, auditoria e i
 - [ ] **TEC-10a** — AuditaAssets em modo aviso (adiantado) (reservado: sessão na nuvem, 09/10/2026)
 - [ ] **VIS-01** — Inventário por tema e bíblia de arte (reservado: sessão na nuvem, 09/10/2026)
 - [ ] **DES-23** — Meta de elenco do Early Access (rascunho) (reservado: sessão na nuvem, 09/10/2026)
-- [ ] **MKT-01** — Spike de mercado do gênero (reservado: sessão na nuvem, 09/10/2026)
+- [x] **MKT-01** — Spike de mercado do gênero — 09/10/2026 (relatório em docs/mercado.md)
 - [ ] **TEC-24** — Plano de gasto dos créditos Meshy (reservado: sessão na nuvem, 09/10/2026)
 
 ### [Fase 2 — Fatia de beleza e Portão Visual](docs/roadmap/fase-02-fatia-de-beleza-e-portao-visual.md)
@@ -350,7 +350,8 @@ _Levar o jogo à venda e cuidar dele depois._
 - [ ] Fase 1: verba para pacotes pagos e para a cápsula, com teto.
 - [ ] Fase 1: escolher 2 ou 3 jogos-régua da Steam.
 - [ ] Fase 1: conferir no site do Meshy o plano da conta em 03/10 (javali e tigre).
-- [ ] Fase 1: lançar o EA sem multiplayer?
+- [ ] Fase 1: lançar o EA sem multiplayer? (o MKT-01 diz que só vale como TD solo contra IA, com envio de bichos e fronteira como diferencial; resumo no MANUAL, seção 12.)
+- [ ] Fase 1: nome do jogo. "Line Tower Wars" já é um jogo grátis na Steam (Mithryl Labs, 30/07/2026); usar só como nome de gênero.
 - [ ] Fase 2: o Portão Visual (é isso?); o enquadramento (morre, foge ou cai exausto); TAA/STP e GI; o hardware mínimo.
 - [ ] Fase 3: a fronteira diverte, pelo A/B cego? E quem são as 2 ou 3 pessoas de fora.
 - [ ] Fase 5: idiomas do EA (sugestão: PT-BR, EN e ZH-Hans), nome e logo provisórios.
@@ -368,6 +369,7 @@ _Levar o jogo à venda e cuidar dele depois._
 - A fatia de beleza pode reprovar nos dois temas: não existir arte coerente e com licença limpa. A saída é pacote pago na camada privada, o que deixa builds de outras sessões diferentes dos do Felipe.
 - Quarta troca de direção de arte. A mitigação agora é a fatia de beleza com jogos-régua, não só uma promessa.
 - Rejeição a assets de IA por parte do público da Steam. As torres atuais são IA de terceiros, com CC0 declarado pelo autor do upload. Mitigação: kit não-IA nas torres e nos assets da cápsula, e o campo de IA no manifesto.
+- Colisão de nome com o "Line Tower Wars" grátis da Mithryl Labs (Steam, 30/07/2026), e reação de parte do público à arte feita com IA (declaração obrigatória na página). Mitigação: nome próprio antes da página; kit não-IA onde der.
 - Teste num único hardware (4070 Ti). Mitigação: perfil mínimo desde a Fase 2.
 - HDRP: a Unity diz que mantém URP e HDRP por bastante tempo e vai unificando aos poucos, mas o futuro do HDRP depende dela. Com HDRP, o Steam Deck e PCs fracos podem não alcançar. Mitigação: a VIS-29 mede o custo e o perfil mínimo antes de migrar.
 - Unreal como plano B: reescrever em C++ custa por volta de 25-40 sessões e tira a verificação da sessão na nuvem (tudo passa a depender do PC). Só entra se URP e HDRP reprovarem no Portão Visual.

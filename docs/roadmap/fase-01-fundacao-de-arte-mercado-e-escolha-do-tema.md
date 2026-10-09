@@ -39,7 +39,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [ ] TEC-10a — AuditaAssets em modo aviso (adiantado)
 - [ ] VIS-01 — Inventário por tema e bíblia de arte
 - [ ] DES-23 — Meta de elenco do Early Access (rascunho)
-- [ ] MKT-01 — Spike de mercado do gênero
+- [x] MKT-01 — Spike de mercado do gênero — 09/10/2026
 - [ ] TEC-24 — Plano de gasto dos créditos Meshy
 
 ---
@@ -233,7 +233,7 @@ Metas de elenco no BalanceLab verdes com o conteúdo novo.
 
 ### MKT-01 — Spike de mercado do gênero
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026. Relatório em `docs/mercado.md` (19 jogos, com fontes), resumo no MANUAL, seção 12. Achado que muda o plano: já existe um "Line Tower Wars" grátis na Steam (Mithryl Labs, 30/07/2026).  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**

@@ -398,3 +398,26 @@ Uma tarefa que passa de uma sessão para a outra deixa no commit o que falta e o
 - Três tentativas de correção falhando: parar, instrumentar cada fronteira (o `-captura` é o
   instrumento) em vez de chutar.
 - Ele testa pelo **executável**, não pelo editor.
+
+## 12. Mercado do gênero (MKT-01, 09/10/2026)
+
+Relatório completo, com fontes: [`docs/mercado.md`](mercado.md). O que importa:
+
+- **Colisão de nome.** Já existe um **"Line Tower Wars" grátis na Steam** (Mithryl Labs, 30/07/2026,
+  bots + até 12 online, 7 reviews). Usar "Line Tower Wars" só como nome de gênero, nunca como título.
+- **Líderes:** Legion TD 2 (US$24,99, 15,3 mil reviews, 86%, PvP ranqueado; campanhas solo são DLC de
+  US$9,99 com pouquíssimas reviews) e Element TD 2 (EA a US$9,99, 1.0 a US$14,99; 3,2 mil reviews, 90%).
+  Onda 2024-26 de indies do mesmo formato, quase todos com menos de 50 reviews e visual 2D ou estilizado.
+- **Sem PvP:** não há caso comprovado de Line TD solo que tenha vendido bem; os que dependem só de PvP
+  morrem (Tower Wars 2012, Warstone). Os TDs solo vizinhos vendem (Defense Grid, Sanctum 2). Nunca travar
+  progressão atrás de PvP.
+- **Lacuna:** não achei Line TD **realista** e de aparência atual (só por busca de tags; trate como
+  indício). Pode ser falta de oferta ou custo de arte e de legibilidade.
+- **Preço:** US$9,99 no EA, US$14,99 no 1.0; a faixa US$15-30 converte pior (amostra enviesada para sucessos).
+- **Tags:** Tower Defense, Strategy, Singleplayer, Replay Value, Real Time Tactics, Realistic/3D. Não marcar
+  PvP nem Multiplayer enquanto não existirem.
+- **IA:** um review do Legion TD 2 já reclama de "AI slop". Declarar o uso de IA na página (campo `ia` do
+  manifesto, seção 7) e pesar isso na escolha dos modelos do Meshy.
+- **Recomendação do relatório:** EA sem multiplayer só se vendido como TD de estratégia solo contra IA,
+  com o envio de bichos e a fronteira como diferencial; página cedo, demo no Next Fest, 3 dificuldades de IA.
+  A decisão é do Felipe (ROADMAP, "Decisões").
