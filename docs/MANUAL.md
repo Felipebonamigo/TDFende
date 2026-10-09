@@ -45,7 +45,9 @@ executável se comportam diferente; o que o Felipe roda é o executável.
 7. Arquivos que o Unity regrava sozinho ao rodar em batch (`Assets/Settings/URP_Asset.asset`,
    `URP_Renderer.asset`, `UniversalRenderPipelineGlobalSettings.asset`,
    `DefaultVolumeProfile.asset`, `ProjectSettings/*.asset`) **não entram em commit** sem o
-   Felipe confirmar que abriu o editor e está tudo certo.
+   Felipe confirmar que abriu o editor e está tudo certo. A versão de 09/10/2026 já está
+   commitada (TEC-01): dois builds seguidos deixam o git limpo. Se um build voltar a mexer
+   neles, é mudança nova — mostre o diff e pergunte.
 8. `Builds/`, `Tools/*/glb/`, `Tools/*/out/`, `Tools/*/v_*.jpg|png`, `__pycache__/` são ignorados.
 
 ## 3. Comandos

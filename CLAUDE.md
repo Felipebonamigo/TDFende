@@ -22,4 +22,4 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
   modelo com textura). Aceitar EULA, logar em conta ou comprar: só o Felipe autoriza.
 - Arquivos que o Unity regrava ao rodar em batch (`Assets/Settings/*.asset`,
   `ProjectSettings/*.asset`, `DefaultVolumeProfile.asset`) não entram em commit sem o Felipe
-  confirmar.
+  confirmar. A versão de 09/10/2026 já foi commitada com o ok dele; mudança nova neles = perguntar.

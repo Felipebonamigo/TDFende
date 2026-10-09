@@ -22,7 +22,7 @@ O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta.
 
 Pergunte antes de executar o item que depende da decisão; registre a resposta aqui.
 
-- [ ] Manter ou reverter cada configuração regravada pelo Unity (m_LightsUseLinearIntensity, SSAO, prefiltering, DefaultVolumeProfile, static batching), olhando o A/B que sai da bisseção.
+- [x] Manter ou reverter cada configuração regravada pelo Unity: **manter todas** (Felipe, 09/10/2026; detalhes no TEC-01).
 - [ ] LFS, arte pesada só no PC ou reescrita do histórico; repositório público ou privado até a página da Steam; licença do código.
 - [ ] Aprovar o critério de 'architectural' para o CLAUDE.md. Proposta: mudança em struct da Sim, no formato do replay ou do catálogo, comando novo, vida de torre, MatchRules e multiplayer.
 - [ ] Aposentar o Sincronizar.ps1 ou mantê-lo compatível com a trava.
@@ -35,7 +35,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] BUG-02 — Clipe padrão dos bichos
 - [x] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
 - [x] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
-- [ ] TEC-01 — Base limpa: o executável sai da main
+- [x] TEC-01 — Base limpa: o executável sai da main
 - [ ] TEC-34 — Repositório: LFS, histórico e público × privado
 - [ ] TEC-20 — Sessões paralelas seguras (mínimo)
 - [ ] TEC-30 — FlowSim no GitHub Actions
@@ -302,7 +302,8 @@ Remover uma combinação de propósito reprova o build de diagnóstico, e a cole
 
 ### TEC-01 — Base limpa: o executável sai da main
 
-- [ ] **Status:** quase pronto (09/10/2026), falta a decisão do Felipe sobre os arquivos regravados.
+- [x] **Status:** feito em 09/10/2026 (commits com "TEC-01" na mensagem: `git log --grep=TEC-01`).
+  O Felipe confirmou commitar os 7 arquivos regravados (09/10/2026).
   - Feito: os 8 `.meta` soltos entraram no commit do BUG-01; os 2 GLBs originais do Meshy (270 MB)
     saíram de `Resources/TDFende/Bichos/Gerados` para `Tools/ConverterBichos/glb/originais-meshy/`
     (fora do git; nunca entraram no build, eram só importação lenta); `ROADMAP.md` existe.
@@ -316,7 +317,7 @@ Remover uma combinação de propósito reprova o build de diagnóstico, e a cole
     pelo `Editor/SsaoSetup.cs`, de propósito, desde 92325c5); `DefaultVolumeProfile` com os
     efeitos do URP 6 em valor neutro (o Unity preenche sozinho); `UniversalRenderPipelineGlobalSettings`
     (registro interno); `ProjectSettings` com static batching do Standalone (padrão do Unity).
-    Reverter não adianta: o Unity regrava no próximo build. **Recomendação: commitar os 7.**
+    Reverter não adianta: o Unity regrava no próximo build. Commitados com o ok do Felipe.
   - Fica: o `Torre_Canhao.fbx` antigo (sem estágio, 1,2 MB no build) é o modelo do modo clássico
     (`GameController`, estágio 0). Tirar troca o visual do clássico, que a captura não testa;
     fica para quando o clássico for revisto.
