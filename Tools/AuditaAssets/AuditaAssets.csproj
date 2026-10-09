@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    AuditaAssets (TEC-10a): confere o orçamento de malha e textura da arte (tetos do TEC-06, em
+    docs/MANUAL.md, seção 4) sem abrir o Unity. Lê os FBX binários direto e os cabeçalhos das imagens.
+    Por enquanto só avisa; o modo estrito (flag em Program.cs) vira reprovação quando a arte assentar.
+    Sem pacotes NuGet, como o AuditaLicencas. RollForward: SDK 10 no PC do Felipe, 8 na nuvem.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

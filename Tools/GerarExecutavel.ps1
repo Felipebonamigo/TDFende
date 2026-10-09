@@ -28,6 +28,8 @@ if (-not $PularLicencas) {
         exit 4
     }
 }
+Write-Host "Orçamento de malha e textura (só aviso)..."
+& dotnet run --project "$raiz\Tools\AuditaAssets" -v quiet --nologo -- --disco --raiz "$raiz"
 $versao = ((Get-Content "$raiz\ProjectSettings\ProjectVersion.txt" | Select-String 'm_EditorVersion: (\S+)').Matches[0].Groups[1].Value)
 $unity = "C:\Program Files\Unity\Hub\Editor\$versao\Editor\Unity.exe"
 if (-not (Test-Path $unity)) { throw "Unity $versao não instalado em $unity (instale pelo Hub)" }

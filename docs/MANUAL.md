@@ -161,6 +161,15 @@ Referência: RTX 4070 Ti, janela 1600×900, qualidade padrão, `-Estresse`. Medi
 um quadro perdido vira dois). Nível Baixo, quando existir: ≤ 300 k triângulos na cena (meta antiga do celular; recalibrar na VIS-29).
 Os tetos por asset pressupõem LOD (TEC-10): de perto o modelo cheio, de longe o reduzido.
 
+**AuditaAssets (TEC-10a):** `dotnet run --project Tools/AuditaAssets -v quiet --nologo -- --git`
+(ou `--disco`, `--detalhe`) mede cada FBX de `Assets/Resources` **sem abrir o Unity** (lê os índices de
+polígonos do FBX binário; confere com o `-captura` nas peças que não têm código por cima) e compara com os
+tetos acima: torre 25 k, fortaleza 40 k, bicho 15 k, acampamento 25 k (provisório). Também avisa de textura
+acima de 2048 px (teto provisório), de textura importada sem compressão e das texturas em `.bytes` (JPG
+decodificado em runtime: o TEC-09 as migra para BC7/BC5; textura nova entra como Texture2D importada).
+Roda no pre-commit e no `GerarExecutavel.ps1`, **só avisando**; `--estrito` faz reprovar quando a arte
+assentar. Em 09/10/2026: 21 dos 30 modelos medidos acima do teto, o pior a Torre_Gelo_3 (94,7 k).
+
 Arquivos ao lado do print: `print_bicho_<Nome>.png` e `print_bicho_<Nome>_simples.png` (retrato
 com o material do bicho e com um material simples) e `print_metricas.json` (resultado, falhas,
 boot, quadro p50/p95/p99 em ms, triângulos/draws/SetPass máximos, exceções, erros, cobertura de

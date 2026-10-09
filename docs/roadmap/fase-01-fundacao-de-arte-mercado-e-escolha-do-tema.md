@@ -36,7 +36,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 - [x] TEC-22 — Manifesto de licenças com auditoria no commit e no build — 09/10/2026 (e1bc185)
 - [ ] TEC-23 — Camada privada de arte e som
-- [ ] TEC-10a — AuditaAssets em modo aviso (adiantado)
+- [x] TEC-10a — AuditaAssets em modo aviso (adiantado) — 09/10/2026
 - [ ] VIS-01 — Inventário por tema e bíblia de arte
 - [ ] DES-23 — Meta de elenco do Early Access (rascunho)
 - [x] MKT-01 — Spike de mercado do gênero — 09/10/2026
@@ -124,7 +124,7 @@ Builds com e sem a pasta rodam, e o log diz qual camada carregou.
 
 ### TEC-10a — AuditaAssets em modo aviso (adiantado)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (`Tools/AuditaAssets`, MANUAL seção 4). Mede o FBX sem o Unity e bate com o `-captura` (fortaleza 92,6 k, rato 25,5 k, cachorro 17,6 k, rinoceronte 16 k). Hoje 21 de 30 modelos acima do teto, o pior a Torre_Gelo_3 (94,7 k). Texturas: avisa de >2048 px, sem compressão e dos `.bytes` (48 hoje). O teto de textura é provisório.  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**
