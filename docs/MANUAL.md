@@ -32,7 +32,8 @@ executável se comportam diferente; o que o Felipe roda é o executável.
 1. Começo: `git pull --rebase --autostash` na `main`.
 2. Commit **direto na `main`**, mensagem em português, terminando com a linha
    `Co-Authored-By: Claude ... <noreply@anthropic.com>`.
-3. O **pre-commit** (`.githooks/pre-commit`) compila o Runtime contra as DLLs reais do Unity
+3. O **GitHub Actions** (`.github/workflows/flowsim.yml`) roda o FlowSim a cada push na `main`
+   (vale também para sessão na nuvem e clone novo). O **pre-commit** (`.githooks/pre-commit`) compila o Runtime contra as DLLs reais do Unity
    (`Tools/CompileCheck`), compila Editor + URP (`Tools/CompileCheckUrp`) e roda os testes
    (`Tools/FlowSim`, ~3 min). Se falhar, **conserte e rode `git commit` de novo com os mesmos
    arquivos já no índice**.
@@ -119,6 +120,10 @@ para medir quanto ela custa). `-Estresse` (no exe: `-estresse`) monta um fim de 
 lane e 4 rodadas de todos os bichos nas duas lanes. Referência de 09/10/2026 (1600×900), depois
 do VIS-11a: normal p95 7,0 ms, ~14 milhões de triângulos; estresse p95 41,7 ms com 60 bichos,
 ~23 milhões (sem grama o p95 do estresse é o mesmo: o gargalo não é a grama).
+
+**Selo:** todo executável mostra "build <hash>" no canto inferior direito e grava
+`[TDFende] build <hash>` no Player.log (`git describe --always --dirty`; "-dirty" = gerado com
+mudança sem commit). Executável sem selo reprova a captura.
 
 Arquivos ao lado do print: `print_bicho_<Nome>.png` e `print_bicho_<Nome>_simples.png` (retrato
 com o material do bicho e com um material simples) e `print_metricas.json` (resultado, falhas,

@@ -34,7 +34,6 @@ namespace TDFende
         Texture2D _probeTex;
 
         readonly List<string> _failures = new List<string>();
-        readonly List<string> _animals = new List<string>(); // json de cada bicho medido
         readonly List<float> _frameMs = new List<float>();
         int _exceptions, _errors;
         long _triMax, _drawMax, _setPassMax;
@@ -74,6 +73,7 @@ namespace TDFende
 
         void TickPortraits()
         {
+            MeasureNew();
             if (_subject != null || _stage > 0)
             {
                 if (_t < _stageAt) return;
@@ -100,12 +100,11 @@ namespace TDFende
                         if (alive)
                         {
                             Aim(_subject);
-                            _plainCoverage = Coverage(_subject);
+                            _plainCoverage[_subject.Rig.Def.Name] = Coverage(_subject);
                             ScreenCapture.CaptureScreenshot(System.IO.Path.ChangeExtension(_path, null) + "_bicho_" + name + "_simples.png");
                         }
                         break;
                     case 3: // devolve o material e desliga a câmera de retrato
-                        RecordAnimal();
                         foreach (var (r, m) in _saved) if (r != null) r.sharedMaterials = m;
                         _saved.Clear();
                         _probeCam.enabled = false;
@@ -137,33 +136,58 @@ namespace TDFende
             _probeCam.transform.LookAt(target);
         }
 
+        void EnsureProbe()
+        {
+            if (_probeCam != null) return;
+            _probeCam = new GameObject("CameraRetrato").AddComponent<Camera>();
+            _probeCam.depth = 100; // por cima da câmera da partida
+            _probeCam.nearClipPlane = 0.01f;
+            _probeCam.fieldOfView = 35f;
+            _probeCam.enabled = false;
+            // a medida só vale se a camada vazia der fundo puro
+            float empty = Coverage(null);
+            if (empty > 0.001f) Fail($"medida de cobertura quebrada: camada vazia cobre {empty:P1}");
+        }
+
         void Portrait(EnemyView v)
         {
-            if (_probeCam == null)
-            {
-                _probeCam = new GameObject("CameraRetrato").AddComponent<Camera>();
-                _probeCam.depth = 100; // por cima da câmera da partida
-                _probeCam.nearClipPlane = 0.01f;
-                _probeCam.fieldOfView = 35f;
-                // a medida só vale se a camada vazia der fundo puro
-                float empty = Coverage(null);
-                if (empty > 0.001f) Fail($"medida de cobertura quebrada: camada vazia cobre {empty:P1}");
-            }
+            EnsureProbe();
             _probeCam.enabled = true;
             Aim(v);
             LogEnemy(v);
-            _coverage = Coverage(v);
-            _plainCoverage = -1f;
-            foreach (var r in v.Rig.GetComponentsInChildren<Renderer>(true))
-                foreach (var m in r.sharedMaterials)
-                {
-                    if (m == null) Fail($"{v.Rig.Def.Name}: '{r.name}' com material nulo");
-                    else if (!m.shader.isSupported) Fail($"{v.Rig.Def.Name}: shader '{m.shader.name}' não suportado");
-                }
             ScreenCapture.CaptureScreenshot(System.IO.Path.ChangeExtension(_path, null) +
                                             "_bicho_" + v.Rig.Def.Name.Replace("Inimigo_", "") + ".png");
         }
-        float _coverage, _plainCoverage;
+
+        // cobertura de cada tipo de bicho, medida no quadro em que ele aparece: o render na
+        // textura é síncrono, então não espera a fila de retratos (o cachorro, frágil, morria
+        // antes da vez dele). Material simples: medido no retrato, se o bicho ainda viver
+        readonly Dictionary<string, float> _coverage = new Dictionary<string, float>();
+        readonly Dictionary<string, float> _plainCoverage = new Dictionary<string, float>();
+
+        void MeasureNew()
+        {
+            foreach (var v in Object.FindObjectsByType<EnemyView>(FindObjectsSortMode.None))
+            {
+                if (!v.enabled || v.Rig == null || _coverage.ContainsKey(v.Rig.Def.Name)) continue;
+                string name = v.Rig.Def.Name;
+                EnsureProbe();
+                Aim(v);
+                float c = Coverage(v);
+                _coverage[name] = c;
+                bool ok = c >= MinCoverage;
+                if (!ok) Fail($"{name} invisível: cobertura {c:P2} (mínimo {MinCoverage:P1})");
+                Debug.Log($"[TDFende] captura, cobertura {name}: {c:P2} {(ok ? "ok" : "INVISÍVEL")}");
+                foreach (var r in v.Rig.GetComponentsInChildren<Renderer>(true))
+                    foreach (var m in r.sharedMaterials)
+                    {
+                        if (m == null) Fail($"{name}: '{r.name}' com material nulo");
+                        else if (!m.shader.isSupported) Fail($"{name}: shader '{m.shader.name}' não suportado");
+                    }
+            }
+            // o retrato em andamento volta a mirar no bicho dele antes do print deste quadro
+            if (_subject != null && _subject.Rig != null) Aim(_subject);
+        }
 
         /// <summary>
         /// Fração dos pixels de um quadro 256×256 da câmera de retrato coberta pelo corpo do bicho,
@@ -199,17 +223,16 @@ namespace TDFende
             return n / (float)(ProbeSize * ProbeSize);
         }
 
-        void RecordAnimal()
+        /// <summary>Uma linha de json por bicho medido; cobertura_simples -1 = morreu antes do retrato.</summary>
+        List<string> AnimalsJson()
         {
-            var name = _subject != null && _subject.Rig != null ? _subject.Rig.Def.Name : "?";
-            bool ok = _coverage >= MinCoverage;
-            // -1: o bicho morreu antes do retrato com material simples
-            string plain = _plainCoverage < 0f ? "não medido" : _plainCoverage.ToString("P2");
-            if (!ok) Fail($"{name} invisível: cobertura {_coverage:P2} (mínimo {MinCoverage:P1}), com material simples {plain}");
-            Debug.Log($"[TDFende] captura, cobertura {name}: {_coverage:P2} (material simples {plain}) {(ok ? "ok" : "INVISÍVEL")}");
-            _animals.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                "{{\"nome\": \"{0}\", \"cobertura\": {1:0.0000}, \"cobertura_simples\": {2:0.0000}, \"visivel\": {3}}}",
-                name, _coverage, _plainCoverage, ok ? "true" : "false"));
+            var list = new List<string>();
+            foreach (var kv in _coverage)
+                list.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "{{\"nome\": \"{0}\", \"cobertura\": {1:0.0000}, \"cobertura_simples\": {2:0.0000}, \"visivel\": {3}}}",
+                    kv.Key, kv.Value, _plainCoverage.TryGetValue(kv.Key, out var p) ? p : -1f,
+                    kv.Value >= MinCoverage ? "true" : "false"));
+            return list;
         }
 
         void Fail(string why)
@@ -391,8 +414,12 @@ namespace TDFende
             Census();
             CheckVariants();
             LintLogFile();
-            if (_portrayed.Count < SendCatalog.Count)
-                Fail($"só {_portrayed.Count} de {SendCatalog.Count} tipos de bicho apareceram ({string.Join(", ", _portrayed)})");
+            // executável sem selo = gerado fora do BuildJogo (ou o selo quebrou): não dá para
+            // saber de que commit veio (TEC-03)
+            if (!Application.isEditor && Application.version == BuildStamp.Unstamped)
+                Fail("executável sem selo de build (Application.version = " + Application.version + ")");
+            if (_coverage.Count < SendCatalog.Count)
+                Fail($"só {_coverage.Count} de {SendCatalog.Count} tipos de bicho apareceram ({string.Join(", ", _coverage.Keys)})");
 
             var ms = new List<float>(_frameMs);
             ms.Sort();
@@ -401,6 +428,7 @@ namespace TDFende
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             var json = new System.Text.StringBuilder("{\n");
             json.Append("  \"resultado\": \"" + (passed ? "passou" : "reprovou") + "\",\n");
+            json.Append("  \"build\": \"" + Application.version + "\",\n");
             json.Append("  \"falhas\": [" + string.Join(", ", _failures.ConvertAll(f => "\"" + f.Replace("\\", "/").Replace("\"", "'") + "\"")) + "],\n");
             json.Append(string.Format(inv, "  \"boot_s\": {0:0.00},\n", _bootAt));
             json.Append(string.Format(inv, "  \"quadro_ms\": {{\"p50\": {0:0.00}, \"p95\": {1:0.00}, \"p99\": {2:0.00}, \"quadros\": {3}}},\n", p50, p95, p99, ms.Count));
@@ -410,7 +438,7 @@ namespace TDFende
             json.Append("  \"excecoes\": " + _exceptions + ",\n  \"erros\": " + _errors + ",\n");
             json.Append("  \"estresse\": " + (_stress ? "true" : "false") + ",\n");
             json.Append("  \"bichos_vivos_max\": " + _aliveMax + ",\n");
-            json.Append("  \"bichos\": [\n    " + string.Join(",\n    ", _animals) + "\n  ]\n}\n");
+            json.Append("  \"bichos\": [\n    " + string.Join(",\n    ", AnimalsJson()) + "\n  ]\n}\n");
             var file = System.IO.Path.ChangeExtension(_path, null) + "_metricas.json";
             try { System.IO.File.WriteAllText(file, json.ToString()); }
             catch (System.Exception e) { Debug.Log("[TDFende] captura: não gravou " + file + ": " + e.Message); }

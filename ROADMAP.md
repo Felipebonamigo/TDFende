@@ -94,8 +94,8 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 - [x] **TEC-01** — Base limpa: o executável sai da main — 09/10/2026
 - [x] **TEC-34** — Repositório: LFS, histórico e público × privado — 09/10/2026
 - [x] **TEC-20** — Sessões paralelas seguras (mínimo) — 09/10/2026
-- [ ] **TEC-30** — FlowSim no GitHub Actions
-- [ ] **TEC-03** — Selo de build no print e no log
+- [x] **TEC-30** — FlowSim no GitHub Actions — 09/10/2026
+- [x] **TEC-03** — Selo de build no print e no log — 09/10/2026
 - [ ] **TEC-06** — Orçamento de desempenho escrito (modo aviso)
 - [ ] **TEC-26** — Backup do que não está no Git
 - [ ] **TEC-35** — Tetos e políticas no MANUAL

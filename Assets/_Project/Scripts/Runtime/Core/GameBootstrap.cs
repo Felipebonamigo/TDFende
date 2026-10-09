@@ -19,6 +19,8 @@ namespace TDFende
             // este é o único momento em que um arquivo de balanceamento ainda vale.
             CatalogLoader.LoadIfPresent();
 
+            BuildStamp.Create();
+
             new GameObject("== TDFende ==").AddComponent<ModeSelect>();
         }
     }

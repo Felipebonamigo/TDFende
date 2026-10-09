@@ -81,20 +81,53 @@ namespace TDFende.EditorTools
 
         static bool Build(string output)
         {
-            EnsureScene();
-            ShaderKeep();
-            var opts = new BuildPlayerOptions
+            // selo (TEC-03): o commit vira a versão do executável (Application.version), que o
+            // BuildStamp mostra no canto da tela e no Player.log. Só durante o build, para não
+            // sujar o ProjectSettings a cada build
+            string version = PlayerSettings.bundleVersion;
+            string stamp = GitDescribe();
+            PlayerSettings.bundleVersion = stamp;
+            try
             {
-                scenes = new[] { ScenePath },
-                locationPathName = output,
-                target = BuildTarget.StandaloneWindows64,
-                options = BuildOptions.None,
-            };
-            var report = BuildPipeline.BuildPlayer(opts);
-            var s = report.summary;
-            Debug.Log($"[TDFende] build {s.result}: {Path.GetFullPath(output)} " +
-                      $"({s.totalSize / (1024 * 1024)} MB, {s.totalTime.TotalSeconds:0} s, {s.totalErrors} erro(s))");
-            return s.result == BuildResult.Succeeded;
+                EnsureScene();
+                ShaderKeep();
+                var opts = new BuildPlayerOptions
+                {
+                    scenes = new[] { ScenePath },
+                    locationPathName = output,
+                    target = BuildTarget.StandaloneWindows64,
+                    options = BuildOptions.None,
+                };
+                var report = BuildPipeline.BuildPlayer(opts);
+                var s = report.summary;
+                Debug.Log($"[TDFende] build {s.result}: {Path.GetFullPath(output)} selo {stamp} " +
+                          $"({s.totalSize / (1024 * 1024)} MB, {s.totalTime.TotalSeconds:0} s, {s.totalErrors} erro(s))");
+                return s.result == BuildResult.Succeeded;
+            }
+            finally { PlayerSettings.bundleVersion = version; }
+        }
+
+        /// <summary>`git describe --always --dirty` (hash curto, "-dirty" com mudança sem commit).</summary>
+        static string GitDescribe()
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo("git", "describe --always --dirty")
+                {
+                    WorkingDirectory = Path.GetDirectoryName(Application.dataPath),
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using (var p = System.Diagnostics.Process.Start(psi))
+                {
+                    string text = p.StandardOutput.ReadToEnd().Trim();
+                    p.WaitForExit();
+                    if (p.ExitCode == 0 && text.Length > 0) return text;
+                }
+            }
+            catch (System.Exception e) { Debug.LogWarning("[TDFende] build: git describe falhou: " + e.Message); }
+            return "sem-git";
         }
 
         /// <summary>

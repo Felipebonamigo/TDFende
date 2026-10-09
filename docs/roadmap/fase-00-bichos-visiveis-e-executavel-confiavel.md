@@ -38,8 +38,8 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-01 — Base limpa: o executável sai da main
 - [x] TEC-34 — Repositório: LFS, histórico e público × privado
 - [x] TEC-20 — Sessões paralelas seguras (mínimo)
-- [ ] TEC-30 — FlowSim no GitHub Actions
-- [ ] TEC-03 — Selo de build no print e no log
+- [x] TEC-30 — FlowSim no GitHub Actions
+- [x] TEC-03 — Selo de build no print e no log
 - [ ] TEC-06 — Orçamento de desempenho escrito (modo aviso)
 - [ ] TEC-26 — Backup do que não está no Git
 - [ ] TEC-35 — Tetos e políticas no MANUAL
@@ -449,7 +449,11 @@ Duas sessões em clones paralelos com commits íntegros (git show --stat), e tr�
 
 ### TEC-30 — FlowSim no GitHub Actions
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-30" na mensagem).
+  `.github/workflows/flowsim.yml` roda o FlowSim (net10.0, ubuntu) a cada push na `main`.
+  Provado no GitHub: o push de ca6468e passou (run 37954502327) e o disparo manual com
+  `falha_de_proposito` ficou vermelho (run 37954500082). O CompileCheck continua só no
+  pre-commit local (precisa das DLLs do Unity).
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**
@@ -464,7 +468,16 @@ Workflow que roda o FlowSim (net10.0) a cada push na main e fica vermelho com um
 
 ### TEC-03 — Selo de build no print e no log
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-03" na mensagem).
+  - `BuildJogo` põe `git describe --always --dirty` na versão do executável só durante o build
+    (o ProjectSettings volta ao que era); `BuildStamp` mostra "build <hash>" no canto inferior
+    direito (menu e partida) e grava `[TDFende] build <hash>` no Player.log; o
+    `print_metricas.json` tem o campo `build`.
+  - A captura reprova executável sem selo (versão "1.0"): visto falhar antes de ligar o
+    carimbo, passa depois.
+  - Não feito: a linha `version` no replay (opcional; builds antigos recusariam replays novos).
+  - De quebra: a cobertura de cada bicho passou a ser medida no quadro em que ele aparece
+    (antes esperava a fila de retratos, e o cachorro morria antes da vez dele: "só 8 de 9").
 - **Categoria:** TEC · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 2 · custo 1 · risco 1 · prioridade 4
 
