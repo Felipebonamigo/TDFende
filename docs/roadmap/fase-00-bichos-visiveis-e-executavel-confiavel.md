@@ -40,9 +40,9 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-20 — Sessões paralelas seguras (mínimo)
 - [x] TEC-30 — FlowSim no GitHub Actions
 - [x] TEC-03 — Selo de build no print e no log
-- [ ] TEC-06 — Orçamento de desempenho escrito (modo aviso)
-- [ ] TEC-26 — Backup do que não está no Git
-- [ ] TEC-35 — Tetos e políticas no MANUAL
+- [x] TEC-06 — Orçamento de desempenho escrito (modo aviso)
+- [x] TEC-26 — Backup do que não está no Git
+- [x] TEC-35 — Tetos e políticas no MANUAL
 - [ ] PROC-01 — Caixa de aprovações e acompanhamento
 
 ---
@@ -512,7 +512,12 @@ O Player.log e o print mostram o hash, e um replay com e sem a linha é lido.
 
 ### TEC-06 — Orçamento de desempenho escrito (modo aviso)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-06" na mensagem). Tabela no MANUAL
+  (seção 4, "Orçamento de desempenho"), medida no `-Estresse`; veredito por item em
+  `orcamento` no `print_metricas.json`, só como aviso (constantes `Budget*` no `SmokeCapture`).
+  Como o cartão previa, o build atual fica acima na grama (4,0 M), nas torres (43 k a 95,6 k),
+  na fortaleza (92,6 k), em 3 bichos e no p95 do estresse (41,7 ms) — o que volta ao teto com
+  a VIS-11 (grama nova) e a TEC-10 (LOD). Regra de antes/depois no MANUAL.
 - **Categoria:** TEC · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 3,5 · custo 2 · risco 2 · prioridade 4
 - **Depende de:** TEC-04
@@ -560,7 +565,11 @@ O build atual reprova na grama e nas torres pesadas e volta a passar depois de V
 
 ### TEC-26 — Backup do que não está no Git
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-26" na mensagem). `Tools/Backup.ps1`
+  copia GLBs originais, quarentena e último executável para `D:\TDFende-backup` (disco físico
+  diferente do C:), 801 MB na primeira cópia. Teste de restauração com SHA-256 registrado no
+  MANUAL (seção 2, item 11). **Agendamento diário: aguardando o ok do Felipe** (tarefa agendada
+  é configuração permanente do PC).
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**
@@ -575,7 +584,11 @@ Script agendado copia essas pastas para a nuvem (OneDrive) ou para um disco exte
 
 ### TEC-35 — Tetos e políticas no MANUAL
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-35" na mensagem). MANUAL, seção 9:
+  URP como teto (HDRP descartado), política de patch do 6000.3.x antes de build público (com a
+  CVE-2025-59489 como motivo), Unity Personal até US$ 200 mil de receita + financiamento em 12
+  meses (regra de 2026, splash opcional no Unity 6), critério de "architectural" (também no
+  CLAUDE.md).
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**

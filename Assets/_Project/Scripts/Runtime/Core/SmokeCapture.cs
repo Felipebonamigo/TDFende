@@ -339,6 +339,7 @@ namespace TDFende
                 foreach (var m in g.Materials) Add(m, "grama");
             foreach (var t in Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None)) Add(t.materialTemplate, "terreno");
             Add(RenderSettings.skybox, "céu");
+            CensusAssets();
         }
 
         /// <summary>Reprova combinação em uso que nenhum material do ShaderKeep garante (TEC-11).</summary>
@@ -407,6 +408,70 @@ namespace TDFende
             Debug.Log($"[TDFende] captura, estresse: sem lugar para a torre {type} na lane {lane.Id}");
         }
 
+        // orçamento de desempenho (TEC-06): só AVISO, nunca reprova — com a arte mudando, um teto
+        // rígido deixaria a captura sempre com 1. Tabela e números medidos no MANUAL, seção 4.
+        // Referência: RTX 4070 Ti, janela 1600×900, qualidade padrão, captura -estresse
+        const float BudgetP95Ms = 8f;
+        const long BudgetSceneTris = 2_500_000, BudgetDraws = 2000, BudgetSetPass = 500;
+        const float BudgetBootS = 5f;
+        const int BudgetTower = 25_000, BudgetKeep = 40_000, BudgetAnimal = 15_000, BudgetGrass = 400_000;
+
+        // triângulos de cada modelo visto: "Torre_Canhao_3" (estágio), "Fortaleza", "Inimigo_Rato"
+        readonly SortedDictionary<string, long> _assetTris = new SortedDictionary<string, long>();
+
+        static long Triangles(GameObject root)
+        {
+            long n = 0;
+            void Count(Mesh m) { if (m != null) for (int i = 0; i < m.subMeshCount; i++) n += m.GetIndexCount(i) / 3; }
+            foreach (var mf in root.GetComponentsInChildren<MeshFilter>()) if (mf.name != "AnelTime") Count(mf.sharedMesh);
+            foreach (var s in root.GetComponentsInChildren<SkinnedMeshRenderer>()) Count(s.sharedMesh);
+            return n;
+        }
+
+        void CensusAssets()
+        {
+            foreach (var rig in Object.FindObjectsByType<ModelRig>(FindObjectsSortMode.None))
+            {
+                string name = rig.gameObject.name;
+                string key = name.StartsWith("Torre_") ? name + "_" + rig.Stage
+                           : name == "Base" ? "Fortaleza"
+                           : name.StartsWith("Inimigo") && rig.Def != null ? rig.Def.Name : null;
+                if (key != null && !_assetTris.ContainsKey(key)) _assetTris[key] = Triangles(rig.gameObject);
+            }
+        }
+
+        /// <summary>Veredito de cada item do orçamento (json); o que estoura vai para o log como AVISO.</summary>
+        List<string> Budget(float p95)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var items = new List<(string item, double measured, double cap)>
+            {
+                ("quadro p95 (ms)", p95, BudgetP95Ms),
+                ("boot (s)", _bootAt, BudgetBootS),
+            };
+            if (_tris.Valid) items.Add(("triângulos na cena", _triMax, BudgetSceneTris));
+            if (_draws.Valid) items.Add(("draws", _drawMax, BudgetDraws));
+            if (_setPass.Valid) items.Add(("SetPass", _setPassMax, BudgetSetPass));
+            var grass = Object.FindFirstObjectByType<GrassField>();
+            if (grass != null) items.Add(("grama (triângulos)", grass.Triangles, BudgetGrass));
+            foreach (var kv in _assetTris)
+                items.Add((kv.Key + " (triângulos)", kv.Value,
+                    kv.Key.StartsWith("Torre_") ? BudgetTower : kv.Key == "Fortaleza" ? BudgetKeep : BudgetAnimal));
+
+            var json = new List<string>();
+            var over = new List<string>();
+            foreach (var (item, measured, cap) in items)
+            {
+                bool ok = measured <= cap;
+                if (!ok) over.Add(string.Format(inv, "{0} {1:0.##} > {2:0.##}", item, measured, cap));
+                json.Add(string.Format(inv, "{{\"item\": \"{0}\", \"medido\": {1:0.##}, \"teto\": {2:0.##}, \"ok\": {3}}}",
+                    item, measured, cap, ok ? "true" : "false"));
+            }
+            Debug.Log(over.Count == 0 ? "[TDFende] captura, orçamento: tudo dentro"
+                : "[TDFende] captura, orçamento: AVISO (" + over.Count + " acima do teto, não reprova):\n  " + string.Join("\n  ", over));
+            return json;
+        }
+
         /// <summary>Confere o que falta, grava print_metricas.json e fecha com 0 ou 1.</summary>
         void Finish()
         {
@@ -438,6 +503,7 @@ namespace TDFende
             json.Append("  \"excecoes\": " + _exceptions + ",\n  \"erros\": " + _errors + ",\n");
             json.Append("  \"estresse\": " + (_stress ? "true" : "false") + ",\n");
             json.Append("  \"bichos_vivos_max\": " + _aliveMax + ",\n");
+            json.Append("  \"orcamento\": [\n    " + string.Join(",\n    ", Budget(p95)) + "\n  ],\n");
             json.Append("  \"bichos\": [\n    " + string.Join(",\n    ", AnimalsJson()) + "\n  ]\n}\n");
             var file = System.IO.Path.ChangeExtension(_path, null) + "_metricas.json";
             try { System.IO.File.WriteAllText(file, json.ToString()); }

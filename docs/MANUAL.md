@@ -70,6 +70,15 @@ executável se comportam diferente; o que o Felipe roda é o executável.
     (`git worktree add ..\TDFende-sim main`), que não precisa da `Library` do Unity. Antes de
     pegar uma tarefa do `ROADMAP.md`, escreva nela `(reservado: sessão <data hora>)` e faça push;
     quem chegar depois pega a próxima.
+11. **Backup do que não está no git** (TEC-26): `powershell -ExecutionPolicy Bypass -File
+    Tools\Backup.ps1` copia para `D:\TDFende-backup` (outro disco físico: o C: é o disco 1, o D:
+    o 0) os GLBs originais (`Tools/*/glb/`), a quarentena (`C:\Users\Felip\TDFende-quarentena`) e
+    o último executável. `robocopy /E` sem apagar: o que some do PC continua no D:. Registro em
+    `D:\TDFende-backup\backup.log`. **Restaurar:** copie a pasta de volta (`ConverterBichos-glb`
+    → `Tools\ConverterBichos\glb`, `ConverterTorres-glb` → `Tools\ConverterTorres\glb`,
+    `quarentena` → `C:\Users\Felip\TDFende-quarentena`). Teste de restauração em 09/10/2026:
+    GLB do tigre, Fortaleza.glb, TDFende.exe e um arquivo da quarentena voltaram com o mesmo
+    SHA-256. O D: não protege contra roubo ou incêndio do PC.
 
 ## 3. Comandos
 
@@ -124,6 +133,33 @@ do VIS-11a: normal p95 7,0 ms, ~14 milhões de triângulos; estresse p95 41,7 ms
 **Selo:** todo executável mostra "build <hash>" no canto inferior direito e grava
 `[TDFende] build <hash>` no Player.log (`git describe --always --dirty`; "-dirty" = gerado com
 mudança sem commit). Executável sem selo reprova a captura.
+
+### Orçamento de desempenho (TEC-06) — só aviso
+
+A captura compara cada item com o teto e escreve `orcamento` no `print_metricas.json` e
+`[TDFende] captura, orçamento: AVISO ...` no log (o `Captura.ps1` mostra). **Não reprova**: com
+a arte mudando, um teto rígido deixaria a captura sempre com 1. **Regra: nenhuma mudança visual
+sem a linha de desempenho de antes e de depois** (rode `Captura.ps1 -Estresse` nas duas pontas e
+ponha os números no commit). Tetos em `SmokeCapture` (constantes `Budget*`).
+
+Referência: RTX 4070 Ti, janela 1600×900, qualidade padrão, `-Estresse`. Medido em 09/10/2026
+(build 97e943d):
+
+| Item | Teto | Medido | |
+|---|---|---|---|
+| Quadro p95 | 8 ms | 41,7 ms (normal: 7,0 a 13,9 ms*) | acima |
+| Boot | 5 s | 4,4 s | ok |
+| Triângulos na cena | 2,5 M | 24,6 M (normal: ~17 M) | acima |
+| Draws | 2.000 | 2.552 (normal: ~1.050) | acima |
+| SetPass | 500 | 569 (normal: ~290) | acima |
+| Grama (todas as touceiras) | 400 k | 4,0 M | acima |
+| Fortaleza | 40 k | 92,6 k | acima |
+| Torre (cada estágio) | 25 k | 43 k (Sentinela 3) a 95,6 k (Gelo 3) | todas acima |
+| Bicho | 15 k | 1,6 k (águia) a 25,5 k (rato); acima: rato, cachorro 17,6 k, rinoceronte 16 k | 3 acima |
+
+\* o p95 normal pula entre 7,0 e 13,9 ms porque o quadro trava no sincronismo vertical (144 Hz:
+um quadro perdido vira dois). Nível Baixo/celular, quando existir: ≤ 300 k triângulos na cena.
+Os tetos por asset pressupõem LOD (TEC-10): de perto o modelo cheio, de longe o reduzido.
 
 Arquivos ao lado do print: `print_bicho_<Nome>.png` e `print_bicho_<Nome>_simples.png` (retrato
 com o material do bicho e com um material simples) e `print_metricas.json` (resultado, falhas,
@@ -284,7 +320,28 @@ cartoon. Não precisa ser medieval. Prefira arte real (Poly Haven, comunidade Me
 conta do Felipe) a formas procedurais. Todo ganho visual tem que caber no orçamento de FPS
 (medir no `-captura`).
 
-## 9. Como o Felipe trabalha
+## 9. Tetos e políticas (TEC-35)
+
+- **URP é o teto.** HDRP está descartado: o jogo precisa rodar em PC comum, Steam Deck e,
+  depois, celular. "Última geração" aqui é arte, luz, pós-processamento e animação dentro do
+  URP — nenhuma sessão propõe trocar de pipeline.
+- **Patch do Unity:** o projeto fica na linha 6000.3 (hoje 6000.3.11f1). Antes de cada build
+  **público** (Steam, itch, demo), atualize para o último 6000.3.x pelo Hub, rode o pre-commit,
+  gere o executável e a captura. Motivo concreto: a CVE-2025-59489 (carregamento de arquivo
+  inseguro, nota 8,4) atingia executáveis de 2017.1 até 6000.3.0b3; a 6000.3.11f1 já tem a
+  correção, mas a próxima falha só se corrige recompilando. Avisos em
+  https://unity.com/security.
+- **Unity Personal (gratuito):** vale enquanto a receita **e** o financiamento somados dos últimos
+  12 meses ficarem até US$ 200 mil (regra de 2026). Acima disso, Unity Pro por assento
+  (~US$ 2.310/ano). Com o Unity 6 a tela "Made with Unity" é opcional. Confira
+  https://unity.com/products/pricing-updates antes de lançar — muda de um ano para outro.
+- **Critério de "architectural"** (aprovado pelo Felipe em 09/10/2026, está no CLAUDE.md):
+  mudança em struct da Sim, no formato do replay ou do catálogo, comando novo, vida de torre,
+  `MatchRules` e multiplayer. Isso pede design escrito e aprovado antes do código; o resto é
+  "bounded".
+- **Repositório:** público, arte pesada no PC, nada acima de 10 MB no git (seção 2, item 9).
+
+## 10. Como o Felipe trabalha
 
 - Respostas em português, resultado primeiro, curtas. Fechar com `DONE`,
   `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT` ou `BLOCKED`.

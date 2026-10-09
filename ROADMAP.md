@@ -96,9 +96,9 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 - [x] **TEC-20** — Sessões paralelas seguras (mínimo) — 09/10/2026
 - [x] **TEC-30** — FlowSim no GitHub Actions — 09/10/2026
 - [x] **TEC-03** — Selo de build no print e no log — 09/10/2026
-- [ ] **TEC-06** — Orçamento de desempenho escrito (modo aviso)
-- [ ] **TEC-26** — Backup do que não está no Git
-- [ ] **TEC-35** — Tetos e políticas no MANUAL
+- [x] **TEC-06** — Orçamento de desempenho escrito (modo aviso) — 09/10/2026
+- [x] **TEC-26** — Backup do que não está no Git — 09/10/2026
+- [x] **TEC-35** — Tetos e políticas no MANUAL — 09/10/2026
 - [ ] **PROC-01** — Caixa de aprovações e acompanhamento
 
 ### [Trilha S — Simulação em paralelo (headless, worktree, sem Unity)](docs/roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md)

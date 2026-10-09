@@ -76,6 +76,9 @@ namespace TDFende
         readonly List<Draw> _draws = new List<Draw>();
         RenderParams[] _params;
 
+        /// <summary>Triângulos de grama por quadro (todas as touceiras), para o orçamento da captura.</summary>
+        public long Triangles { get; private set; }
+
         /// <summary>Materiais da grama: não estão em Renderer nenhum, a captura confere por aqui.</summary>
         public IEnumerable<Material> Materials
         {
@@ -281,6 +284,7 @@ namespace TDFende
                 tris += variant.Triangles;
             }
 
+            Triangles = tris;
             Debug.Log($"[TDFende] grama 3D: {placed} touceiras de {pool.Count} variantes, " +
                       $"~{tris / 1_000_000.0:0.0} M triângulos (orçamento {TriangleBudget / 1_000_000} M).");
         }

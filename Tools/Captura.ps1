@@ -27,5 +27,8 @@ if (-not $p.WaitForExit($Tempo * 1000)) {
 }
 Select-String -Path $log -Pattern '\[TDFende\] captura(, cobertura|, desempenho|, REPROVA|: PASSOU|: REPROVOU)' |
     ForEach-Object { $_.Line }
+# orçamento de desempenho (só aviso): a linha e os itens acima do teto logo abaixo dela
+Select-String -Path $log -Pattern '\[TDFende\] captura, orçamento' -Context 0,30 | ForEach-Object {
+    $_.Line; $_.Context.PostContext | Where-Object { $_ -match '^  \S' -and $_ -match ' > ' } }
 Write-Host "Código de saída: $($p.ExitCode)  (prints e métricas em $(Split-Path -Parent $Saida))"
 exit $p.ExitCode
