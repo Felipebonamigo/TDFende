@@ -133,7 +133,7 @@ _Antes de qualquer download ou crédito: licença, camada privada, auditoria e i
 - [x] **TEC-22** — Manifesto de licenças com auditoria no commit e no build — 09/10/2026 (e1bc185)
 - [ ] **TEC-23** — Camada privada de arte e som (código em 2c9e38d, 09/10/2026; **falta provar no executável com e sem a pasta, na sessão do PC**)
 - [x] **TEC-10a** — AuditaAssets em modo aviso (adiantado) — 09/10/2026
-- [ ] **VIS-01** — Inventário por tema e bíblia de arte (inventário e análise prontos em 09/10/2026, docs/arte/tema.md; **falta a decisão do Felipe: tema e jogos-régua**)
+- [x] **VIS-01** — Inventário por tema e bíblia de arte — 09/10/2026 (docs/arte/tema.md; tema: fantasia realista baixa com natureza; régua: Total War: Warhammer III)
 - [x] **DES-23** — Meta de elenco do Early Access (rascunho) — 09/10/2026 (docs/arte/elenco.md, condicionado ao tema)
 - [x] **MKT-01** — Spike de mercado do gênero — 09/10/2026 (relatório em docs/mercado.md)
 - [x] **TEC-24** — Plano de gasto dos créditos Meshy — 09/10/2026 (MANUAL, seção 14, e livro-caixa)
@@ -344,11 +344,13 @@ _Levar o jogo à venda e cuidar dele depois._
 - [x] Fase 0: critério de 'architectural' aprovado; Sincronizar.ps1 aposentado; backup no D: (Felipe, 09/10/2026).
 - [x] Plataforma e pipeline: Steam no PC, celular fora da meta; HDRP pretendido se ganhar a VIS-29, Unreal 5 só como plano B; a 4070 Ti é a referência do nível Ultra (Felipe, 09/10/2026).
 - [x] Trabalho dividido: sessão na nuvem (simulação, ferramentas, downloads automáticos, documentação) e sessão no PC (Unity, Unreal, executável, prints, downloads com login) (Felipe, 09/10/2026; MANUAL, seção 10).
+- [x] Declarar o uso de IA na página da Steam: **sim** (Felipe, 09/10/2026).
 - [ ] Fase 2: pipeline final (URP ou HDRP) pela folha da VIS-29; se os dois reprovarem, abrir a comparação com o Unreal 5.
-- [ ] Fase 1: tema e bioma. Inventário pronto (docs/arte/tema.md). **Recomendação: fantasia realista baixa**; plano B natureza/expedição; medieval com kit pago só se os dois reprovarem. Confirma na fatia de beleza.
-- [ ] Fase 1: o elenco segue o bioma, e cada espécie tem no máximo um papel especial; manter os 9 bichos ou migrar para uma fonte única.
-- [ ] Fase 1: verba para pacotes pagos e para a cápsula, com teto.
-- [ ] Fase 1: escolher 2 ou 3 jogos-régua da Steam (sugestão: Manor Lords, Total War: Warhammer III, Frostpunk 2).
+- [x] Fase 1: tema e bioma: **fantasia realista baixa com natureza** (Felipe, 09/10/2026); plano B natureza/expedição se a fatia de beleza reprovar. Confirma na Fase 2.
+- [ ] Fase 1: o elenco segue o bioma, e cada espécie tem no máximo um papel especial. **Sem verba, não há fonte única de bichos**: manter os 9 e completar só com CC BY grátis ou Meshy com aprovação (docs/arte/elenco.md). Precisa de uma decisão sobre o quanto aceitar de mistura.
+- [x] Fase 1: verba para pacotes pagos: **nenhuma** (Felipe, 09/10/2026).
+- [ ] Fase 1: verba da cápsula e do marketing, com teto (outra pergunta, só na Fase 17).
+- [x] Fase 1: jogo-régua: **Total War: Warhammer III** (Felipe, 09/10/2026); pode acrescentar outro quando quiser.
 - [ ] Fase 1: conferir no site do Meshy o plano da conta em 03/10 (javali e tigre) e em 04/10 (primeira Torre_Canhao), e o que gastou os 150 créditos sem registro (docs/meshy-livro-caixa.md).
 - [ ] Fase 1: lançar o EA sem multiplayer? (o MKT-01 diz que só vale como TD solo contra IA, com envio de bichos e fronteira como diferencial; resumo no MANUAL, seção 12.)
 - [ ] Fase 1: nome do jogo. "Line Tower Wars" já é um jogo grátis na Steam (Mithryl Labs, 30/07/2026); usar só como nome de gênero.
@@ -368,7 +370,7 @@ _Levar o jogo à venda e cuidar dele depois._
 - O bicho invisível pode ser mais fundo que shader ou culling. Três correções falhando: rever o AnimalLoader inteiro, inclusive trocar Legacy por Animator.
 - A fatia de beleza pode reprovar nos dois temas: não existir arte coerente e com licença limpa. A saída é pacote pago na camada privada, o que deixa builds de outras sessões diferentes dos do Felipe.
 - Quarta troca de direção de arte. A mitigação agora é a fatia de beleza com jogos-régua, não só uma promessa.
-- Rejeição a assets de IA por parte do público da Steam. As torres atuais são IA de terceiros, com CC0 declarado pelo autor do upload. Mitigação: kit não-IA nas torres e nos assets da cápsula, e o campo de IA no manifesto.
+- Rejeição a assets de IA por parte do público da Steam. As torres atuais são IA de terceiros, com CC0 declarado pelo autor do upload. O Felipe decidiu declarar o uso de IA (09/10/2026) e não há verba para kit não-IA. Mitigação: nos assets da cápsula, só arte sem IA ou muito retrabalhada, e o campo de IA no manifesto.
 - Colisão de nome com o "Line Tower Wars" grátis da Mithryl Labs (Steam, 30/07/2026), e reação de parte do público à arte feita com IA (declaração obrigatória na página). Mitigação: nome próprio antes da página; kit não-IA onde der.
 - Teste num único hardware (4070 Ti). Mitigação: perfil mínimo desde a Fase 2.
 - HDRP: a Unity diz que mantém URP e HDRP por bastante tempo e vai unificando aos poucos, mas o futuro do HDRP depende dela. Com HDRP, o Steam Deck e PCs fracos podem não alcançar. Mitigação: a VIS-29 mede o custo e o perfil mínimo antes de migrar.

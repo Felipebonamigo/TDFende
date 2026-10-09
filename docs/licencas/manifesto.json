@@ -13,7 +13,8 @@
  ],
  "cabecalho": [
   "Tudo que o jogo usa e não foi escrito por nós, com origem, autor, licença e o que alteramos. Texturas fotográficas ficam em `Assets/Resources/TDFende/Textures/` (JPG guardado como `.bytes` para o importador do Unity não recomprimir). Os materiais sem foto continuam procedurais (`Runtime/Art/ProcTex.cs`).",
-  "CC0 não exige crédito; fica registrado para saber de onde veio cada coisa. O que exige crédito sai em `Assets/Resources/TDFende/creditos.txt`, que a tela de créditos mostra."
+  "CC0 não exige crédito; fica registrado para saber de onde veio cada coisa. O que exige crédito sai em `Assets/Resources/TDFende/creditos.txt`, que a tela de créditos mostra.",
+  "**Declaração de IA na Steam: sim** (decidido pelo Felipe em 09/10/2026). O campo `ia` de cada entrada é a fonte: `própria` (gerado por nós no Meshy) e `terceiro` (gerado por IA por outra pessoa) entram na declaração da página (META-03a)."
  ],
  "entradas": [
   {

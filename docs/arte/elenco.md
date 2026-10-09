@@ -53,3 +53,16 @@ contrato antes de comprar, ver `tema.md`), e eu não vi os clipes reais. A águi
 - Os modelos CC BY grátis são de autores diferentes e têm clipes desiguais: servem de tapa-buraco, não de elenco.
 - Gerar bicho no Meshy gasta crédito (rig 5 e animação 3 por ação, segundo a tabela da API; geração ~30) e, para
   quadrúpede, só dá a animação "Andando" (MANUAL, seção 6). Cada pedido passa pelo Felipe (seção 14).
+
+## Efeito da decisão "sem verba" (09/10/2026)
+
+O Felipe decidiu **não gastar com pacotes pagos**. Então o pacote de animais está fora, e o elenco só cresce com:
+1. **CC BY grátis do Sketchfab**, de autores diferentes (urso, javali, alce, corça, raposa; versão antiga, com
+   "problemas de rig" segundo o autor) e **CC0** quando houver;
+2. **Meshy da conta do Felipe**, bicho a bicho, sempre com pedido de aprovação e custo dito antes (rig 5 e animação 3 por
+   ação segundo a tabela; geração ~30). Quadrúpede só ganha "Andando".
+
+Em números, a meta de 14 a 16 comuns, 4 elites e 2 chefes **não fecha** sem arte nova. O que dá para prometer hoje:
+**9 atuais + 2 a 4 espécies grátis** (cervo ou alce, raposa, javali novo), sem elite nem chefe animados até haver
+modelo. Isso empurra MERC-11 (chefe elefante) e BICHO-09 (elite imune) para depois de uma decisão sobre quanto
+Meshy gastar nos bichos. Pergunta aberta no ROADMAP.

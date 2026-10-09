@@ -2,8 +2,9 @@
 
 [← cronograma](../../ROADMAP.md) · como trabalhar: [MANUAL](../MANUAL.md)
 
-**Estado em 09/10/2026:** inventário pronto, **decisão do Felipe pendente** (tema, 2-3 jogos-régua e verba).
-A recomendação abaixo é minha e é provisória até a fatia de beleza (VIS-27) provar ou reprovar o tema.
+**Estado em 09/10/2026: decidido pelo Felipe** (ver "Decisão" no fim): fantasia realista baixa com natureza,
+régua Total War: Warhammer III, nenhuma verba para pacotes pagos, IA declarada na Steam. Continua provisório
+até a fatia de beleza (VIS-27) provar ou reprovar o tema; se reprovar, o plano B é natureza/expedição.
 
 Três agentes inventariaram um tema cada, só com metadados e miniaturas (nenhum modelo aberto, nada baixado
 ou comprado, zero crédito do Meshy): [natureza/expedição](natureza.md) · [fantasia realista baixa](fantasia.md) ·
@@ -63,7 +64,7 @@ realistas e luz de fim de tarde, mantendo as torres atuais.
   destoam ao lado de arte fotoescaneada. Só a fatia de beleza, com o jogo rodando e a câmera teleobjetiva,
   mostra se isso incomoda de verdade.
 
-## Bíblia de arte (rascunho, para o tema recomendado)
+## Bíblia de arte (rascunho, para o tema escolhido)
 
 - **Lugar:** vale alto de planalto, com ruínas de pedra, pinheiros esparsos, rochas musgosas e neblina baixa.
 - **Hora e luz:** fim de tarde, sol baixo e quente, céu parcialmente nublado. O HDRI atual
@@ -75,14 +76,29 @@ realistas e luz de fim de tarde, mantendo as torres atuais.
   que lembre jogo de celular, mistura de escalas e de estilos de pintura.
 - **Frase de venda** (do MKT-01): "Cada inimigo que você manda paga a sua defesa. Cada torre que você ergue empurra a
   sua fronteira."
-- **Jogos-régua** (sugestão minha, o Felipe escolhe 2 ou 3): *Manor Lords* (terreno, luz e materiais realistas
-  vistos de cima), *Total War: Warhammer III* (fantasia realista em câmera de estratégia) e *Frostpunk 2*
-  (atmosfera, luz e neblina). Falta confirmar que o Felipe gosta deles.
+- **Jogo-régua (escolhido pelo Felipe): *Total War: Warhammer III*** — fantasia realista numa câmera de
+  estratégia: unidades legíveis de longe, terreno e vegetação com peso, luz com atmosfera. A fatia de beleza
+  (VIS-27) é medida ao lado dele, em capturas do mesmo enquadramento. Eram sugestões também *Manor Lords* e
+  *Frostpunk 2*; o Felipe pode acrescentar mais um a qualquer momento.
 
-## Decisões que esperam o Felipe
+## Decisão do Felipe (09/10/2026)
 
-1. Tema: fantasia realista baixa (recomendado), natureza/expedição ou medieval com kit pago.
-2. Os 2 ou 3 jogos-régua.
-3. Verba para pacotes pagos: nenhuma, até ~US$ 150 ou até ~US$ 600. Nada de comprar o pacote de animais antes da
-   leitura do contrato.
-4. Aceitar que as torres e a fortaleza são arte feita por IA (declaração obrigatória na Steam).
+1. **Tema: "fantasia com natureza".** Leitura adotada: **fantasia realista baixa num bioma natural** (vale, floresta e
+   planalto de rochas musgosas, com ruínas de pedra), que é a opção recomendada acima. Não é o tema "natureza/
+   expedição" (savana, safári, postos de guarda). *Se a leitura estiver errada, é só dizer.*
+2. **Jogo-régua: Total War: Warhammer III.**
+3. **Verba para pacotes pagos: nenhuma.** Consequências, escritas aqui para ninguém tropeçar nelas:
+   - nada de comprar o pacote de animais (a dúvida do "Editorial Use Only" deixa de ser urgente), nem kit de
+     castelo, águia ou acampamento;
+   - a arte nova só vem de **CC0, CC BY e do que o Meshy da conta do Felipe gerar, sempre com pedido de aprovação
+     antes** (MANUAL, seção 14);
+   - **o elenco de bichos fica limitado**: sem o pacote, ele não passa de 9 a 11 espécies, e as grátis em CC BY são
+     de autores diferentes, algumas com "problemas de rig" (`elenco.md`);
+   - a camada privada (TEC-23) continua útil para o Mixamo e para o que o Felipe vier a ter, mas ninguém compra nada
+     por ela agora.
+4. **Declarar IA na Steam: sim.** As torres, a fortaleza e o acampamento da comunidade do Meshy, e o que o Felipe
+   gerar lá, entram na declaração da página (META-03a). O campo `ia` do manifesto (`docs/licencas/manifesto.json`)
+   é a fonte dessa declaração.
+
+Ainda em aberto, e que não depende do tema: o plano do Meshy em 03/10 e 04/10, os 150 créditos sem registro, e a
+verba da cápsula (marketing), que é outra pergunta.

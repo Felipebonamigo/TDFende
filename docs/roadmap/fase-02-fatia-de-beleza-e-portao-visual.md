@@ -21,7 +21,7 @@ Uma lane que já parece jogo, com arte real no tema favorito, medida contra os j
 
 Pergunte antes de executar o item que depende da decisão; registre a resposta aqui.
 
-- [ ] Portão Visual: o Felipe diz 'é isso' com a fatia ao lado dos jogos-régua, e o p95 fica dentro do aviso? Se falhar, o segundo tema vira fatia.
+- [ ] Portão Visual: o Felipe diz 'é isso' com a fatia ao lado do jogo-régua (**Total War: Warhammer III**, escolhido em 09/10/2026), e o p95 fica dentro do aviso? Se falhar, o segundo tema (natureza/expedição) vira fatia.
 - [ ] Enquadramento: morre, foge ou cai exausto.
 - [ ] Pipeline: URP ou HDRP, pela comparação da VIS-29. Se o HDRP reprovar, abrir a comparação com o Unreal 5?
 - [ ] TAA/STP/DLSS ou SMAA; assar a parte estática com APV e probes ou só skybox + SSAO (no HDRP: SSGI ou ray tracing).

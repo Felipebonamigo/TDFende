@@ -6,6 +6,8 @@ Tudo que o jogo usa e não foi escrito por nós, com origem, autor, licença e o
 
 CC0 não exige crédito; fica registrado para saber de onde veio cada coisa. O que exige crédito sai em `Assets/Resources/TDFende/creditos.txt`, que a tela de créditos mostra.
 
+**Declaração de IA na Steam: sim** (decidido pelo Felipe em 09/10/2026). O campo `ia` de cada entrada é a fonte: `própria` (gerado por nós no Meshy) e `terceiro` (gerado por IA por outra pessoa) entram na declaração da página (META-03a).
+
 **Legenda.** *IA*: `própria` = gerado por nós com IA; `terceiro` = gerado por IA por outra pessoa; `não` = sem declaração de IA. *Estado*: `pendente` = falta conferir algo antes de publicar (veja a nota do grupo).
 
 ## Texturas fotográficas e materiais

@@ -459,17 +459,24 @@ Relatório completo, com fontes: [`docs/mercado.md`](mercado.md). O que importa:
 
 ## 13. Tema e direção de arte (VIS-01, 09/10/2026)
 
-Três temas foram inventariados (natureza/expedição, fantasia realista baixa, medieval com kit pago):
-[`docs/arte/tema.md`](arte/tema.md) tem a comparação, a bíblia de arte (rascunho) e a recomendação, e
-[`docs/arte/`](arte/) os relatórios e dados de cada um. **A decisão do Felipe está pendente** (ROADMAP, "Decisões").
-Em resumo:
+**Decidido pelo Felipe em 09/10/2026:**
+- **Tema: fantasia realista baixa com natureza** — vale, floresta e planalto de rochas musgosas, ruínas de pedra,
+  bestas realistas, luz de fim de tarde. Plano B se a fatia de beleza reprovar: natureza/expedição.
+- **Jogo-régua: Total War: Warhammer III.** A fatia de beleza (VIS-27) é medida ao lado dele.
+- **Verba para pacotes pagos: nenhuma.** Arte nova só de CC0, CC BY ou do Meshy da conta do Felipe (com aprovação
+  antes, seção 14). Não comprar o pacote de animais nem kit de castelo.
+- **Declarar IA na Steam: sim** (campo `ia` do manifesto, seção 7).
+
+Análise completa, bíblia de arte e relatórios dos três temas: [`docs/arte/tema.md`](arte/tema.md) e
+[`docs/arte/`](arte/). Em resumo, o que levou a essa escolha:
 - as notas dos três temas empatam (diferença menor que o ruído de quem olhou só miniaturas);
 - Gelo, Fogo e Ar realistas prontos não existem em nenhum tema; o que é de graça e bom em torre, fortaleza e
-  acampamento foi gerado por IA no Meshy (declarar na Steam);
-- bichos: o pacote pago de animais cobre 8 dos 9, mas a listagem traz "Editorial Use Only": **não comprar sem ler o
-  contrato**;
-- recomendação provisória: **fantasia realista baixa**, porque é o único tema em que as 21 peças que já estão no
-  jogo são o próprio tema. Plano B: natureza/expedição. O Portão Visual (Fase 2) confirma ou derruba.
+  acampamento foi gerado por IA no Meshy;
+- fantasia realista baixa é o único tema em que as 21 peças que já estão no jogo são o próprio tema;
+- o pacote pago de animais traz "Editorial Use Only" na listagem e, de qualquer forma, está fora da verba.
+
+**Efeito sobre os bichos:** sem pacote, o elenco não passa de 9 a 11 espécies (`docs/arte/elenco.md`). O
+Portão Visual (Fase 2) confirma ou derruba o tema.
 
 ## 14. Plano de gasto dos créditos Meshy (TEC-24, 09/10/2026)
 

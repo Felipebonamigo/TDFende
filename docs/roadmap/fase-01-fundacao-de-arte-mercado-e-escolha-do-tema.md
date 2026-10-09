@@ -21,14 +21,14 @@ Antes de qualquer download ou crédito: licença, camada privada, auditoria e in
 
 Pergunte antes de executar o item que depende da decisão; registre a resposta aqui.
 
-- [ ] Tema e bioma, decididos pela matriz e confirmados na fatia de beleza (Fase 2).
+- [x] Tema e bioma: **fantasia realista baixa com natureza** (Felipe, 09/10/2026), a confirmar na fatia de beleza (Fase 2).
 - Natureza/expedição. Prós: arte mais farta (Poly Haven; o HDRI do jogo já é sul-africano), elenco natural, enquadramento não letal. Contras: troca as torres e pede cuidado com o tom de 'canhão contra bicho'.
 - Fantasia realista 'baixa'. Prós: torres elementais coerentes, espaço para alfas e chefes. Contras: torres PBR de fantasia escassas, risco de cair no estilizado.
 - Medieval realista com kit pago. Prós: kits modulares abundantes no Fab e na Asset Store. Contras: tigre, rinoceronte e elefante destoam; Gelo, Fogo e Ar puxam para fantasia.
 - Fora: moderno militar (tom de caçada), cidade retomada (arquitetura sob medida, quase só pago) e Índia mogol (só referência).
 - [ ] Elenco coerente com o bioma: no temperado, cervo, alce, bisão, raposa e corvo; na savana, gnu, búfalo, hiena, zebra e leão. Manter os 9 atuais ou migrar para uma fonte única de bichos.
-- [ ] Verba para pacotes pagos (camada privada): sim ou não, e com que teto.
-- [ ] Os 2 ou 3 jogos-régua da Steam.
+- [x] Verba para pacotes pagos (camada privada): **nenhuma** (Felipe, 09/10/2026).
+- [x] Jogo-régua da Steam: **Total War: Warhammer III** (Felipe, 09/10/2026).
 - [ ] Conferir no site do Meshy o plano da conta em 03/10, quando foram gerados o javali e o tigre.
 - [ ] EA sem multiplayer? (a partir do MKT-01)
 
@@ -37,7 +37,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-22 — Manifesto de licenças com auditoria no commit e no build — 09/10/2026 (e1bc185)
 - [ ] TEC-23 — Camada privada de arte e som (código em 2c9e38d; falta provar no exe)
 - [x] TEC-10a — AuditaAssets em modo aviso (adiantado) — 09/10/2026
-- [ ] VIS-01 — Inventário por tema e bíblia de arte (inventário pronto; falta decisão do Felipe)
+- [x] VIS-01 — Inventário por tema e bíblia de arte — 09/10/2026
 - [x] DES-23 — Meta de elenco do Early Access (rascunho) — 09/10/2026
 - [x] MKT-01 — Spike de mercado do gênero — 09/10/2026
 - [x] TEC-24 — Plano de gasto dos créditos Meshy — 09/10/2026
@@ -139,7 +139,7 @@ O pre-commit e o BuildJogo avisam malha ou textura fora do orçamento do TEC-06,
 
 ### VIS-01 — Inventário por tema e bíblia de arte
 
-- [ ] **Status:** inventário e análise prontos em 09/10/2026 ([`docs/arte/tema.md`](../arte/tema.md), três relatórios e dados brutos). **Falta o Felipe:** escolher o tema (recomendação: fantasia realista baixa), 2 ou 3 jogos-régua e a verba. Depois disso, registrar a decisão no MANUAL e no README e marcar [x].  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026. Inventário e análise em [`docs/arte/tema.md`](../arte/tema.md); decisão do Felipe: fantasia realista baixa com natureza, régua Total War: Warhammer III, nenhuma verba, IA declarada. Registrada no MANUAL (seção 13) e no README.
 - **Categoria:** VIS · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 5 · custo 2,5 · risco 2,5 · prioridade 5
 - **Depende de:** BUG-01

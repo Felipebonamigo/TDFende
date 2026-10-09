@@ -4,6 +4,14 @@ Tower defense com uma mecânica de **fronteira territorial + atrito** (inspirada
 torres projetam uma fronteira no terreno e inimigos dentro do seu território perdem vida com o tempo.
 Projeto-treino antes do RTS — alvo: Steam, com arquitetura mobile-ready desde o dia 1.
 
+## Direção de arte
+
+Realista e de última geração, não low-poly nem cartoon. **Tema: fantasia realista baixa com natureza** (vale,
+floresta e rochas musgosas, ruínas de pedra, bestas realistas), com **Total War: Warhammer III** como jogo-régua de
+beleza. Sem verba para pacotes pagos: a arte vem de fontes livres (CC0, CC BY) e de modelos gerados com IA, e o uso
+de IA será declarado na página da Steam. Detalhes e licenças: [`docs/arte/tema.md`](docs/arte/tema.md) e
+[`THIRD_PARTY.md`](THIRD_PARTY.md). Cronograma: [`ROADMAP.md`](ROADMAP.md).
+
 ## Como abrir (primeira vez)
 
 1. Abra o **Unity Hub** → **Add** → **Add project from disk** → escolha esta pasta.
