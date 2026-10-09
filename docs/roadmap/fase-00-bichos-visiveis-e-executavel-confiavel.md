@@ -31,7 +31,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 ## Tarefas, em ordem
 
 - [x] BUG-01 — Bichos invisíveis no executável (primeiro item)
-- [ ] TEC-04 — Captura v2 (núcleo) com código de saída e estresse
+- [x] TEC-04 — Captura v2 (núcleo) com código de saída e estresse
 - [ ] BUG-02 — Clipe padrão dos bichos
 - [ ] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
 - [ ] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
@@ -111,7 +111,19 @@ O assert de cobertura reprova os 9 bichos no build atual e passa depois da corre
 
 ### TEC-04 — Captura v2 (núcleo) com código de saída e estresse
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** núcleo feito em 09/10/2026 (commit com "TEC-04" na mensagem: `git log --grep=TEC-04`).
+  - **Feito:** `Tools/Captura.ps1` (saída 0 passou, 1 reprovou, 2 travou); assert de cobertura
+    de pixels de cada bicho (corpo sozinho na camada 31, mínimo 0,5%); tipo de bicho que não
+    apareceu; shader não suportado ou material nulo; exceção no log; tempo esgotado (60 s);
+    `print_metricas.json` com boot, quadro p50/p95/p99, triângulos/draws/SetPass (ProfilerRecorder,
+    funciona no exe de release), exceções, erros e cobertura de cada bicho; `-estresse`.
+  - **Visto falhar:** com o `AnimalLoader` de antes do BUG-01 sai com 1 (Rato, Águia e Cachorro
+    com 0,00% de cobertura; o Lobo nem chegou ao retrato). Com o atual sai com 0.
+  - **Medido (1600×900):** normal p95 7,0 ms, ~25 milhões de triângulos, 1.012 draws; estresse
+    (60 bichos, 12 torres no nível 6) p95 41,7 ms, p99 48,6 ms, ~27-30 milhões de triângulos,
+    ~2.100 draws, ~650 SetPass. Insumo para o TEC-06 (orçamento) e o VIS-11a (grama).
+  - **Fica para depois:** lint do Player.log (depende do BUG-02), cor média do chão, altura em
+    pixels, folha de contato, flags -menu/-fim/-captura-ui (entram com as telas).
 - **Categoria:** TEC · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 3,5 · custo 3 · risco 2 · prioridade 4,5
 - **Depende de:** TEC-01

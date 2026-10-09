@@ -76,15 +76,34 @@ Notas:
 
 ```
 powershell -ExecutionPolicy Bypass -File Tools\GerarExecutavel.ps1
-Builds\Windows\TDFende.exe -screen-fullscreen 0 -screen-width 1600 -screen-height 900 -captura C:\caminho\print.png
+powershell -ExecutionPolicy Bypass -File Tools\Captura.ps1 [-Saida C:\caminho\print.png] [-Estresse]
 ```
 
-Rode pelo PowerShell com `Start-Process ... -PassThru` e `WaitForExit(150000)`. O jogo entra no
+`Captura.ps1` roda `TDFende.exe -captura <print.png>` em janela 1600×900, espera até 150 s e
+**devolve o código de saída do jogo: 0 passou, 1 reprovou, 2 travou** (fechado à força). Na tela
+saem a cobertura de cada bicho, o desempenho e o motivo de cada reprovação. O jogo entra no
 Tower Wars (Normal), manda **um de cada bicho** na lane da IA, registra o movimento por 12 s,
-tira `print.png`, depois aproxima a câmera (do primeiro bicho, ou da grama se não houver bicho)
-e tira `print_grama.png`, e fecha sozinho. Leia os prints com a ferramenta de leitura de imagem.
+tira `print.png`, depois aproxima a câmera da grama e tira `print_grama.png`, e fecha sozinho.
+Leia os prints com a ferramenta de leitura de imagem.
+
+**Reprova (código 1):** bicho com cobertura abaixo de 0,5% no retrato (o corpo, sem o anel do
+time, é desenhado sozinho na camada 31 sobre fundo preto e conta-se o que não é fundo), tipo de
+bicho que não apareceu, shader não suportado ou material nulo num bicho, exceção no log, mais de
+60 s sem terminar. Tempo de quadro e triângulos **só são medidos** (o orçamento é o TEC-06).
+
+`-Estresse` (no exe: `-estresse`) monta um fim de partida: as 6 torres no nível máximo em cada
+lane e 4 rodadas de todos os bichos nas duas lanes. Referência de 09/10/2026 (1600×900): normal
+p95 7,0 ms, ~25 milhões de triângulos; estresse p95 41,7 ms com 60 bichos, ~27-30 milhões.
+
+Arquivos ao lado do print: `print_bicho_<Nome>.png` e `print_bicho_<Nome>_simples.png` (retrato
+com o material do bicho e com um material simples) e `print_metricas.json` (resultado, falhas,
+boot, quadro p50/p95/p99 em ms, triângulos/draws/SetPass máximos, exceções, erros, cobertura de
+cada bicho).
 
 No log `%USERPROFILE%\AppData\LocalLow\DefaultCompany\TDFende\Player.log`:
+- `[TDFende] captura: PASSOU` ou `REPROVOU (n): motivo | motivo` — a linha final.
+- `[TDFende] captura, cobertura <bicho>: x% (material simples y%)`.
+- `[TDFende] captura, desempenho:` — quadro p50/p95/p99, triângulos, draws, SetPass, boot.
 - `[TDFende] captura, cena:` — shader/keywords/instancing do terreno, texturas das camadas,
   céu, luz ambiente, sol.
 - `[TDFende] captura, movimento` — por bicho: `(animado | animação parada | sem animação)`,

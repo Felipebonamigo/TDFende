@@ -87,7 +87,7 @@ Candidatos ao inventário: natureza/expedição, fantasia realista 'baixa' e med
 _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta. Um -captura com métricas e cenário de estresse reprova qualquer regressão. Infraestrutura de sessões, backup e repositório resolvida antes do primeiro asset novo._
 
 - [x] **BUG-01** — Bichos invisíveis no executável (primeiro item) — 09/10/2026
-- [ ] **TEC-04** — Captura v2 (núcleo) com código de saída e estresse
+- [x] **TEC-04** — Captura v2 (núcleo) com código de saída e estresse — 09/10/2026
 - [ ] **BUG-02** — Clipe padrão dos bichos
 - [ ] **VIS-11a** — Grama: rarear ou desligar por flag até o chão novo
 - [ ] **TEC-11** — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
