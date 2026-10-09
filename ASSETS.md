@@ -13,9 +13,10 @@ No PowerShell, na pasta do projeto:
 powershell -ExecutionPolicy Bypass -File Tools\BaixarArte.ps1
 ```
 
-Depois abra o Unity (ele importa sozinho) e faça commit — estes arquivos PODEM ir para o GitHub.
-Com a sincronização automática instalada (`Tools\InstalarSincronizacao.ps1`), nada disso é
-preciso: quando o script de download muda, o PC roda de novo sozinho e envia a arte nova.
+Depois abra o Unity (ele importa sozinho) e faça commit — estes arquivos PODEM ir para o GitHub
+(CC0; nenhum passa de 10 MB, o limite do pre-commit). A sincronização automática
+(`Sincronizar.ps1`) foi aposentada em 09/10/2026: com várias sessões do Claude ela arriscava
+commit pela metade (docs/MANUAL.md, seção 2).
 
 ## 2. Bichos de verdade (as tropas que você envia) — já vêm no projeto
 

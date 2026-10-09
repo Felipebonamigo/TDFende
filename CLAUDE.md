@@ -13,7 +13,12 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
 - Mensagens de commit e comentários em português.
 - **Verificação:** nada está pronto sem rodar FlowSim + CompileCheck (o pre-commit faz) e, se
   mexeu em algo visível, gerar o executável e conferir o print do `-captura` (MANUAL, seção 4).
-  O Felipe joga pelo executável, não pelo editor.
+  O Felipe joga pelo executável, não pelo editor. `Tools\Captura.ps1` tem que sair com 0.
+- **Tarefa "architectural"** (design escrito e aprovado pelo Felipe antes de qualquer código;
+  critério aprovado em 09/10/2026): mudança em struct da Sim, no formato do replay ou do
+  catálogo, comando novo, vida de torre, `MatchRules` e multiplayer. O resto é "bounded".
+- **Repositório público, arte pesada no PC** (09/10/2026): nada acima de 10 MB no git (o
+  pre-commit bloqueia); fonte de modelo e GLB original ficam no PC com backup no D:.
 - **Direção de arte (06/10/2026):** realista e de última geração, não low-poly nem cartoon; não
   precisa ser medieval.
 - **Modelos 3D (pedido do Felipe, 04/10/2026):** primeiro procurar pronto na comunidade para

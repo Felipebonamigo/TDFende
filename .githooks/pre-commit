@@ -12,6 +12,20 @@
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 
+# Arte pesada fica no PC (MANUAL, "Repositório"): o repositório é público e o que entra no
+# histórico não sai mais. Nenhum arquivo acima de 10 MB entra no commit.
+LIMITE=$((10 * 1024 * 1024))
+GRANDES=$(git diff --cached --name-only --diff-filter=AM -z | while IFS= read -r -d '' f; do
+    t=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+    # if, e não "[ ] && echo": com set -e, o último teste falso derrubava o hook calado
+    if [ "$t" -gt "$LIMITE" ]; then echo "  $f ($((t / 1048576)) MB)"; fi
+done)
+if [ -n "$GRANDES" ]; then
+    echo "[pre-commit] arquivo acima de 10 MB não vai para o git (fica no PC, com backup no D:):"
+    echo "$GRANDES"
+    exit 1
+fi
+
 echo "[pre-commit] compilando scripts do Unity..."
 if ! dotnet build "$ROOT/Tools/CompileCheck" -v quiet --nologo > /tmp/tdfende-cc.log 2>&1; then
     echo "[pre-commit] FALHOU a compilação do lado Unity:"

@@ -23,10 +23,10 @@ O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta.
 Pergunte antes de executar o item que depende da decisão; registre a resposta aqui.
 
 - [x] Manter ou reverter cada configuração regravada pelo Unity: **manter todas** (Felipe, 09/10/2026; detalhes no TEC-01).
-- [ ] LFS, arte pesada só no PC ou reescrita do histórico; repositório público ou privado até a página da Steam; licença do código.
-- [ ] Aprovar o critério de 'architectural' para o CLAUDE.md. Proposta: mudança em struct da Sim, no formato do replay ou do catálogo, comando novo, vida de torre, MatchRules e multiplayer.
-- [ ] Aposentar o Sincronizar.ps1 ou mantê-lo compatível com a trava.
-- [ ] Onde fica o backup: OneDrive, disco externo ou os dois.
+- [x] Repositório: **público + arte pesada no PC**, sem LFS (Felipe, 09/10/2026). Licença do código: em aberto (decidir antes da página da Steam).
+- [x] Critério de 'architectural' aprovado como proposto e escrito no CLAUDE.md (Felipe, 09/10/2026).
+- [x] Sincronizar.ps1 **aposentado** (Felipe, 09/10/2026).
+- [x] Backup no **disco D:** (Felipe, 09/10/2026).
 
 ## Tarefas, em ordem
 
@@ -36,8 +36,8 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
 - [x] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
 - [x] TEC-01 — Base limpa: o executável sai da main
-- [ ] TEC-34 — Repositório: LFS, histórico e público × privado
-- [ ] TEC-20 — Sessões paralelas seguras (mínimo)
+- [x] TEC-34 — Repositório: LFS, histórico e público × privado
+- [x] TEC-20 — Sessões paralelas seguras (mínimo)
 - [ ] TEC-30 — FlowSim no GitHub Actions
 - [ ] TEC-03 — Selo de build no print e no log
 - [ ] TEC-06 — Orçamento de desempenho escrito (modo aviso)
@@ -372,7 +372,11 @@ Cortar para: commitar os .meta, decidir os 6 settings, refazer o executável pel
 
 ### TEC-34 — Repositório: LFS, histórico e público × privado
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-34" na mensagem). Decisão do Felipe:
+  público até a página da Steam, arte pesada no PC, sem LFS. Regra no MANUAL (seção 2, item 9)
+  e no CLAUDE.md; o pre-commit bloqueia arquivo acima de 10 MB (testado com um de 12 MB: saída
+  1). O maior arquivo do repositório hoje tem 6,8 MB e nenhum blob do histórico passa de 10 MB,
+  então não há o que reescrever. O `.gitignore` já cobria `Tools/*/glb/` e `Builds/`.
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**
@@ -393,7 +397,15 @@ O .gitignore é ajustado conforme a decisão.
 
 ### TEC-20 — Sessões paralelas seguras (mínimo)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** mínimo feito em 09/10/2026 (commit com "TEC-20" na mensagem).
+  - Trava `Builds\.trava` no `GerarExecutavel.ps1` (testado: com a trava sai com 3 e não
+    builda; sem ela builda e apaga a trava) e recusa rodar com o Unity aberto.
+  - `Sincronizar.ps1` e `InstalarSincronizacao.ps1` aposentados (não estavam agendados);
+    `ASSETS.md` atualizado.
+  - MANUAL, seção 2, item 10: um Unity por vez, worktree para Sim/Python, reserva de tarefa
+    no `ROADMAP.md`. Critério de "architectural" no CLAUDE.md.
+  - Não feito: a rodada de prova com duas sessões paralelas (precisa de duas sessões abertas)
+    e o build noturno com prints.
 - **Categoria:** TEC · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 2,5 · custo 3 · risco 2,5 · prioridade 4,5
 - **Depende de:** TEC-01, TEC-04

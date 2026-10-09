@@ -47,8 +47,28 @@ executável se comportam diferente; o que o Felipe roda é o executável.
    `DefaultVolumeProfile.asset`, `ProjectSettings/*.asset`) **não entram em commit** sem o
    Felipe confirmar que abriu o editor e está tudo certo. A versão de 09/10/2026 já está
    commitada (TEC-01): dois builds seguidos deixam o git limpo. Se um build voltar a mexer
-   neles, é mudança nova — mostre o diff e pergunte.
+   neles, é mudança nova — mostre o diff e pergunte. Se o `git status` mostrar `M` neles mas
+   `git diff` vier vazio, é só o Unity regravando com fim de linha LF: `git add` neles limpa
+   o status sem mudar nada.
 8. `Builds/`, `Tools/*/glb/`, `Tools/*/out/`, `Tools/*/v_*.jpg|png`, `__pycache__/` são ignorados.
+9. **Repositório público, arte pesada no PC** (decisão do Felipe, 09/10/2026, TEC-34). O
+   repositório no GitHub fica público até a página da Steam; o que entra no histórico não sai
+   mais. Por isso:
+   - nenhum arquivo acima de **10 MB** entra no git — o pre-commit bloqueia (o maior hoje tem
+     6,8 MB). Sem Git LFS;
+   - GLB original, fonte de modelo, quarentena e executável entregue ficam **no PC**, nas pastas
+     ignoradas (`Tools/*/glb/`, `Builds/`, `C:\Users\Felip\TDFende-quarentena`), com cópia no
+     D: (`Tools\Backup.ps1`, TEC-26);
+   - asset da Asset Store/Fab e de origem não comprovada **nunca** entra no git (seção 7);
+   - antes de commitar arte, confira a licença: público = redistribuído.
+10. **Sessões paralelas** (TEC-20): o `Tools/Sincronizar.ps1` (pull + commit automático a cada
+    2 min) foi aposentado em 09/10/2026 — cada sessão faz pull/commit/push na mão, como acima.
+    Só **um** Unity por vez nesta pasta: o `GerarExecutavel.ps1` cria a trava `Builds\.trava`
+    e se recusa a rodar se ela existir (ou se o editor estiver aberto). Trabalho só de Sim
+    (FlowSim) ou Python (conversores) pode ir num worktree à parte
+    (`git worktree add ..\TDFende-sim main`), que não precisa da `Library` do Unity. Antes de
+    pegar uma tarefa do `ROADMAP.md`, escreva nela `(reservado: sessão <data hora>)` e faça push;
+    quem chegar depois pega a próxima.
 
 ## 3. Comandos
 

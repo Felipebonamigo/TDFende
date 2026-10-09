@@ -92,8 +92,8 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 - [x] **VIS-11a** — Grama: rarear ou desligar por flag até o chão novo — 09/10/2026
 - [x] **TEC-11** — Shaders sem surpresa no build (escopo dado pela causa do BUG-01) — 09/10/2026
 - [x] **TEC-01** — Base limpa: o executável sai da main — 09/10/2026
-- [ ] **TEC-34** — Repositório: LFS, histórico e público × privado
-- [ ] **TEC-20** — Sessões paralelas seguras (mínimo)
+- [x] **TEC-34** — Repositório: LFS, histórico e público × privado — 09/10/2026
+- [x] **TEC-20** — Sessões paralelas seguras (mínimo) — 09/10/2026
 - [ ] **TEC-30** — FlowSim no GitHub Actions
 - [ ] **TEC-03** — Selo de build no print e no log
 - [ ] **TEC-06** — Orçamento de desempenho escrito (modo aviso)
@@ -335,8 +335,8 @@ _Levar o jogo à venda e cuidar dele depois._
 ## Decisões que esperam o Felipe
 
 - [x] Fase 0: manter ou reverter cada configuração regravada — manter todas (Felipe, 09/10/2026).
-- [ ] Fase 0: Git LFS ou arte pesada fora do Git; repositório público ou privado até a página da Steam; licença do código.
-- [ ] Fase 0: aprovar o critério de 'architectural' para o CLAUDE.md; aposentar ou adaptar o Sincronizar.ps1; onde fica o backup.
+- [x] Fase 0: repositório público + arte pesada no PC, sem LFS (Felipe, 09/10/2026). Licença do código: em aberto até a página da Steam.
+- [x] Fase 0: critério de 'architectural' aprovado; Sincronizar.ps1 aposentado; backup no D: (Felipe, 09/10/2026).
 - [ ] Fase 1: tema e bioma pela matriz (natureza/expedição, fantasia realista baixa ou medieval com kit pago), confirmados na fatia de beleza.
 - [ ] Fase 1: o elenco segue o bioma, e cada espécie tem no máximo um papel especial; manter os 9 bichos ou migrar para uma fonte única.
 - [ ] Fase 1: verba para pacotes pagos e para a cápsula, com teto.
