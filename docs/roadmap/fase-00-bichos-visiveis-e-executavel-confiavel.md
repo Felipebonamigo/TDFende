@@ -11,6 +11,12 @@ O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta.
 
 ## Critério de saída (a fase só fecha com tudo isto verificado)
 
+**Fechada em 09/10/2026**, verificado no executável da `main` com selo limpo `fc635b7`:
+captura normal e `-Estresse` com saída 0, os 9 bichos medidos, 0 "Default clip", 0 exceções,
+p95 normal 7,0 ms (144 fps), estresse medido (p95 41,7-48,6 ms com 60 bichos: acima do
+orçamento, fica para TEC-10/VIS-11), pre-commit e Actions verdes, ROADMAP, regra do
+repositório e backup testado no MANUAL, velocidade recalibrada, print enviado ao Felipe.
+
 - Exe gerado da main com hash limpo passa no -captura com código 0, e os 9 bichos aparecem no close.
 - Zero linhas 'Default clip' e zero exceções.
 - p95 de volta ao patamar dos 104 fps, e -estresse medido.
