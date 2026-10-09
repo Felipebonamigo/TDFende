@@ -34,7 +34,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 ## Tarefas, em ordem
 
-- [ ] TEC-22 — Manifesto de licenças com auditoria no commit e no build
+- [x] TEC-22 — Manifesto de licenças com auditoria no commit e no build — 09/10/2026 (e1bc185)
 - [ ] TEC-23 — Camada privada de arte e som
 - [ ] TEC-10a — AuditaAssets em modo aviso (adiantado)
 - [ ] VIS-01 — Inventário por tema e bíblia de arte
@@ -46,7 +46,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 ### TEC-22 — Manifesto de licenças com auditoria no commit e no build
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026, commit e1bc185. 41 entradas cobrem os 201 arquivos de Resources; ferramenta em `Tools/AuditaLicencas`; 3 entradas pendentes (plano do Meshy em 03-04/10) só avisam. O Felipe fecha o pendente conferindo o plano no site do Meshy.  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** TEC · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 3,5 · custo 2,5 · risco 1,5 · prioridade 4
 
