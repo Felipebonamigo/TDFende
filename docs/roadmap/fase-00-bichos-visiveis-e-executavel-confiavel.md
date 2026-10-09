@@ -43,7 +43,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-06 — Orçamento de desempenho escrito (modo aviso)
 - [x] TEC-26 — Backup do que não está no Git
 - [x] TEC-35 — Tetos e políticas no MANUAL
-- [ ] PROC-01 — Caixa de aprovações e acompanhamento
+- [x] PROC-01 — Caixa de aprovações e acompanhamento
 
 ---
 
@@ -607,7 +607,12 @@ MANUAL com:
 
 ### PROC-01 — Caixa de aprovações e acompanhamento
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "PROC-01" na mensagem), com uma parte adiada.
+  - Regra "o que não depende de aprovação segue" no `ROADMAP.md` (Como usar, item 8).
+  - Tabela de acompanhamento com a Fase 0 preenchida e a recalibração formal (≈ 0,2 medido;
+    0,5 provisório para as fases de arte/conteúdo; refazer no Portão 1).
+  - Adiado: a página semanal de aprovações. Hoje não há lote nenhum esperando o Felipe (a única
+    pendência é o ok para agendar o backup); a página nasce no primeiro lote real da Fase 1/2.
 - **Esforço:** P (menos de 1 sessão)
 
 **Por que, e nesta fase:**

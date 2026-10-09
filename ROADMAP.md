@@ -11,6 +11,10 @@ Montado em 06/10/2026 por um planejamento com 47 agentes: 5 leitores do código,
 5. Ao terminar: verificação completa (FlowSim + CompileCheck + `-captura` se for visível), commit e push, e marque `[x]` com data e hash do commit **aqui e no arquivo da fase**, no mesmo commit.
 6. A fase só fecha quando o **critério de saída** dela estiver verificado. Anote na tabela de acompanhamento as sessões reais × estimadas.
 7. Uma coisa de cada vez: não abra a próxima tarefa com a atual pela metade.
+8. **O que não depende de aprovação segue.** Tarefa travada numa decisão do Felipe: registre a
+   pergunta em "Decisões que esperam o Felipe" (abaixo) e pegue a próxima tarefa que não depende
+   dela. Quando houver um lote para ele aprovar (prints de arte, sons, lote de créditos Meshy),
+   junte tudo numa página (artifact) com sim/não por item, em vez de perguntar um por um.
 
 ## Visão
 
@@ -99,7 +103,7 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 - [x] **TEC-06** — Orçamento de desempenho escrito (modo aviso) — 09/10/2026
 - [x] **TEC-26** — Backup do que não está no Git — 09/10/2026
 - [x] **TEC-35** — Tetos e políticas no MANUAL — 09/10/2026
-- [ ] **PROC-01** — Caixa de aprovações e acompanhamento
+- [x] **PROC-01** — Caixa de aprovações e acompanhamento — 09/10/2026
 
 ### [Trilha S — Simulação em paralelo (headless, worktree, sem Unity)](docs/roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md)
 
@@ -381,9 +385,16 @@ _Levar o jogo à venda e cuidar dele depois._
 
 ## Acompanhamento
 
+**Recalibração ao fim da Fase 0 (09/10/2026):** 14 itens estimados em 5-6 sessões saíram em 1
+sessão longa (razão real/estimado ≈ 0,2). Não aplique 0,2 ao resto às cegas: a Fase 0 era
+infraestrutura com ciclo curto (build de 15 s, captura de 40 s) e quase nenhuma espera por
+aprovação. Para as fases de arte e conteúdo, que dependem de aprovação do Felipe, de download e
+de créditos Meshy, use **0,5** como provisório e recalibre no Portão 1 com os números reais.
+Custo de Opus por fase: o Claude não vê a fatura; o Felipe anota aqui pelo uso em claude.ai.
+
 | Fase | Início | Fim | Sessões estimadas | Sessões reais | O que ensinou |
 |---|---|---|---|---|---|
-| Fase 0 | | | 5-6 | | |
+| Fase 0 | 09/10/2026 | 09/10/2026 | 5-6 | 1 (uma sessão longa) | Captura com código de saída primeiro: ela achou o bicho sumido, o clipe padrão, o cachorro fora da fila e, com o build estrito, a névoa que o exe nunca teve. Medir cada fronteira (pose real × caixa guardada) resolveu o BUG-01 depois de uma hipótese errada de shader. |
 | Trilha S | | | 12-16, em paralelo (fora do caminho crítico) | | |
 | Fase 1 | | | 2-3 (sem Unity, em paralelo à Fase 0) | | |
 | Fase 2 | | | 5-7 | | |
