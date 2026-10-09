@@ -111,12 +111,20 @@ script, a janela nasce sem foco e o Unity pausa o jogo.
    (`Graphics.RenderMeshInstanced`) invisível.
 3. **Terreno com `drawInstanced = true` sai PRETO no executável** (no editor não). Está
    desligado em `World/GroundBuilder.cs`. Não religue sem provar com print.
-4. **Invisível no executável e visível no editor** = quase sempre 1 ou 2. Diagnóstico: o log
-   `captura, bicho` e o print de perto.
-5. **Material criado em runtime com keyword ligada/desligada** (ex.: `AnimalLoader.FixSurface`)
+4. **Objeto invisível**: primeiro descubra se é material ou malha. A captura fotografa cada
+   bicho duas vezes (`_bicho_<Nome>.png` com o material dele e `_bicho_<Nome>_simples.png` com
+   um material simples). Some nos dois = malha/esqueleto; aparece só no simples = material ou
+   variante de shader (aí vale o item 1 ou 2).
+5. **Bicho com esqueleto medido pela caixa errada.** A caixa guardada no `SkinnedMeshRenderer`
+   pode não ter nada a ver com a malha animada: em cachorro, lobo, rato e águia a caixa dizia o
+   tamanho certo e a malha animada era quase um ponto (escala do esqueleto × malha diferente em
+   cada modelo baixado). Por isso o `AnimalLoader` mede com `BakeMesh` na pose de andar
+   (`RealBounds`) e reajusta a caixa de recorte (`FitCullingBounds`). O log
+   `captura, bicho ... pose real: tamanho` mostra a medida verdadeira. (BUG-01, 09/10/2026)
+6. **Material criado em runtime com keyword ligada/desligada** (ex.: `AnimalLoader.FixSurface`)
    cai numa combinação que o build pode não ter. Liste as keywords no log e garanta a combinação
    no ShaderKeep.
-6. O `Player.log` só é escrito pelo executável; erros de shader às vezes **não** aparecem nele —
+7. O `Player.log` só é escrito pelo executável; erros de shader às vezes **não** aparecem nele —
    o print é a prova.
 
 ## 6. Pipelines de arte

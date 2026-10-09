@@ -15,6 +15,99 @@ namespace TDFende
         string _path;
         float _t;
         bool _shot, _close, _closeShot;
+
+        // retrato de perto de cada bicho: câmera própria, porque a da partida não chega a
+        // menos de 8 unidades e o rato (0,15 de altura) vira poucos pixels
+        readonly System.Collections.Generic.HashSet<string> _portrayed = new System.Collections.Generic.HashSet<string>();
+        Camera _probeCam;
+
+        // retrato em dois tempos: com o material do bicho, e com um material simples sem recorte
+        // (aparece só no segundo = o recorte por alfa apaga o bicho; some nos dois = malha/esqueleto)
+        EnemyView _subject;
+        int _stage;
+        float _stageAt;
+        readonly System.Collections.Generic.List<(SkinnedMeshRenderer r, Material[] m)> _saved =
+            new System.Collections.Generic.List<(SkinnedMeshRenderer, Material[])>();
+        Material _plain;
+
+        void TickPortraits()
+        {
+            if (_subject != null || _stage > 0)
+            {
+                if (_t < _stageAt) return;
+                bool alive = _subject != null && _subject.enabled && _subject.Rig != null;
+                string name = alive ? _subject.Rig.Def.Name.Replace("Inimigo_", "") : "";
+                switch (_stage)
+                {
+                    case 1: // troca para o material simples
+                        if (alive)
+                        {
+                            if (_plain == null) _plain = new Material(Shader.Find("Universal Render Pipeline/Lit")) { color = new Color(1f, 0.2f, 0.6f) };
+                            _saved.Clear();
+                            foreach (var r in _subject.Rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                            {
+                                _saved.Add((r, r.sharedMaterials));
+                                var arr = new Material[r.sharedMaterials.Length];
+                                for (int i = 0; i < arr.Length; i++) arr[i] = _plain;
+                                r.sharedMaterials = arr;
+                            }
+                            Aim(_subject);
+                        }
+                        break;
+                    case 2:
+                        if (alive)
+                        {
+                            Aim(_subject);
+                            ScreenCapture.CaptureScreenshot(System.IO.Path.ChangeExtension(_path, null) + "_bicho_" + name + "_simples.png");
+                        }
+                        break;
+                    case 3: // devolve o material e desliga a câmera de retrato
+                        foreach (var (r, m) in _saved) if (r != null) r.sharedMaterials = m;
+                        _saved.Clear();
+                        _probeCam.enabled = false;
+                        _subject = null;
+                        _stage = 0;
+                        return;
+                }
+                _stage++;
+                _stageAt = _t + 0.2f;
+                return;
+            }
+            foreach (var v in Object.FindObjectsByType<EnemyView>(FindObjectsSortMode.None))
+            {
+                if (!v.enabled || v.Rig == null || _portrayed.Contains(v.Rig.Def.Name)) continue;
+                _portrayed.Add(v.Rig.Def.Name);
+                Portrait(v);
+                _subject = v;
+                _stage = 1;
+                _stageAt = _t + 0.2f;
+                return;
+            }
+        }
+
+        void Aim(EnemyView v)
+        {
+            float h = Mathf.Max(0.15f, v.Rig.Def.Height);
+            var target = v.transform.position + Vector3.up * (h * 0.5f);
+            _probeCam.transform.position = target + new Vector3(h * 1.6f, h * 1.4f, -h * 2.4f);
+            _probeCam.transform.LookAt(target);
+        }
+
+        void Portrait(EnemyView v)
+        {
+            if (_probeCam == null)
+            {
+                _probeCam = new GameObject("CameraRetrato").AddComponent<Camera>();
+                _probeCam.depth = 100; // por cima da câmera da partida
+                _probeCam.nearClipPlane = 0.01f;
+                _probeCam.fieldOfView = 35f;
+            }
+            _probeCam.enabled = true;
+            Aim(v);
+            LogEnemy(v);
+            ScreenCapture.CaptureScreenshot(System.IO.Path.ChangeExtension(_path, null) +
+                                            "_bicho_" + v.Rig.Def.Name.Replace("Inimigo_", "") + ".png");
+        }
         float _closeAt;
 
         /// <summary>Caminho pedido em "-captura", ou null se o jogo abriu normal.</summary>
@@ -115,14 +208,6 @@ namespace TDFende
                     float w = tw.Player.Map.WorldSize.z;
                     float laneX = -(w + TowerWarsController.LaneGapForTests) * 0.5f;
                     tw.CameraRig.Focus(new Vector3(laneX - w * 0.5f - 2.5f, 0f, 0f), 4f);
-                    // com bicho na tela, a câmera vai nele: é o que mais some num build
-                    foreach (var v in Object.FindObjectsByType<EnemyView>(FindObjectsSortMode.None))
-                        if (v.enabled && v.Rig != null)
-                        {
-                            tw.CameraRig.Focus(v.transform.position, 3f);
-                            LogEnemy(v);
-                            break;
-                        }
                 }
                 _close = true;
                 _closeAt = _t;
@@ -133,6 +218,10 @@ namespace TDFende
                 _closeShot = true;
             }
             else if (_closeShot && _t >= _closeAt + 2f) Application.Quit(); // o print é gravado no fim do quadro
+
+            // retratos: cada tipo de bicho é fotografado de perto assim que aparece (antes de
+            // morrer ou passar da base); a câmera de retrato só fica ligada no quadro do print
+            if (!_shot && _t >= 2f) TickPortraits();
         }
 
         /// <summary>O bicho fotografado: renderers, materiais, tamanho e se está ligado.</summary>
@@ -143,6 +232,21 @@ namespace TDFende
             {
                 sb.Append($"  {r.GetType().Name} '{r.name}' ativo={r.gameObject.activeInHierarchy} ligado={r.enabled} " +
                           $"visível={r.isVisible} limites={r.bounds.size} escala={r.transform.lossyScale}\n");
+                if (r is SkinnedMeshRenderer smr)
+                {
+                    // a malha como está NESTA pose: o limite do renderer pode estar velho; isto não
+                    var baked = new Mesh();
+                    smr.BakeMesh(baked, true);
+                    var b = baked.bounds;
+                    var worldCenter = smr.transform.TransformPoint(b.center);
+                    var worldSize = Vector3.Scale(b.size, smr.transform.lossyScale);
+                    var root = smr.rootBone;
+                    sb.Append($"    pose real: tamanho {worldSize} centro {worldCenter} (bicho em {v.transform.position}) " +
+                              $"vértices {baked.vertexCount} ossos {smr.bones.Length} " +
+                              $"raiz '{(root ? root.name : "-")}' escala-raiz {(root ? root.lossyScale.ToString() : "-")} " +
+                              $"malha-original {(smr.sharedMesh ? smr.sharedMesh.bounds.size.ToString() : "NULA")}\n");
+                    Object.Destroy(baked);
+                }
                 foreach (var m in r.sharedMaterials)
                     sb.Append(m == null ? "    material NULO\n"
                         : $"    '{m.name}' shader '{m.shader.name}' suportado={m.shader.isSupported} fila={m.renderQueue} " +

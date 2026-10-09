@@ -119,35 +119,46 @@ namespace TDFende
             float yaw = plain.Contains("_giro-90") ? -90f : plain.Contains("_giro90") ? 90f : plain.Contains("_giro180") ? 180f : 0f;
             holder.localRotation = Quaternion.Euler(0f, yaw, 0f);
 
-            // tamanho: altura do bicho no jogo = a do procedural (rato miúdo, elefante grande)
-            var b = Bounds(inst);
-            bool flies = def.Anim == AnimKind.Glider;
-            float target = flies ? 0.45f : def.Height;
-            if (b.size.y > 0.0001f)
-            {
-                float k = target / b.size.y;
-                // asa aberta mede pouco na altura: para ave, mede pela envergadura
-                if (flies) k = 0.9f / Mathf.Max(b.size.x, b.size.z, 0.0001f);
-                holder.localScale = Vector3.one * k;
-                b = Bounds(inst);
-            }
-            // pé no chão (ou no ar, para quem voa) e centro no pivô
-            var local = root.InverseTransformPoint(b.center);
-            float floor = root.InverseTransformPoint(b.min).y;
-            float lift = flies ? 1.1f - (b.size.y * 0.5f) : 0f;
-            holder.localPosition += new Vector3(-local.x, -floor + lift, -local.z);
-
             anim = inst.GetComponentInChildren<Animation>();
             if (anim == null)
             {
                 // modelo com Animator (Mecanim): troca por Animation para tocar clipe pelo nome
                 var animator = inst.GetComponentInChildren<Animator>();
                 var host = animator != null ? animator.gameObject : inst;
-                if (animator != null) Object.Destroy(animator);
+                if (animator != null) Object.DestroyImmediate(animator);
                 anim = host.AddComponent<Animation>();
             }
             AddClips(anim, prefab.name);
             anim.cullingType = AnimationCullingType.BasedOnRenderers;
+            // pose do jogo ANTES de medir: a escala que vale é a da malha animada, não a do arquivo
+            string pose = anim.GetClip("Walk") != null ? "Walk" : anim.GetClip("Idle") != null ? "Idle" : null;
+            if (pose != null)
+            {
+                anim.Play(pose);
+                anim.Sample();
+            }
+
+            // tamanho: altura do bicho no jogo = a do procedural (rato miúdo, elefante grande).
+            // Mede a malha como ela é desenhada (RealBounds), não a caixa guardada no arquivo:
+            // em cachorro, lobo, rato e águia a caixa dizia o tamanho certo enquanto a malha
+            // animada encolhia a quase um ponto, e o bicho ficava invisível (BUG-01, 09/10/2026).
+            var b = RealBounds(inst);
+            bool flies = def.Anim == AnimKind.Glider;
+            float target = flies ? 0.45f : def.Height;
+            if (b.size.y > 1e-7f)
+            {
+                float k = target / b.size.y;
+                // asa aberta mede pouco na altura: para ave, mede pela envergadura
+                if (flies) k = 0.9f / Mathf.Max(b.size.x, b.size.z, 1e-7f);
+                holder.localScale = Vector3.one * k;
+                b = RealBounds(inst);
+            }
+            FitCullingBounds(inst);
+            // pé no chão (ou no ar, para quem voa) e centro no pivô
+            var local = root.InverseTransformPoint(b.center);
+            float floor = root.InverseTransformPoint(b.min).y;
+            float lift = flies ? 1.1f - (b.size.y * 0.5f) : 0f;
+            holder.localPosition += new Vector3(-local.x, -floor + lift, -local.z);
             // animação que anda para a frente sozinha ("root motion") faria o bicho escorregar e
             // voltar: quem anda é a simulação, então o osso-raiz fica preso no lugar
             inst.AddComponent<RootLock>();
@@ -268,13 +279,64 @@ namespace TDFende
             if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", Mathf.Min(m.GetFloat("_Glossiness"), 0.25f));
         }
 
-        static Bounds Bounds(GameObject go)
+        static readonly Mesh Baked = new Mesh { name = "MedidaBicho" };
+
+        /// <summary>
+        /// Caixa, em mundo, da malha como está agora (pose animada incluída). Para malha com
+        /// esqueleto, "assa" a pose; a caixa guardada no renderer pode não ter nada a ver com o
+        /// que é desenhado.
+        /// </summary>
+        static Bounds RealBounds(GameObject go)
         {
-            var rs = go.GetComponentsInChildren<Renderer>(true);
-            if (rs.Length == 0) return new Bounds(go.transform.position, Vector3.zero);
-            var b = rs[0].bounds;
-            foreach (var r in rs) b.Encapsulate(r.bounds);
+            bool any = false;
+            var total = new Bounds(go.transform.position, Vector3.zero);
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                Bounds b;
+                if (r is SkinnedMeshRenderer s)
+                {
+                    if (s.sharedMesh == null) continue;
+                    s.BakeMesh(Baked, true);
+                    b = WorldBounds(s.transform, Baked.bounds);
+                }
+                else b = r.bounds;
+                if (!any) { total = b; any = true; }
+                else total.Encapsulate(b);
+            }
+            return total;
+        }
+
+        static Bounds WorldBounds(Transform t, Bounds local)
+        {
+            var b = new Bounds(t.TransformPoint(local.center), Vector3.zero);
+            var e = local.extents;
+            for (int i = 0; i < 8; i++)
+                b.Encapsulate(t.TransformPoint(local.center + new Vector3(
+                    (i & 1) == 0 ? -e.x : e.x, (i & 2) == 0 ? -e.y : e.y, (i & 4) == 0 ? -e.z : e.z)));
             return b;
+        }
+
+        /// <summary>
+        /// Caixa de recorte de cada malha com esqueleto = a pose real, com folga para a
+        /// animação: com a caixa velha do arquivo, o Unity descartava ou mantinha o bicho pelo
+        /// tamanho errado.
+        /// </summary>
+        static void FitCullingBounds(GameObject go)
+        {
+            foreach (var s in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (s.sharedMesh == null) continue;
+                s.BakeMesh(Baked, true);
+                var world = WorldBounds(s.transform, Baked.bounds);
+                var space = s.rootBone != null ? s.rootBone : s.transform;
+                var c = space.InverseTransformPoint(world.center);
+                var b = new Bounds(c, Vector3.zero);
+                var e = world.extents * 1.5f; // folga: a perna estica e o corpo sobe ao andar
+                for (int i = 0; i < 8; i++)
+                    b.Encapsulate(space.InverseTransformPoint(world.center + new Vector3(
+                        (i & 1) == 0 ? -e.x : e.x, (i & 2) == 0 ? -e.y : e.y, (i & 4) == 0 ? -e.z : e.z)));
+                s.localBounds = b;
+            }
         }
 
         /// <summary>Anel no chão com a cor do time: o bicho baixado não tem coleira tingível.</summary>

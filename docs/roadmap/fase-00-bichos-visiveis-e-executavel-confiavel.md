@@ -30,7 +30,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 ## Tarefas, em ordem
 
-- [ ] BUG-01 — Bichos invisíveis no executável (primeiro item)
+- [x] BUG-01 — Bichos invisíveis no executável (primeiro item)
 - [ ] TEC-04 — Captura v2 (núcleo) com código de saída e estresse
 - [ ] BUG-02 — Clipe padrão dos bichos
 - [ ] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
@@ -49,7 +49,20 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 ### BUG-01 — Bichos invisíveis no executável (primeiro item)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "BUG-01" na mensagem: `git log --grep=BUG-01`).
+  - **Causa:** não era shader nem configuração do URP. Em rato, cachorro, lobo e águia a malha
+    animada (esqueleto × malha do modelo baixado) fica quase um ponto, enquanto a caixa guardada
+    no `SkinnedMeshRenderer` diz o tamanho certo. O `AnimalLoader` media essa caixa, então não
+    ampliava o bicho, e o recorte por caixa velha sumia com ele. O teste com material simples
+    (`_bicho_<Nome>_simples.png`) sumiu igual, o que descartou material/variante.
+  - **Correção:** o `AnimalLoader` toca a pose (Walk/Idle), mede a malha desenhada com `BakeMesh`
+    (`RealBounds`), escala por essa medida e reajusta a caixa de recorte (`FitCullingBounds`).
+    Vale para qualquer modelo novo, então não mexi no conversor.
+  - **Verificado:** executável novo, `-captura` com retrato de cada bicho: os 9 aparecem
+    (Águia, Cachorro, Elefante, Javali, Lobo, Rato, Rinoceronte, Tigre, Urso), todos
+    "(animado)", FPS médio 96, nenhuma exceção.
+  - **Pendente (vai para o TEC-04):** o assert automático de cobertura de pixels. Hoje a prova
+    é o retrato no print, não um código de saída.
 - **Categoria:** BUG · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 5 · custo 3 · risco 2,5 · prioridade 5
 - **Depende de:** TEC-01
