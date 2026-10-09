@@ -109,7 +109,7 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 
 _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado e cada fase de conteúdo só precise da vista. Roda desde a Fase 0 até a Fase 12, em sessões próprias que não pisam no executável._
 
-- [ ] **TEC-31** — Fingerprint com hash quantizado de posições
+- [ ] **TEC-31** — Fingerprint com hash quantizado de posições (reservado: sessão na nuvem, 09/10/2026)
 - [ ] **BUG-04** — SendCatalog completa por nome e valida id
 - [ ] **BUG-05** — Assinatura do replay cobre todos os campos
 - [ ] **TEC-12** — Conteúdo por chave estável
