@@ -1,0 +1,30 @@
+# Testes da lógica pura (Tools/FlowSim) a cada push na main. O pre-commit local faz o mesmo,
+# mas depende do core.hooksPath do PC: sessão na nuvem, clone novo ou --no-verify passam sem
+# teste. O CompileCheck precisa das DLLs do Unity e continua só no pre-commit local.
+#
+# Prova de que fica vermelho: Actions > FlowSim > Run workflow com "falha_de_proposito".
+name: FlowSim
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      falha_de_proposito:
+        description: "Injeta um teste falhando (prova que o CI fica vermelho)"
+        type: boolean
+        default: false
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Testes da lógica (FlowSim)
+        env:
+          TDFENDE_FALHA_DE_PROPOSITO: ${{ inputs.falha_de_proposito && '1' || '' }}
+        run: dotnet run --project Tools/FlowSim --nologo

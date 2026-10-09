@@ -162,6 +162,10 @@ class Program
         Check(TowerStages.ForLevel(TowerWarsConfig.MaxTowerLevel) == TowerStages.Count,
             "Estágio: o nível máximo cai no último modelo");
 
+        // prova do CI (.github/workflows/flowsim.yml, "falha_de_proposito"): o job fica vermelho
+        Check(Environment.GetEnvironmentVariable("TDFENDE_FALHA_DE_PROPOSITO") != "1",
+            "CI: sem falha de propósito");
+
         Console.WriteLine();
         Console.WriteLine(_failed == 0 ? ">>> TODOS OS TESTES PASSARAM" : $">>> {_failed} TESTE(S) FALHARAM");
         return _failed;
