@@ -104,6 +104,16 @@ Notas:
   pasta. Antes de mover/apagar pasta, liste o conteúdo e veja o que é versionado
   (`git ls-files <pasta>`).
 
+### Fingerprint da partida (TEC-31)
+
+`MatchRunner.StateFingerprint()` é a prova de que duas execuções (ao vivo, replay, arquivo) deram a mesma partida.
+Termina com `#<16 dígitos hexa>`: um hash FNV-1a (`StateHash`) sobre as duas lanes (`SimFingerprint`: vidas, ouro,
+placar, cada inimigo com posição e vida e gelo e fogo, cada torre, cada tiro em voo) e sobre o **número de sorteios**
+(`CountingRandom`, que conta sem mudar a sequência: o FlowSim compara com um `Random` puro). Números com vírgula entram
+em passos de 1/256: 0,01 de deslocamento muda o hash, ruído de 1e-3 não. **Não cobre** os temporizadores internos da
+IA; o que ela decide aparece em torres, envios e ouro. Mexeu em regra da Sim: rode `dotnet run --project Tools/FlowSim
+-v quiet -- match 12` antes e depois e compare a saída (deve ser idêntica se a regra não mudou de propósito).
+
 ## 4. Ver o jogo sem o Felipe: `-captura`
 
 ```

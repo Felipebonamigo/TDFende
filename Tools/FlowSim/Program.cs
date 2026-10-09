@@ -145,6 +145,7 @@ class Program
         Console.WriteLine();
         TowerWarsTests();
         ArtLayerTests();
+        FingerprintTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
         Console.WriteLine();
@@ -365,6 +366,76 @@ class Program
     {
         int steps = (int)Math.Round(seconds / (double)TowerWarsConfig.FixedStep);
         for (int i = 0; i < steps; i++) lane.Tick(TowerWarsConfig.FixedStep);
+    }
+
+    /// <summary>
+    /// TEC-31: o fingerprint da partida precisa ENXERGAR posição, vida, torres, tiros e o sorteio. Antes só tinha
+    /// contadores: duas partidas com os inimigos em lugares diferentes davam o mesmo número e "provavam" igualdade.
+    /// </summary>
+    static void FingerprintTests()
+    {
+        // --- o hash quantiza: 0,01 de deslocamento muda, ruído de 0,001 não
+        ulong H(Vector3 v) { var h = new StateHash(); h.Add(v); return h.Value; }
+        var p0 = new Vector3(1f, 2f, 3f);
+        Check(H(p0) != H(p0 + new Vector3(0.01f, 0f, 0f)), "Fingerprint: 0,01 de deslocamento em X muda o hash");
+        Check(H(p0) != H(p0 + new Vector3(0f, 0f, 0.01f)), "Fingerprint: 0,01 de deslocamento em Z muda o hash");
+        Check(H(p0) == H(p0 + new Vector3(0.001f, 0f, 0f)), "Fingerprint: ruído de 0,001 não muda o hash (quantizado)");
+        var a1 = new StateHash(); a1.Add(1); a1.Add(2);
+        var a2 = new StateHash(); a2.Add(2); a2.Add(1);
+        Check(a1.Value != a2.Value, "Fingerprint: a ordem dos campos conta");
+
+        // --- duas lanes com os MESMOS contadores e o inimigo em lugar diferente: o hash tem que separar
+        LaneSim Lane(int ticks)
+        {
+            var feeder = new LaneSim(24, 16); feeder.DebugGrantGold(5000);
+            var lane = new LaneSim(24, 16);
+            feeder.TrySend(0, lane, new Random(11));
+            for (int i = 0; i < ticks; i++) lane.Tick(TowerWarsConfig.FixedStep);
+            return lane;
+        }
+        var near = Lane(30); var far = Lane(31);
+        Check(near.Lives == far.Lives && near.Gold == far.Gold && near.EnemiesAlive == far.EnemiesAlive
+              && near.TotalLeaked == far.TotalLeaked, "Fingerprint (base): os contadores antigos são iguais nas duas lanes");
+        Check(SimFingerprint.OfLane(near) != SimFingerprint.OfLane(far),
+            "Fingerprint: inimigo em outro lugar muda o hash mesmo com contadores iguais");
+        Check(SimFingerprint.OfLane(Lane(30)) == SimFingerprint.OfLane(near), "Fingerprint: a mesma lane duas vezes dá o mesmo hash");
+
+        // --- torre entra no hash (tipo e nível)
+        var t1 = new LaneSim(24, 16); var t2 = new LaneSim(24, 16);
+        t1.DebugGrantGold(5000); t2.DebugGrantGold(5000);
+        t1.TryBuildTower(new Vector2Int(8, 8), 0); t2.TryBuildTower(new Vector2Int(8, 8), 1);
+        Check(t1.TowerCount == t2.TowerCount, "Fingerprint (base): as duas lanes têm 1 torre");
+        Check(SimFingerprint.OfLane(t1) != SimFingerprint.OfLane(t2), "Fingerprint: torre de tipo diferente muda o hash");
+
+        // --- partida inteira: o fingerprint carrega o hash, e continua igual entre execuções iguais
+        MatchRunner Play(int seed, int extraSend)
+        {
+            var m = new MatchRunner(seed, TowerWarsAi.Personality.Normal, 24, 16);
+            for (int t = 0; t < 600; t++)
+            {
+                if (t % 97 == 0) m.Enqueue(MatchCommand.Build(5 + t % 9, 6));
+                if (t == 300 && extraSend >= 0) m.Enqueue(MatchCommand.Send(extraSend));
+                m.Step();
+            }
+            return m;
+        }
+        string fp = Play(5, -1).StateFingerprint();
+        Check(System.Text.RegularExpressions.Regex.IsMatch(fp, @" #[0-9a-f]{16}$"), "Fingerprint: termina com o hash de 16 dígitos (" + fp + ")");
+        Check(Play(5, -1).StateFingerprint() == fp, "Fingerprint: mesma semente e comandos dão o mesmo fingerprint");
+        Check(Play(6, -1).StateFingerprint() != fp, "Fingerprint: outra semente dá outro fingerprint");
+
+        // --- o contador de sorteios não pode alterar a sequência (senão quebra todo replay)
+        var plain = new Random(1234); var counted = new CountingRandom(1234);
+        bool same = true;
+        for (int i = 0; i < 200; i++)
+        {
+            same &= plain.Next() == counted.Next();
+            same &= plain.Next(10) == counted.Next(10);
+            same &= plain.Next(3, 9) == counted.Next(3, 9);
+            same &= plain.NextDouble() == counted.NextDouble();
+        }
+        Check(same, "CountingRandom: sequência idêntica à do Random puro");
+        Check(counted.Draws == 800, $"CountingRandom: conta cada sorteio ({counted.Draws})");
     }
 
     /// <summary>Camada privada de arte (TEC-23): o caminho privado espelha o público dentro de TDFende/Privado.</summary>

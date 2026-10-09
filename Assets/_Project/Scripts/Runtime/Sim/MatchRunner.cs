@@ -23,7 +23,7 @@ namespace TDFende
         public readonly TowerWarsAi.Personality Difficulty;
 
         readonly TowerWarsAi _foeAi;
-        readonly Random _rng;
+        readonly CountingRandom _rng;
         readonly Queue<MatchCommand> _pending = new Queue<MatchCommand>();
         readonly LaneSim[] _lanes;
 
@@ -39,7 +39,7 @@ namespace TDFende
         {
             Seed = seed;
             Difficulty = difficulty;
-            _rng = new Random(seed);
+            _rng = new CountingRandom(seed);
             Player = new LaneSim(width, height) { Id = 0, CarryLeaks = true };
             Foe = new LaneSim(width, height) { Id = 1, CarryLeaks = true };
             _lanes = new[] { Player, Foe };
@@ -82,11 +82,26 @@ namespace TDFende
             }
         }
 
-        /// <summary>Assinatura do estado final. Duas execuções iguais têm que dar o mesmo.</summary>
-        public string StateFingerprint() =>
-            $"t{TickCount} pl{Player.Lives}/{Player.Gold}/{Player.Income}/{Player.TowerCount}/{Player.TotalTowerLevels}" +
-            $" fo{Foe.Lives}/{Foe.Gold}/{Foe.Income}/{Foe.TowerCount}/{Foe.TotalTowerLevels}" +
-            $" k{Player.KilledByTower}/{Player.KilledByAttrition}/{Player.TotalLeaked}" +
-            $"/{Foe.KilledByTower}/{Foe.KilledByAttrition}/{Foe.TotalLeaked}";
+        /// <summary>Sorteios feitos pela partida (entra no fingerprint).</summary>
+        public long RngDraws => _rng.Draws;
+
+        /// <summary>
+        /// Assinatura do estado final. Duas execuções iguais têm que dar o mesmo. O texto legível (contadores)
+        /// continua no começo; o hash de 64 bits no fim (TEC-31) acrescenta posição, vida e estado de cada
+        /// inimigo, torre e tiro das duas lanes e o número de sorteios, que os contadores não enxergam.
+        /// </summary>
+        public string StateFingerprint()
+        {
+            var h = new StateHash();
+            h.Add(TickCount);
+            h.Add(RngDraws);
+            h.Add(SimFingerprint.OfLane(Player));
+            h.Add(SimFingerprint.OfLane(Foe));
+            return $"t{TickCount} pl{Player.Lives}/{Player.Gold}/{Player.Income}/{Player.TowerCount}/{Player.TotalTowerLevels}" +
+                   $" fo{Foe.Lives}/{Foe.Gold}/{Foe.Income}/{Foe.TowerCount}/{Foe.TotalTowerLevels}" +
+                   $" k{Player.KilledByTower}/{Player.KilledByAttrition}/{Player.TotalLeaked}" +
+                   $"/{Foe.KilledByTower}/{Foe.KilledByAttrition}/{Foe.TotalLeaked}" +
+                   $" #{h.Value:x16}";
+        }
     }
 }

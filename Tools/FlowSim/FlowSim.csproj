@@ -26,6 +26,9 @@
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerWarsAi.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchSim.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchCommand.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\StateHash.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SimFingerprint.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CountingRandom.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchRunner.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\Replay.cs" />
   </ItemGroup>
