@@ -29,7 +29,7 @@ namespace TDFende
         {
             if (_shader != null) return;
             bool urp = GraphicsSettings.currentRenderPipeline != null;
-            _shader = Shader.Find(urp ? "Universal Render Pipeline/Lit" : "Standard");
+            _shader = ShaderRefs.Lit;
             _colorProp = Shader.PropertyToID(urp ? "_BaseColor" : "_Color");
         }
 

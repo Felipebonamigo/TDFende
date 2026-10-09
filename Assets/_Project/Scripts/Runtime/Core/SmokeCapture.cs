@@ -13,7 +13,8 @@ namespace TDFende
     /// Sai com código 0 (passou) ou 1 (reprovou) e grava print_metricas.json. Reprova: bicho que
     /// não aparece (cobertura de pixels do retrato abaixo de <see cref="MinCoverage"/>), tipo de
     /// bicho que nunca chegou, shader não suportado, exceção no log, aviso proibido no log
-    /// (<see cref="LogLint"/>), tempo esgotado. Tempo de
+    /// (<see cref="LogLint"/>), material criado em runtime com combinação de shader + keywords
+    /// que o ShaderKeep não garante no build (<see cref="CheckVariants"/>), tempo esgotado. Tempo de
     /// quadro e triângulos só são medidos: o orçamento é o TEC-06.
     ///
     /// Com "-estresse" também monta um fim de partida: as 6 torres no nível máximo em cada lane
@@ -40,6 +41,11 @@ namespace TDFende
         ProfilerRecorder _tris, _draws, _setPass;
         float _bootAt;
         bool _done;
+        int _skipSamples; // quadros pesados da própria captura (retrato, censo) fora da medida
+
+        // variantes: combinação shader + keywords de cada material criado em runtime → quem usa
+        readonly Dictionary<string, string> _inUse = new Dictionary<string, string>();
+        float _censusAt;
 
         // estresse: fim de partida de verdade, com torres no máximo atirando e lanes cheias
         const int StressRounds = 4;
@@ -78,7 +84,7 @@ namespace TDFende
                     case 1: // troca para o material simples
                         if (alive)
                         {
-                            if (_plain == null) _plain = new Material(Shader.Find("Universal Render Pipeline/Lit")) { color = new Color(1f, 0.2f, 0.6f) };
+                            if (_plain == null) _plain = new Material(ShaderRefs.Lit) { color = new Color(1f, 0.2f, 0.6f) };
                             _saved.Clear();
                             foreach (var r in _subject.Rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                             {
@@ -212,14 +218,38 @@ namespace TDFende
             Debug.Log("[TDFende] captura, REPROVA: " + why);
         }
 
-        // avisos que já foram defeito de verdade: um deles no log reprova (BUG-02)
-        static readonly string[] LogLint = { "Default clip could not be found" };
+        // avisos que já foram defeito de verdade: um deles no log reprova (BUG-02). ": variant "
+        // é variante de shader faltando, que só vira erro no build de diagnóstico (TEC-11)
+        static readonly string[] LogLint = { "Default clip could not be found", ": variant " };
         readonly HashSet<string> _linted = new HashSet<string>();
+
+        void Lint(string message)
+        {
+            foreach (var bad in LogLint)
+                if (message.Contains(bad) && _linted.Add(bad))
+                    _failures.Add("aviso proibido no log: " + (message.Length > 240 ? message.Substring(0, 240) + "..." : message));
+        }
+
+        /// <summary>
+        /// Erro do próprio motor (variante de shader faltando, por exemplo) vai direto para o
+        /// Player.log sem passar pelo <see cref="OnLog"/>: lê o arquivo no fim.
+        /// </summary>
+        void LintLogFile()
+        {
+            var file = Application.consoleLogPath;
+            if (string.IsNullOrEmpty(file) || !System.IO.File.Exists(file)) return;
+            try
+            {
+                using (var fs = new System.IO.FileStream(file, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite))
+                using (var reader = new System.IO.StreamReader(fs))
+                    for (string line; (line = reader.ReadLine()) != null;) Lint(line);
+            }
+            catch (System.Exception e) { Debug.Log("[TDFende] captura: não leu o Player.log: " + e.Message); }
+        }
 
         void OnLog(string message, string stack, LogType type)
         {
-            foreach (var bad in LogLint)
-                if (message.Contains(bad) && _linted.Add(bad)) _failures.Add("aviso proibido no log: " + bad);
+            Lint(message);
             if (type == LogType.Exception || type == LogType.Assert)
             {
                 _exceptions++;
@@ -245,7 +275,9 @@ namespace TDFende
         /// <summary>Quadro da partida (sem a câmera de retrato): tempo e o que foi desenhado.</summary>
         void SampleFrame()
         {
-            if (_probeCam != null && _probeCam.enabled) return;
+            if (_probeCam != null && _probeCam.enabled) { _skipSamples = 1; return; }
+            // o tempo de um quadro chega no seguinte: o quadro depois do retrato/censo também sai
+            if (_skipSamples > 0) { _skipSamples--; return; }
             _frameMs.Add(Time.unscaledDeltaTime * 1000f);
             if (_tris.Valid) _triMax = System.Math.Max(_triMax, _tris.LastValue);
             if (_draws.Valid) _drawMax = System.Math.Max(_drawMax, _draws.LastValue);
@@ -256,6 +288,51 @@ namespace TDFende
             sorted.Count == 0 ? 0f : sorted[Mathf.Clamp(Mathf.CeilToInt(p * sorted.Count) - 1, 0, sorted.Count - 1)];
 
         static string Recorded(ProfilerRecorder r, long max) => r.Valid ? max.ToString() : "null";
+
+        static string VariantKey(Material m)
+        {
+            var kws = new List<string>();
+            foreach (var k in m.enabledKeywords) kws.Add(k.name);
+            kws.Sort(System.StringComparer.Ordinal);
+            return m.shader.name + " [" + string.Join(" ", kws) + "]";
+        }
+
+        /// <summary>
+        /// Anota a combinação shader + keywords de cada material criado em runtime que está em
+        /// uso. Material de asset (id positivo) fica de fora: o build já leva a variante dele.
+        /// O de runtime só existe no build se um material do ShaderKeep tiver a mesma combinação.
+        /// </summary>
+        void Census()
+        {
+            void Add(Material m, string who)
+            {
+                if (m == null || m.shader == null || m.GetInstanceID() > 0) return;
+                var key = VariantKey(m);
+                if (!_inUse.ContainsKey(key)) _inUse[key] = who + " / " + m.name;
+            }
+            foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+                foreach (var m in r.sharedMaterials) Add(m, r.name);
+            foreach (var g in Object.FindObjectsByType<GrassField>(FindObjectsSortMode.None))
+                foreach (var m in g.Materials) Add(m, "grama");
+            foreach (var t in Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None)) Add(t.materialTemplate, "terreno");
+            Add(RenderSettings.skybox, "céu");
+        }
+
+        /// <summary>Reprova combinação em uso que nenhum material do ShaderKeep garante (TEC-11).</summary>
+        void CheckVariants()
+        {
+            var kept = new HashSet<string>();
+            foreach (var m in Resources.LoadAll<Material>("TDFende/ShaderKeep")) kept.Add(VariantKey(m));
+            var lines = new List<string>();
+            foreach (var kv in _inUse)
+            {
+                bool ok = kept.Contains(kv.Key);
+                lines.Add((ok ? "  ok    " : "  FALTA ") + kv.Key + "  (" + kv.Value + ")");
+                if (!ok) Fail("variante fora do ShaderKeep: " + kv.Key + " (" + kv.Value + "); acrescente em BuildJogo.Shaders");
+            }
+            lines.Sort(System.StringComparer.Ordinal);
+            Debug.Log("[TDFende] captura, variantes criadas em runtime (" + _inUse.Count + "):\n" + string.Join("\n", lines));
+        }
 
         void TickStress()
         {
@@ -311,6 +388,9 @@ namespace TDFende
         void Finish()
         {
             _done = true;
+            Census();
+            CheckVariants();
+            LintLogFile();
             if (_portrayed.Count < SendCatalog.Count)
                 Fail($"só {_portrayed.Count} de {SendCatalog.Count} tipos de bicho apareceram ({string.Join(", ", _portrayed)})");
 
@@ -440,6 +520,12 @@ namespace TDFende
             }
             SendOneOfEach();
             if (_stress) TickStress();
+            if (_t >= 2f && _t >= _censusAt)
+            {
+                Census();
+                _censusAt = _t + 0.5f;
+                _skipSamples = 1;
+            }
             if (_t >= Wait && _t < Wait + Record) { TrackEnemies(); SampleFrame(); }
             if (!_shot && _t >= Wait + Record)
             {

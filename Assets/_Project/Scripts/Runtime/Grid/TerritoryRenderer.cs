@@ -38,9 +38,7 @@ namespace TDFende
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows = false;
 
-            // TODO(build): Shader.Find sofre stripping em builds — quando formos buildar,
-            // referenciar via material asset ou Always Included Shaders.
-            var shader = Shader.Find("TDFende/TerritoryOverlay");
+            var shader = ShaderRefs.TerritoryOverlay;
             if (shader != null)
             {
                 mr.sharedMaterial = new Material(shader);

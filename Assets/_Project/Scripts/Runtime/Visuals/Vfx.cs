@@ -239,7 +239,8 @@ namespace TDFende
         {
             ref var slot = ref additive ? ref _additive : ref _alpha;
             if (slot != null) return slot;
-            var shader = Shader.Find("TDFende/SoftParticle") ?? Shader.Find("TDFende/TerritoryOverlay");
+            var shader = ShaderRefs.SoftParticle;
+            if (shader == null) shader = ShaderRefs.TerritoryOverlay;
             slot = shader != null ? new Material(shader) : MaterialFactory.Get(Color.white);
             slot.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             slot.SetFloat("_DstBlend", (float)(additive ? BlendMode.One : BlendMode.OneMinusSrcAlpha));

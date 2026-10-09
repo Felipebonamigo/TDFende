@@ -76,13 +76,18 @@ namespace TDFende
         readonly List<Draw> _draws = new List<Draw>();
         RenderParams[] _params;
 
+        /// <summary>Materiais da grama: não estão em Renderer nenhum, a captura confere por aqui.</summary>
+        public IEnumerable<Material> Materials
+        {
+            get { foreach (var k in _kinds) yield return k.Material; }
+        }
+
         /// <summary>false se a arte não estiver presente — aí simplesmente não há grama 3D.</summary>
         public bool Init(Terrain terrain, IReadOnlyList<Rect> playAreas, int seed = 11)
         {
             // "-sem-grama": mede quanto a grama custa (Tools\Captura.ps1 -Extra -sem-grama)
             if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-sem-grama") >= 0) return false;
-            // TODO(build): Shader.Find sofre stripping em build (ver GroundBuilder).
-            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var lit = ShaderRefs.Lit;
             if (lit == null) return false;
 
             foreach (var name in Kinds)

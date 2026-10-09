@@ -48,7 +48,7 @@ namespace TDFende
         {
             if (_lit != null) return;
             _urp = GraphicsSettings.currentRenderPipeline != null;
-            _lit = Shader.Find(_urp ? "Universal Render Pipeline/Lit" : "Standard");
+            _lit = ShaderRefs.Lit;
             _baseColor = Shader.PropertyToID(_urp ? "_BaseColor" : "_Color");
             _baseMap = Shader.PropertyToID(_urp ? "_BaseMap" : "_MainTex");
             _smoothness = Shader.PropertyToID(_urp ? "_Smoothness" : "_Glossiness");
@@ -449,7 +449,7 @@ namespace TDFende
             get
             {
                 if (_overlay != null) return _overlay;
-                var shader = Shader.Find("TDFende/TerritoryOverlay");
+                var shader = ShaderRefs.TerritoryOverlay;
                 _overlay = shader != null ? new Material(shader) : MaterialFactory.Get(Color.white);
                 _overlay.name = "Overlay";
                 return _overlay;

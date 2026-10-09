@@ -125,9 +125,7 @@ namespace TDFende
             if (col != null) col.enabled = false;
 
             var terrain = go.GetComponent<Terrain>();
-            // TODO(build): Shader.Find sofre stripping em build — referenciar o material
-            // por asset ou incluir em Always Included Shaders antes de gerar executável.
-            var terrainShader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
+            var terrainShader = ShaderRefs.TerrainLit;
             if (terrainShader != null)
             {
                 var mat = new Material(terrainShader);

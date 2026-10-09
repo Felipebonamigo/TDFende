@@ -1,5 +1,8 @@
-# Gera Builds\Windows\TDFende.exe sem abrir o Unity (o editor precisa estar FECHADO neste projeto).
-#   powershell -ExecutionPolicy Bypass -File Tools\GerarExecutavel.ps1
+﻿# Gera Builds\Windows\TDFende.exe sem abrir o Unity (o editor precisa estar FECHADO neste projeto).
+#   powershell -ExecutionPolicy Bypass -File Tools\GerarExecutavel.ps1 [-Diagnostico]
+# -Diagnostico: Builds\Diagnostico\TDFende.exe com variantes de shader estritas (variante que
+# falta vira erro no Player.log). Teste com Tools\Captura.ps1 -Diagnostico.
+param([switch]$Diagnostico)
 # Leva alguns minutos (na primeira vez, bem mais: compila os shaders). O log fica em Builds\build.log.
 $ErrorActionPreference = 'Stop'
 $raiz = Split-Path -Parent $PSScriptRoot
@@ -11,7 +14,8 @@ $log = "$raiz\Builds\build.log"
 Write-Host "Gerando o executável com Unity $versao... (log: $log)"
 $p = Start-Process -FilePath $unity -Wait -PassThru -NoNewWindow -ArgumentList @(
     '-batchmode', '-nographics', '-projectPath', "`"$raiz`"",
-    '-executeMethod', 'TDFende.EditorTools.BuildJogo.Windows', '-logFile', "`"$log`"")
+    '-executeMethod', $(if ($Diagnostico) { 'TDFende.EditorTools.BuildJogo.Diagnostico' } else { 'TDFende.EditorTools.BuildJogo.Windows' }),
+    '-logFile', "`"$log`"")
 Select-String -Path $log -Pattern '\[TDFende\] build|error CS|Build Finished|BuildFailedException' | ForEach-Object { $_.Line }
 if ($p.ExitCode -ne 0) { Write-Host "FALHOU (código $($p.ExitCode)). Veja $log"; exit $p.ExitCode }
-Write-Host "Pronto: $raiz\Builds\Windows\TDFende.exe"
+Write-Host "Pronto: $raiz\Builds\$(if ($Diagnostico) { 'Diagnostico' } else { 'Windows' })\TDFende.exe"

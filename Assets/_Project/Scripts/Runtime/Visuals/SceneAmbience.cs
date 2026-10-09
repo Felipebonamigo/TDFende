@@ -81,8 +81,7 @@ namespace TDFende
             var hdr = Resources.Load<Texture2D>(SkyPath);
             if (hdr == null) return null;
 
-            // TODO(build): Shader.Find sofre stripping em build (ver GroundBuilder).
-            var shader = Shader.Find("Skybox/Panoramic");
+            var shader = ShaderRefs.SkyboxPanoramic;
             if (shader == null) return null;
 
             var m = new Material(shader) { name = "CeuHDRI" };
@@ -103,7 +102,7 @@ namespace TDFende
 
         static Material MakeProceduralSky()
         {
-            var shader = Shader.Find("Skybox/Procedural");
+            var shader = ShaderRefs.SkyboxProcedural;
             if (shader == null) return null;
             var m = new Material(shader) { name = "CeuProcedural" };
             m.SetFloat("_SunSize", 0.04f);

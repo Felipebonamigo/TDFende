@@ -34,7 +34,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-04 — Captura v2 (núcleo) com código de saída e estresse
 - [x] BUG-02 — Clipe padrão dos bichos
 - [x] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
-- [ ] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
+- [x] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
 - [ ] TEC-01 — Base limpa: o executável sai da main
 - [ ] TEC-34 — Repositório: LFS, histórico e público × privado
 - [ ] TEC-20 — Sessões paralelas seguras (mínimo)
@@ -238,7 +238,29 @@ São 4,0 M triângulos, desenhados também no DepthNormals do SSAO: o FPS foi de
 
 ### TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "TEC-11" na mensagem: `git log --grep=TEC-11`).
+  A causa do BUG-01 não foi shader, então ficou o escopo menor (diagnóstico + ShaderRefs), mais
+  uma conferência automática na captura:
+  - **Build de diagnóstico** com `strictShaderVariantMatching` (`BuildJogo.Diagnostico`,
+    `GerarExecutavel.ps1 -Diagnostico`, `Captura.ps1 -Diagnostico`); a opção liga só durante o
+    build e volta ao que era no ProjectSettings. A captura lê o Player.log e reprova com
+    `: variant ... not found`.
+  - **Censo de variantes na captura**: todo material criado em runtime em uso tem que ter a mesma
+    combinação shader + keywords de um material do ShaderKeep.
+  - **ShaderRefs** no lugar dos 10 `Shader.Find` do Runtime; `BuildJogo.Shaders` usa os nomes de
+    lá; nenhum `TODO(build)`.
+  - **Visto falhar:** o censo reprovou `Lit [_ALPHATEST_ON _EMISSION _NORMALMAP]` (pelo do rato)
+    e `Lit [_ALPHATEST_ON _EMISSION]` (lobo e águia), que faltavam no ShaderKeep (o Unity trocava
+    em silêncio pela variante mais parecida). O build estrito acusou ~74 mil erros: todos com
+    `FOG_LINEAR` — o exe nunca teve a névoa do `SceneAmbience`, porque o corte automático de
+    névoa só guarda o que alguma cena do build usa. No estrito o urso sumia (0% de cobertura).
+  - **Correção:** as duas combinações em `BuildJogo.Shaders` e névoa linear ligada na
+    `Jogo.unity` pelo `EnsureScene`. Depois: estrito com 0 variantes faltando e saída 0; normal e
+    estresse com saída 0. Retirar uma combinação reprova (era o estado de antes).
+  - Materiais-modelo clonados em vez de `EnableKeyword` solto: não feito (só valia se a causa do
+    BUG-01 fosse shader; o censo já pega combinação nova).
+  - Para a decisão do Felipe sobre as configurações regravadas pelo Unity: com as atuais
+    (prefiltering do URP_Asset regravado) o build estrito não acusa variante faltando.
 - **Categoria:** TEC · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 4 · custo 3 · risco 2 · prioridade 4,5
 - **Depende de:** TEC-01

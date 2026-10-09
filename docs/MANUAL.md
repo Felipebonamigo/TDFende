@@ -122,7 +122,8 @@ script, a janela nasce sem foco e o Unity pausa o jogo.
 
 ## 5. Armadilhas do executável (já custaram horas)
 
-1. **Shader achado por nome é descartado no build.** O código usa `Shader.Find(...)` e nenhum
+1. **Shader achado por nome é descartado no build.** O código pega shader por nome
+   (`Runtime/Core/ShaderRefs.cs`, a lista única; nada de `Shader.Find` solto) e nenhum
    material de cena referencia esses shaders. Solução: `Editor/BuildJogo.cs` cria, a cada
    build, um material por combinação **shader + keywords** em `Resources/TDFende/ShaderKeep/`.
    **Combinação nova de keywords no código = acrescentar em `BuildJogo.Shaders`.** A
@@ -144,10 +145,21 @@ script, a janela nasce sem foco e o Unity pausa o jogo.
    (`RealBounds`) e reajusta a caixa de recorte (`FitCullingBounds`). O log
    `captura, bicho ... pose real: tamanho` mostra a medida verdadeira. (BUG-01, 09/10/2026)
 6. **Material criado em runtime com keyword ligada/desligada** (ex.: `AnimalLoader.FixSurface`)
-   cai numa combinação que o build pode não ter. Liste as keywords no log e garanta a combinação
-   no ShaderKeep.
-7. O `Player.log` só é escrito pelo executável; erros de shader às vezes **não** aparecem nele —
-   o print é a prova.
+   cai numa combinação que o build pode não ter, e o Unity troca **em silêncio** pela variante
+   mais parecida (sem emissão, sem normal map...). A captura confere sozinha: todo material
+   criado em runtime em uso tem que ter a mesma combinação de um material do ShaderKeep; se não
+   tiver, reprova com `variante fora do ShaderKeep: <shader> [keywords]` — acrescente essa
+   combinação em `BuildJogo.Shaders`.
+7. **Névoa some no executável.** O corte automático de névoa (GraphicsSettings: Fog Modes =
+   Automatic) só guarda `FOG_LINEAR` se uma cena do build usar névoa linear; o `SceneAmbience`
+   liga a névoa em runtime. Por isso o `BuildJogo.EnsureScene` deixa a névoa linear ligada na
+   `Jogo.unity`. (Achado pelo build de diagnóstico, 09/10/2026: até então o exe não tinha névoa.)
+8. **Build de diagnóstico** (`GerarExecutavel.ps1 -Diagnostico` + `Captura.ps1 -Diagnostico`):
+   gera `Builds\Diagnostico\TDFende.exe` com `strictShaderVariantMatching`. Variante faltando
+   vira erro `...: variant X not found.` no Player.log (a captura lê o arquivo e reprova) e o
+   objeto some. Rode depois de mexer em material, keyword, URP ou GraphicsSettings.
+9. O `Player.log` só é escrito pelo executável; erros de shader às vezes **não** aparecem nele
+   (fora do build de diagnóstico) — o print é a prova.
 
 ## 6. Pipelines de arte
 

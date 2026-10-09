@@ -34,7 +34,7 @@ namespace TDFende
 
             if (_material == null)
             {
-                var shader = Shader.Find("TDFende/TerritoryOverlay");
+                var shader = ShaderRefs.TerritoryOverlay;
                 _material = shader != null ? new Material(shader) : MaterialFactory.Get(Border);
             }
 

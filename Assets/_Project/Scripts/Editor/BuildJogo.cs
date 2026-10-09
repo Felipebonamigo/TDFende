@@ -23,11 +23,15 @@ namespace TDFende.EditorTools
         const string ScenePath = "Assets/Scenes/Jogo.unity";
         const string KeepDir = "Assets/Resources/TDFende/ShaderKeep";
         const string Output = "Builds/Windows/TDFende.exe";
+        const string DiagnosticOutput = "Builds/Diagnostico/TDFende.exe";
 
-        /// <summary>Shader e as combinações de keyword que o código usa nele.</summary>
+        /// <summary>
+        /// Shader e as combinações de keyword que o código usa nele. A captura (-captura) reprova
+        /// material criado em runtime com combinação que não esteja aqui, e diz qual acrescentar.
+        /// </summary>
         static readonly (string shader, string[][] combos)[] Shaders =
         {
-            ("Universal Render Pipeline/Lit", new[]
+            (ShaderRefs.LitName, new[]
             {
                 new string[0],
                 new[] { "_NORMALMAP" },
@@ -35,49 +39,87 @@ namespace TDFende.EditorTools
                 new[] { "_NORMALMAP", "_EMISSION" },
                 new[] { "_ALPHATEST_ON" },
                 new[] { "_ALPHATEST_ON", "_NORMALMAP" },
+                new[] { "_ALPHATEST_ON", "_EMISSION" },               // pelo do lobo e da águia
+                new[] { "_ALPHATEST_ON", "_NORMALMAP", "_EMISSION" }, // pelo do rato
             }),
-            ("Universal Render Pipeline/Terrain/Lit", new[]
+            (ShaderRefs.TerrainLitName, new[]
             {
                 new string[0],
                 new[] { "_TERRAIN_INSTANCED_PERPIXEL_NORMAL" }, // o que o GroundBuilder liga
                 new[] { "_NORMALMAP" },
                 new[] { "_NORMALMAP", "_TERRAIN_INSTANCED_PERPIXEL_NORMAL" },
             }),
-            ("Skybox/Panoramic", new[] { new string[0] }),
-            ("Skybox/Procedural", new[] { new string[0] }),
-            ("TDFende/SoftParticle", new[] { new string[0] }),
-            ("TDFende/TerritoryOverlay", new[] { new string[0] }),
+            (ShaderRefs.SkyboxPanoramicName, new[] { new string[0] }),
+            (ShaderRefs.SkyboxProceduralName, new[] { new string[0] }),
+            (ShaderRefs.SoftParticleName, new[] { new string[0] }),
+            (ShaderRefs.TerritoryOverlayName, new[] { new string[0] }),
         };
 
         [MenuItem("TDFende/Gerar executável")]
         public static void Windows()
+        {
+            bool ok = Build(Output);
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+        }
+
+        /// <summary>
+        /// Executável de diagnóstico (Builds/Diagnostico) com strictShaderVariantMatching: variante
+        /// que falta sai como erro no Player.log e o objeto fica rosa, em vez de o Unity trocar em
+        /// silêncio pela variante mais parecida. Confirma o que a captura acusa por censo (TEC-11).
+        /// A opção é do ProjectSettings: liga só durante o build e volta ao que era.
+        /// </summary>
+        [MenuItem("TDFende/Gerar executável de diagnóstico (variantes estritas)")]
+        public static void Diagnostico()
+        {
+            bool before = PlayerSettings.strictShaderVariantMatching;
+            bool ok;
+            PlayerSettings.strictShaderVariantMatching = true;
+            try { ok = Build(DiagnosticOutput); }
+            finally { PlayerSettings.strictShaderVariantMatching = before; }
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+        }
+
+        static bool Build(string output)
         {
             EnsureScene();
             ShaderKeep();
             var opts = new BuildPlayerOptions
             {
                 scenes = new[] { ScenePath },
-                locationPathName = Output,
+                locationPathName = output,
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None,
             };
             var report = BuildPipeline.BuildPlayer(opts);
             var s = report.summary;
-            Debug.Log($"[TDFende] build {s.result}: {Path.GetFullPath(Output)} " +
+            Debug.Log($"[TDFende] build {s.result}: {Path.GetFullPath(output)} " +
                       $"({s.totalSize / (1024 * 1024)} MB, {s.totalTime.TotalSeconds:0} s, {s.totalErrors} erro(s))");
-            if (Application.isBatchMode) EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+            return s.result == BuildResult.Succeeded;
         }
 
-        /// <summary>Cena mínima: só a câmera principal (luz, céu e mundo vêm do código).</summary>
+        /// <summary>
+        /// Cena mínima: só a câmera principal (luz, céu e mundo vêm do código). A névoa linear fica
+        /// ligada na cena porque o corte automático de névoa (GraphicsSettings: Fog Modes =
+        /// Automatic) só guarda as variantes FOG_LINEAR se alguma cena do build usar névoa linear;
+        /// sem isso, a névoa que o SceneAmbience liga em runtime não existia no executável.
+        /// </summary>
         static void EnsureScene()
         {
             if (!File.Exists(ScenePath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
-                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                var created = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 var cam = new GameObject("Main Camera") { tag = "MainCamera" };
                 cam.AddComponent<Camera>();
-                EditorSceneManager.SaveScene(scene, ScenePath);
+                EditorSceneManager.SaveScene(created, ScenePath);
+            }
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!RenderSettings.fog || RenderSettings.fogMode != FogMode.Linear)
+            {
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.Linear;
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
             }
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
         }
