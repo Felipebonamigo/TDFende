@@ -415,7 +415,8 @@ conta do Felipe) a formas procedurais. Todo ganho visual tem que caber no orçam
 - **Critério de "architectural"** (aprovado pelo Felipe em 09/10/2026, está no CLAUDE.md):
   mudança em struct da Sim, no formato do replay ou do catálogo, comando novo, vida de torre,
   `MatchRules` e multiplayer. Isso pede design escrito e aprovado antes do código; o resto é
-  "bounded".
+  "bounded". Os designs ficam em [`docs/designs/`](designs/), um arquivo por tarefa, com o problema visto
+  rodando, o desenho, os testes e uma tabela "Decisões pedidas ao Felipe"; o código só começa depois do aval.
 - **Repositório:** público, arte pesada no PC, nada acima de 10 MB no git (seção 2, item 9).
 
 ## 10. Nuvem × PC: quem faz o quê (09/10/2026)
