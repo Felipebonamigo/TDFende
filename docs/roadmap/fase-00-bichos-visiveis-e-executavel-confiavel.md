@@ -32,7 +32,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 
 - [x] BUG-01 — Bichos invisíveis no executável (primeiro item)
 - [x] TEC-04 — Captura v2 (núcleo) com código de saída e estresse
-- [ ] BUG-02 — Clipe padrão dos bichos
+- [x] BUG-02 — Clipe padrão dos bichos
 - [ ] VIS-11a — Grama: rarear ou desligar por flag até o chão novo
 - [ ] TEC-11 — Shaders sem surpresa no build (escopo dado pela causa do BUG-01)
 - [ ] TEC-01 — Base limpa: o executável sai da main
@@ -174,7 +174,11 @@ No build atual tem que sair com código 1 (bicho invisível, triângulos da gram
 
 ### BUG-02 — Clipe padrão dos bichos
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (commit com "BUG-02" na mensagem: `git log --grep=BUG-02`).
+  - `AnimalLoader.AddClips` reatribui `anim.clip` (Idle, senão Walk) depois de trocar os clipes.
+  - A captura agora reprova com qualquer aviso da lista `SmokeCapture.LogLint` (começa com
+    este). Visto falhar antes da correção (6 avisos, saída 1); depois, 0 avisos e saída 0, normal
+    e estresse.
 - **Categoria:** BUG · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 2,5 · custo 1 · risco 1 · prioridade 5
 

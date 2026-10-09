@@ -213,6 +213,11 @@ namespace TDFende
                 anim.AddClip(mine[0], "Walk");
                 anim["Walk"].wrapMode = WrapMode.Loop;
             }
+            // o clipe padrão do componente ainda apontava para um dos que saíram acima: cada vez
+            // que o bicho religava, o Unity avisava "Default clip could not be found" (BUG-02)
+            var first = anim.GetClip("Idle");
+            if (first == null) first = anim.GetClip("Walk");
+            anim.clip = first;
         }
 
         static string StateFor(string clipName)

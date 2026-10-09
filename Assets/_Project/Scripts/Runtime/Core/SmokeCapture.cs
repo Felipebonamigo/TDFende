@@ -12,7 +12,8 @@ namespace TDFende
     ///
     /// Sai com código 0 (passou) ou 1 (reprovou) e grava print_metricas.json. Reprova: bicho que
     /// não aparece (cobertura de pixels do retrato abaixo de <see cref="MinCoverage"/>), tipo de
-    /// bicho que nunca chegou, shader não suportado, exceção no log, tempo esgotado. Tempo de
+    /// bicho que nunca chegou, shader não suportado, exceção no log, aviso proibido no log
+    /// (<see cref="LogLint"/>), tempo esgotado. Tempo de
     /// quadro e triângulos só são medidos: o orçamento é o TEC-06.
     ///
     /// Com "-estresse" também monta um fim de partida: as 6 torres no nível máximo em cada lane
@@ -211,8 +212,14 @@ namespace TDFende
             Debug.Log("[TDFende] captura, REPROVA: " + why);
         }
 
+        // avisos que já foram defeito de verdade: um deles no log reprova (BUG-02)
+        static readonly string[] LogLint = { "Default clip could not be found" };
+        readonly HashSet<string> _linted = new HashSet<string>();
+
         void OnLog(string message, string stack, LogType type)
         {
+            foreach (var bad in LogLint)
+                if (message.Contains(bad) && _linted.Add(bad)) _failures.Add("aviso proibido no log: " + bad);
             if (type == LogType.Exception || type == LogType.Assert)
             {
                 _exceptions++;

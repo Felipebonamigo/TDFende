@@ -88,8 +88,9 @@ Leia os prints com a ferramenta de leitura de imagem.
 
 **Reprova (código 1):** bicho com cobertura abaixo de 0,5% no retrato (o corpo, sem o anel do
 time, é desenhado sozinho na camada 31 sobre fundo preto e conta-se o que não é fundo), tipo de
-bicho que não apareceu, shader não suportado ou material nulo num bicho, exceção no log, mais de
-60 s sem terminar. Tempo de quadro e triângulos **só são medidos** (o orçamento é o TEC-06).
+bicho que não apareceu, shader não suportado ou material nulo num bicho, exceção no log, aviso
+da lista `SmokeCapture.LogLint` no log (aviso que já foi defeito; acrescente lá), mais de 60 s
+sem terminar. Tempo de quadro e triângulos **só são medidos** (o orçamento é o TEC-06).
 
 `-Estresse` (no exe: `-estresse`) monta um fim de partida: as 6 torres no nível máximo em cada
 lane e 4 rodadas de todos os bichos nas duas lanes. Referência de 09/10/2026 (1600×900): normal
