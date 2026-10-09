@@ -131,12 +131,12 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 _Antes de qualquer download ou crédito: licença, camada privada, auditoria e inventário real de arte por tema (bichos inclusive), elenco por bioma e posição de mercado. Sai daqui o tema favorito para a fatia de beleza._
 
 - [x] **TEC-22** — Manifesto de licenças com auditoria no commit e no build — 09/10/2026 (e1bc185)
-- [ ] **TEC-23** — Camada privada de arte e som (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **TEC-23** — Camada privada de arte e som (código em 2c9e38d, 09/10/2026; **falta provar no executável com e sem a pasta, na sessão do PC**)
 - [x] **TEC-10a** — AuditaAssets em modo aviso (adiantado) — 09/10/2026
-- [ ] **VIS-01** — Inventário por tema e bíblia de arte (reservado: sessão na nuvem, 09/10/2026)
-- [ ] **DES-23** — Meta de elenco do Early Access (rascunho) (reservado: sessão na nuvem, 09/10/2026)
+- [ ] **VIS-01** — Inventário por tema e bíblia de arte (inventário e análise prontos em 09/10/2026, docs/arte/tema.md; **falta a decisão do Felipe: tema e jogos-régua**)
+- [x] **DES-23** — Meta de elenco do Early Access (rascunho) — 09/10/2026 (docs/arte/elenco.md, condicionado ao tema)
 - [x] **MKT-01** — Spike de mercado do gênero — 09/10/2026 (relatório em docs/mercado.md)
-- [ ] **TEC-24** — Plano de gasto dos créditos Meshy (reservado: sessão na nuvem, 09/10/2026)
+- [x] **TEC-24** — Plano de gasto dos créditos Meshy — 09/10/2026 (MANUAL, seção 14, e livro-caixa)
 
 ### [Fase 2 — Fatia de beleza e Portão Visual](docs/roadmap/fase-02-fatia-de-beleza-e-portao-visual.md)
 
@@ -345,11 +345,11 @@ _Levar o jogo à venda e cuidar dele depois._
 - [x] Plataforma e pipeline: Steam no PC, celular fora da meta; HDRP pretendido se ganhar a VIS-29, Unreal 5 só como plano B; a 4070 Ti é a referência do nível Ultra (Felipe, 09/10/2026).
 - [x] Trabalho dividido: sessão na nuvem (simulação, ferramentas, downloads automáticos, documentação) e sessão no PC (Unity, Unreal, executável, prints, downloads com login) (Felipe, 09/10/2026; MANUAL, seção 10).
 - [ ] Fase 2: pipeline final (URP ou HDRP) pela folha da VIS-29; se os dois reprovarem, abrir a comparação com o Unreal 5.
-- [ ] Fase 1: tema e bioma pela matriz (natureza/expedição, fantasia realista baixa ou medieval com kit pago), confirmados na fatia de beleza.
+- [ ] Fase 1: tema e bioma. Inventário pronto (docs/arte/tema.md). **Recomendação: fantasia realista baixa**; plano B natureza/expedição; medieval com kit pago só se os dois reprovarem. Confirma na fatia de beleza.
 - [ ] Fase 1: o elenco segue o bioma, e cada espécie tem no máximo um papel especial; manter os 9 bichos ou migrar para uma fonte única.
 - [ ] Fase 1: verba para pacotes pagos e para a cápsula, com teto.
-- [ ] Fase 1: escolher 2 ou 3 jogos-régua da Steam.
-- [ ] Fase 1: conferir no site do Meshy o plano da conta em 03/10 (javali e tigre).
+- [ ] Fase 1: escolher 2 ou 3 jogos-régua da Steam (sugestão: Manor Lords, Total War: Warhammer III, Frostpunk 2).
+- [ ] Fase 1: conferir no site do Meshy o plano da conta em 03/10 (javali e tigre) e em 04/10 (primeira Torre_Canhao), e o que gastou os 150 créditos sem registro (docs/meshy-livro-caixa.md).
 - [ ] Fase 1: lançar o EA sem multiplayer? (o MKT-01 diz que só vale como TD solo contra IA, com envio de bichos e fronteira como diferencial; resumo no MANUAL, seção 12.)
 - [ ] Fase 1: nome do jogo. "Line Tower Wars" já é um jogo grátis na Steam (Mithryl Labs, 30/07/2026); usar só como nome de gênero.
 - [ ] Fase 2: o Portão Visual (é isso?); o enquadramento (morre, foge ou cai exausto); TAA/STP e GI; o hardware mínimo.

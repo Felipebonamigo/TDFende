@@ -456,3 +456,37 @@ Relatório completo, com fontes: [`docs/mercado.md`](mercado.md). O que importa:
 - **Recomendação do relatório:** EA sem multiplayer só se vendido como TD de estratégia solo contra IA,
   com o envio de bichos e a fronteira como diferencial; página cedo, demo no Next Fest, 3 dificuldades de IA.
   A decisão é do Felipe (ROADMAP, "Decisões").
+
+## 13. Tema e direção de arte (VIS-01, 09/10/2026)
+
+Três temas foram inventariados (natureza/expedição, fantasia realista baixa, medieval com kit pago):
+[`docs/arte/tema.md`](arte/tema.md) tem a comparação, a bíblia de arte (rascunho) e a recomendação, e
+[`docs/arte/`](arte/) os relatórios e dados de cada um. **A decisão do Felipe está pendente** (ROADMAP, "Decisões").
+Em resumo:
+- as notas dos três temas empatam (diferença menor que o ruído de quem olhou só miniaturas);
+- Gelo, Fogo e Ar realistas prontos não existem em nenhum tema; o que é de graça e bom em torre, fortaleza e
+  acampamento foi gerado por IA no Meshy (declarar na Steam);
+- bichos: o pacote pago de animais cobre 8 dos 9, mas a listagem traz "Editorial Use Only": **não comprar sem ler o
+  contrato**;
+- recomendação provisória: **fantasia realista baixa**, porque é o único tema em que as 21 peças que já estão no
+  jogo são o próprio tema. Plano B: natureza/expedição. O Portão Visual (Fase 2) confirma ou derruba.
+
+## 14. Plano de gasto dos créditos Meshy (TEC-24, 09/10/2026)
+
+Saldo lido na API em 09/10/2026: **842 créditos**. Livro-caixa: [`docs/meshy-livro-caixa.md`](meshy-livro-caixa.md)
+(há 150 créditos gastos entre 04 e 09/10 sem registro; o Felipe confere no histórico do site).
+
+1. **Meshy só onde não há CC0 ou CC BY de qualidade.** Hoje a galeria da comunidade já cobre torres, fortaleza e
+   acampamento; gerar torre inteira (30 por modelo, 18 estágios = ~540) está fora de questão.
+2. **Peças e lacunas, não conjuntos:** um prop, um adereço de topo, um bicho que o inventário não achou, retextura.
+3. **Piloto antes de lote.** Um modelo, aprovado por critério medido: normal map presente, albedo sem sombra
+   assada, triângulos dentro do teto (`Tools/AuditaAssets`). Só então o lote.
+4. **Um pedido ao Felipe por lote**, dizendo quantos créditos e o que sai. Sem resposta "sim", não gasta.
+5. **Tetos e reservas (sugestão, a aprovar):** gasto acumulado até 600, com **pelo menos 200 de reserva** para
+   bichos e para o tier 2 (Fase 13).
+6. **Preços:** só valem os que o piloto confirmar no saldo. Observado: texto para 3D com textura = 30 (preview
+   20 + textura 10, 04/10). Pela tabela da API: remesh 5, rig 5, animação 3 por ação. Em 06/10 o remesh e o rig
+   no site saíram sem descontar, mas **não conte com isso**. "Ataque e morte a ~3 créditos" para bípede: não
+   confirmado.
+7. **Depois de cada operação:** ler o saldo (`GET /openapi/v1/balance`), anotar no livro-caixa e, se o modelo
+   entra no jogo, no manifesto (seção 7: origem Meshy pede `planoMeshy` e `ia: propria`).

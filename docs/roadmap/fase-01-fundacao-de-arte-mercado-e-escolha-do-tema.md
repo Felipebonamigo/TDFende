@@ -35,12 +35,12 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 ## Tarefas, em ordem
 
 - [x] TEC-22 — Manifesto de licenças com auditoria no commit e no build — 09/10/2026 (e1bc185)
-- [ ] TEC-23 — Camada privada de arte e som
+- [ ] TEC-23 — Camada privada de arte e som (código em 2c9e38d; falta provar no exe)
 - [x] TEC-10a — AuditaAssets em modo aviso (adiantado) — 09/10/2026
-- [ ] VIS-01 — Inventário por tema e bíblia de arte
-- [ ] DES-23 — Meta de elenco do Early Access (rascunho)
+- [ ] VIS-01 — Inventário por tema e bíblia de arte (inventário pronto; falta decisão do Felipe)
+- [x] DES-23 — Meta de elenco do Early Access (rascunho) — 09/10/2026
 - [x] MKT-01 — Spike de mercado do gênero — 09/10/2026
-- [ ] TEC-24 — Plano de gasto dos créditos Meshy
+- [x] TEC-24 — Plano de gasto dos créditos Meshy — 09/10/2026
 
 ---
 
@@ -86,7 +86,7 @@ Hoje reprova (Meshy com plano desconhecido, plastic_crate), e um arquivo sem ent
 
 ### TEC-23 — Camada privada de arte e som
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [ ] **Status:** código feito em 09/10/2026 (commit 2c9e38d: `ArtLayerPaths`, `ArtLayers`, regras de importação `ArtRoots`, `.gitignore`, `Backup.ps1`, `-captura` com "com privado"/"sem privado"; 15 testes no FlowSim, Runtime compila). **Falta, na sessão do PC:** gerar o exe com um FBX de bicho em `Assets/_Privado/Resources/TDFende/Privado/Bichos/` e sem ele, e ver no log `camada privada` e `-captura` passando nos dois (MANUAL, seção 6). O código de editor (`ArtRoots` e as regras) não compila aqui sem o UnityEditor: o `CompileCheckUrp` do PC é quem confere.  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** TEC · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 4 · custo 2,5 · risco 3 · prioridade 4
 - **Depende de:** TEC-22
@@ -139,7 +139,7 @@ O pre-commit e o BuildJogo avisam malha ou textura fora do orçamento do TEC-06,
 
 ### VIS-01 — Inventário por tema e bíblia de arte
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [ ] **Status:** inventário e análise prontos em 09/10/2026 ([`docs/arte/tema.md`](../arte/tema.md), três relatórios e dados brutos). **Falta o Felipe:** escolher o tema (recomendação: fantasia realista baixa), 2 ou 3 jogos-régua e a verba. Depois disso, registrar a decisão no MANUAL e no README e marcar [x].  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** VIS · **Esforço:** M (1-2 sessões)
 - **Notas dos avaliadores (1-5):** valor 5 · custo 2,5 · risco 2,5 · prioridade 5
 - **Depende de:** BUG-01
@@ -188,7 +188,7 @@ Folhas de contato por tema enviadas ao Felipe, e a decisão registrada no MANUAL
 
 ### DES-23 — Meta de elenco do Early Access (rascunho)
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** rascunho entregue em 09/10/2026 ([`docs/arte/elenco.md`](../arte/elenco.md)), condicionado ao tema e ao pacote de animais; recalibra na Fase 11.  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** DES · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 3,5 · custo 3 · risco 3 · prioridade 3,5
 - **Depende de:** TEC-14
@@ -248,7 +248,7 @@ Relatório de subagente sobre Legion TD 2, Element TD 2 e outros Line TD da Stea
 
 ### TEC-24 — Plano de gasto dos créditos Meshy
 
-- [ ] **Status:** a fazer  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
+- [x] **Status:** feito em 09/10/2026 (MANUAL, seção 14, e [`docs/meshy-livro-caixa.md`](../meshy-livro-caixa.md)). Saldo 842; 150 créditos entre 04 e 09/10 sem registro, a conferir no site.  _(ao concluir: marque [x], escreva data e commit, e marque também no ROADMAP.md)_
 - **Categoria:** TEC · **Esforço:** P (menos de 1 sessão)
 - **Notas dos avaliadores (1-5):** valor 2 · custo 1 · risco 1 · prioridade 4
 - **Depende de:** VIS-01
