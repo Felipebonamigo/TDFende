@@ -2,7 +2,10 @@
 #   powershell -ExecutionPolicy Bypass -File Tools\GerarExecutavel.ps1 [-Diagnostico]
 # -Diagnostico: Builds\Diagnostico\TDFende.exe com variantes de shader estritas (variante que
 # falta vira erro no Player.log). Teste com Tools\Captura.ps1 -Diagnostico.
-param([switch]$Diagnostico)
+# -PularLicencas: só em emergência. Por padrão o build confere o disco inteiro contra
+# docs\licencas\manifesto.json (inclusive o que o .gitignore esconde: Mixamo, pacotes pagos) e
+# não sai com arquivo de arte sem entrada.
+param([switch]$Diagnostico, [switch]$PularLicencas)
 # Leva alguns minutos (na primeira vez, bem mais: compila os shaders). O log fica em Builds\build.log.
 $ErrorActionPreference = 'Stop'
 $raiz = Split-Path -Parent $PSScriptRoot
@@ -16,6 +19,14 @@ if (Test-Path $trava) {
 if (Get-Process Unity -ErrorAction SilentlyContinue) {
     Write-Host "O Unity está aberto: feche o editor antes de gerar o executável."
     exit 3
+}
+if (-not $PularLicencas) {
+    Write-Host "Conferindo as licenças da arte no disco..."
+    & dotnet run --project "$raiz\Tools\AuditaLicencas" -v quiet --nologo -- --disco --raiz "$raiz"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Build recusado: arte sem licença registrada. Acrescente em docs\licencas\manifesto.json (MANUAL, seção 7)."
+        exit 4
+    }
 }
 $versao = ((Get-Content "$raiz\ProjectSettings\ProjectVersion.txt" | Select-String 'm_EditorVersion: (\S+)').Matches[0].Groups[1].Value)
 $unity = "C:\Program Files\Unity\Hub\Editor\$versao\Editor\Unity.exe"

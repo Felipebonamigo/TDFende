@@ -1,0 +1,797 @@
+{
+ "versao": 1,
+ "_comentario": "Fonte única das licenças da arte. Mude AQUI e rode: dotnet run --project Tools/AuditaLicencas -v quiet --nologo -- --gera (reescreve THIRD_PARTY.md e Assets/Resources/TDFende/creditos.txt). Regras no MANUAL, seção 7.",
+ "raizes": [
+  "Assets/Resources",
+  "Assets/_Privado",
+  "Assets/StreamingAssets"
+ ],
+ "ignorar": [
+  "**/Thumbs.db",
+  "**/desktop.ini",
+  "**/.DS_Store"
+ ],
+ "cabecalho": [
+  "Tudo que o jogo usa e não foi escrito por nós, com origem, autor, licença e o que alteramos. Texturas fotográficas ficam em `Assets/Resources/TDFende/Textures/` (JPG guardado como `.bytes` para o importador do Unity não recomprimir). Os materiais sem foto continuam procedurais (`Runtime/Art/ProcTex.cs`).",
+  "CC0 não exige crédito; fica registrado para saber de onde veio cada coisa. O que exige crédito sai em `Assets/Resources/TDFende/creditos.txt`, que a tela de créditos mostra."
+ ],
+ "entradas": [
+  {
+   "id": "tex-stone",
+   "grupo": "Texturas fotográficas e materiais",
+   "titulo": "castle_brick_02_red (Stone, StoneDark, StoneFrost)",
+   "caminhos": [
+    "Assets/Resources/TDFende/Textures/Stone_*",
+    "Assets/Resources/TDFende/Textures/StoneDark_*",
+    "Assets/Resources/TDFende/Textures/StoneFrost_*"
+   ],
+   "origem": "Poly Haven, via repositório O3DE (Gems/AtomContent/TestData/.../TextureHaven)",
+   "autor": "Poly Haven",
+   "licenca": "CC0",
+   "link": "https://polyhaven.com/a/castle_brick_02_red",
+   "derivacao": "redimensionadas, recoloridas para a paleta do jogo e com o verde da normal invertido (padrão DirectX)",
+   "ia": "nao",
+   "credito": "cortesia",
+   "creditoTexto": "\"castle_brick_02_red\" — Poly Haven (polyhaven.com), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "tex-rock",
+   "grupo": "Texturas fotográficas e materiais",
+   "titulo": "Rock030",
+   "caminhos": [
+    "Assets/Resources/TDFende/Textures/Rock_*"
+   ],
+   "origem": "ambientCG, via repositório O3DE (TestData/Textures/cc0)",
+   "autor": "ambientCG",
+   "licenca": "CC0",
+   "link": "https://ambientcg.com/view?id=Rock030",
+   "derivacao": "redimensionada e recolorida para a paleta do jogo",
+   "ia": "nao",
+   "credito": "cortesia",
+   "creditoTexto": "\"Rock030\" — ambientCG (ambientcg.com), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "tex-bark",
+   "grupo": "Texturas fotográficas e materiais",
+   "titulo": "bark1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Textures/Bark_*"
+   ],
+   "origem": "repositório O3DE (TestData/Textures/cc0)",
+   "autor": "não identificado (pasta cc0 do O3DE)",
+   "licenca": "CC0",
+   "derivacao": "redimensionada e recolorida para a paleta do jogo",
+   "ia": "nao",
+   "nota": "O autor original não consta no repositório do O3DE; a pasta se chama cc0.",
+   "excecoes": []
+  },
+  {
+   "id": "tex-o3de",
+   "grupo": "Texturas fotográficas e materiais",
+   "titulo": "Madeira, ferro, couro, tecido e terra (O3DE ReferenceMaterials)",
+   "caminhos": [
+    "Assets/Resources/TDFende/Textures/Wood_*",
+    "Assets/Resources/TDFende/Textures/WoodDark_*",
+    "Assets/Resources/TDFende/Textures/Iron_*",
+    "Assets/Resources/TDFende/Textures/Leather_*",
+    "Assets/Resources/TDFende/Textures/Cloth_*",
+    "Assets/Resources/TDFende/Textures/ClothTeam_*",
+    "Assets/Resources/TDFende/Textures/Dirt_*"
+   ],
+   "origem": "Open 3D Engine, Gems/AtomContent/ReferenceMaterials (WoodPlanks, WornMetal, Leather, BasicFabric, Ground)",
+   "autor": "Contributors to the Open 3D Engine",
+   "licenca": "MIT",
+   "link": "https://github.com/o3de/o3de",
+   "derivacao": "redimensionadas e recoloridas para a paleta do jogo",
+   "ia": "nao",
+   "nota": "O O3DE oferece MIT ou Apache 2.0, à escolha; usado sob MIT (aviso completo no fim deste arquivo).",
+   "credito": "obrigatorio",
+   "creditoTexto": "Textures from the Open 3D Engine (O3DE) ReferenceMaterials, MIT License, Copyright Contributors to the Open 3D Engine (full notice in THIRD_PARTY.md).",
+   "excecoes": []
+  },
+  {
+   "id": "tex-polyhaven",
+   "grupo": "Texturas fotográficas e materiais",
+   "titulo": "RoofTile e Slate",
+   "caminhos": [
+    "Assets/Resources/TDFende/Textures/RoofTile_*",
+    "Assets/Resources/TDFende/Textures/Slate_*"
+   ],
+   "origem": "Poly Haven, baixadas por Tools/BaixarArte.ps1",
+   "autor": "Poly Haven",
+   "licenca": "CC0",
+   "link": "https://polyhaven.com/textures",
+   "derivacao": "redimensionadas e recoloridas para a paleta do jogo",
+   "ia": "nao",
+   "credito": "cortesia",
+   "creditoTexto": "\"RoofTile e Slate\" — Poly Haven (polyhaven.com), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "cenario-polyhaven",
+   "grupo": "Cenário, chão, grama e céu (Poly Haven)",
+   "titulo": "Barris, caixas, pedras, tocos e troncos",
+   "caminhos": [
+    "Assets/Resources/TDFende/Cenario/**"
+   ],
+   "origem": "Poly Haven, baixados por Tools/BaixarArte.ps1 (cada pasta leva o id do asset)",
+   "autor": "Poly Haven (vários artistas)",
+   "licenca": "CC0",
+   "link": "https://polyhaven.com/models",
+   "derivacao": "usados como baixados",
+   "ia": "nao",
+   "credito": "cortesia",
+   "creditoTexto": "Cenário (barris, pedras, troncos, tocos): Poly Haven (polyhaven.com), CC0",
+   "nota": "plastic_crate_01 e _02 saem na VIS-04 (denunciam maquete).",
+   "excecoes": []
+  },
+  {
+   "id": "chao-grama-ceu",
+   "grupo": "Cenário, chão, grama e céu (Poly Haven)",
+   "titulo": "grass_medium_01/02, leafy_grass, aerial_grass_rock e céu kloofendal_48d_partly_cloudy_puresky",
+   "caminhos": [
+    "Assets/Resources/Art/**"
+   ],
+   "origem": "Poly Haven, baixados por Tools/BaixarArte.ps1",
+   "autor": "Poly Haven (vários artistas)",
+   "licenca": "CC0",
+   "link": "https://polyhaven.com",
+   "derivacao": "usados como baixados",
+   "ia": "nao",
+   "credito": "cortesia",
+   "creditoTexto": "Grama, chão e céu HDRI: Poly Haven (polyhaven.com), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "shaderkeep",
+   "grupo": "Gerado pelo próprio projeto",
+   "titulo": "ShaderKeep (materiais que seguram os shaders no build)",
+   "caminhos": [
+    "Assets/Resources/TDFende/ShaderKeep/**"
+   ],
+   "origem": "gerado pelo BuildJogo a cada build",
+   "autor": "TDFende",
+   "licenca": "Propria",
+   "derivacao": "—",
+   "ia": "nao",
+   "excecoes": []
+  },
+  {
+   "id": "creditos",
+   "grupo": "Gerado pelo próprio projeto",
+   "titulo": "creditos.txt",
+   "caminhos": [
+    "Assets/Resources/TDFende/creditos.txt"
+   ],
+   "origem": "gerado por Tools/AuditaLicencas a partir deste manifesto",
+   "autor": "TDFende",
+   "licenca": "Propria",
+   "derivacao": "—",
+   "ia": "nao",
+   "excecoes": []
+  },
+  {
+   "id": "leiame",
+   "grupo": "Gerado pelo próprio projeto",
+   "titulo": "LEIA-ME.txt das pastas de arte",
+   "caminhos": [
+    "Assets/Resources/TDFende/**/LEIA-ME.txt"
+   ],
+   "origem": "escrito no projeto",
+   "autor": "TDFende",
+   "licenca": "Propria",
+   "derivacao": "—",
+   "ia": "nao",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-rato",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "Black Rat (Free download)",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/rato.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/rato_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "Nestaeric",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/black-rat-free-download-3db3acb4140d4de8bd62a171212bad9c",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos)",
+   "ia": "nao",
+   "nota": "Licença conferida na página do Sketchfab. Sem sinal de IA nas tags e na descrição (API, 09/10/2026); o autor não declara.",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"Black Rat (Free download)\" by Nestaeric (https://sketchfab.com/3d-models/black-rat-free-download-3db3acb4140d4de8bd62a171212bad9c) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-cachorro",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "Police Dog",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/cachorro.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/cachorro_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "Chenchanchong",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/police-dog-414a3970c7674bc0bedbab32350f56b6",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos); o colete \"POLICE\" foi tirado",
+   "ia": "nao",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"Police Dog\" by Chenchanchong (https://sketchfab.com/3d-models/police-dog-414a3970c7674bc0bedbab32350f56b6) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-lobo",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "Animated Wolf Scene",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/lobo.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/lobo_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "Roo (roo3d)",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos)",
+   "ia": "nao",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"Animated Wolf Scene\" by Roo (roo3d) (https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-aguia",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "Red-tailed Hawk - in Flight (gavião-de-cauda-vermelha, usado como a águia)",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/aguia.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/aguia_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "osuecampus (OSU.Multimedia)",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/red-tailed-hawk-in-flight-4abcab5af9044a939fb5a55bff9e5000",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos)",
+   "ia": "nao",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"Red-tailed Hawk - in Flight\" by osuecampus (OSU.Multimedia) (https://sketchfab.com/3d-models/red-tailed-hawk-in-flight-4abcab5af9044a939fb5a55bff9e5000) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-urso",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "Realistic Animated Bear 3D Model",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/urso.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/urso_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "WildMesh 3D",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/realistic-animated-bear-3d-model-bffc3c87d2d148ff8533e1cc8a11c9f1",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos)",
+   "ia": "nao",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"Realistic Animated Bear 3D Model\" by WildMesh 3D (https://sketchfab.com/3d-models/realistic-animated-bear-3d-model-bffc3c87d2d148ff8533e1cc8a11c9f1) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-rinoceronte",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "Rhino Rebuilt",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/rinoceronte.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/rinoceronte_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "kenchoo (a partir de \"Gray Rhino\", AIUM2, CC BY)",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/rhino-rebuilt-5626816de2734e748f68cb0c00151d3b",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos)",
+   "ia": "nao",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"Rhino Rebuilt\" by kenchoo (a partir de \"Gray Rhino\", AIUM2, CC BY) (https://sketchfab.com/3d-models/rhino-rebuilt-5626816de2734e748f68cb0c00151d3b) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-elefante",
+   "grupo": "Bichos 3D (Sketchfab, CC BY 4.0)",
+   "titulo": "African Elephant",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/elefante.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/elefante_*"
+   ],
+   "origem": "Sketchfab",
+   "autor": "jimmyho905",
+   "licenca": "CC-BY-4.0",
+   "link": "https://sketchfab.com/3d-models/african-elephant-b960467b14f34cfc84feeb3361a21f54",
+   "derivacao": "convertido de GLB para FBX, malha reduzida, texturas reduzidas para 1024 px, só as animações de andar/correr/parado/morrer, ossos sem uso removidos (Tools/ConverterBichos)",
+   "ia": "nao",
+   "credito": "obrigatorio",
+   "creditoTexto": "\"African Elephant\" by jimmyho905 (https://sketchfab.com/3d-models/african-elephant-b960467b14f34cfc84feeb3361a21f54) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-javali",
+   "grupo": "Modelos gerados no Meshy pela conta do Felipe",
+   "titulo": "Javali",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/javali.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/javali_*"
+   ],
+   "origem": "Meshy (imagem para 3D em 03/10/2026; rig de quadrúpede e animação \"Andando\" no próprio Meshy em 06/10/2026)",
+   "autor": "Felipe Bonamigo (conta no Meshy)",
+   "licenca": "Meshy-conta-Felipe",
+   "derivacao": "malha reduzida a ~10 mil triângulos no Meshy, convertido por Tools/ConverterBichos",
+   "ia": "propria",
+   "planoMeshy": "desconhecido",
+   "credito": "obrigatorio",
+   "creditoTexto": "3D models generated with Meshy (meshy.ai).",
+   "estado": "pendente",
+   "pendencia": "Conferir no site do Meshy o plano da conta na data da geração. Plano pago: o modelo é do Felipe, sem crédito obrigatório. Plano grátis: CC BY 4.0, com crédito ao Meshy. Na dúvida o crédito fica nos créditos do jogo. Uma das gerações de 03/10 foi às 23:06, possivelmente ainda no plano grátis.",
+   "excecoes": []
+  },
+  {
+   "id": "bicho-tigre",
+   "grupo": "Modelos gerados no Meshy pela conta do Felipe",
+   "titulo": "Tigre",
+   "caminhos": [
+    "Assets/Resources/TDFende/Bichos/tigre.fbx",
+    "Assets/Resources/TDFende/Bichos/Textures/tigre_*"
+   ],
+   "origem": "Meshy (imagem para 3D em 03/10/2026; rig de quadrúpede e animação \"Andando\" no próprio Meshy em 06/10/2026)",
+   "autor": "Felipe Bonamigo (conta no Meshy)",
+   "licenca": "Meshy-conta-Felipe",
+   "derivacao": "malha reduzida a ~10 mil triângulos no Meshy, convertido por Tools/ConverterBichos",
+   "ia": "propria",
+   "planoMeshy": "desconhecido",
+   "credito": "obrigatorio",
+   "creditoTexto": "3D models generated with Meshy (meshy.ai).",
+   "estado": "pendente",
+   "pendencia": "Conferir no site do Meshy o plano da conta na data da geração. Plano pago: o modelo é do Felipe, sem crédito obrigatório. Plano grátis: CC BY 4.0, com crédito ao Meshy. Na dúvida o crédito fica nos créditos do jogo. Uma das gerações de 03/10 foi às 23:06, possivelmente ainda no plano grátis.",
+   "excecoes": []
+  },
+  {
+   "id": "torre-canhao-meshy",
+   "grupo": "Modelos gerados no Meshy pela conta do Felipe",
+   "titulo": "Torre de Canhão (primeira versão, gerada por texto)",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Canhao.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Canhao_cor.bytes",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Canhao_normal.bytes"
+   ],
+   "origem": "Meshy (texto para 3D, tarefas 01a104b8-2063-7663-baf7-42c6a6d83e9e e 01a104bb-05d0-72f1-af81-a4033f72ad91, 04/10/2026)",
+   "autor": "Felipe Bonamigo (conta no Meshy)",
+   "licenca": "Meshy-conta-Felipe",
+   "derivacao": "canhão do modelo removido, escala e corte em Shaft/Top, texturas em 1024 px com correção de tom (Tools/ConverterTorres)",
+   "ia": "propria",
+   "planoMeshy": "desconhecido",
+   "credito": "obrigatorio",
+   "creditoTexto": "3D models generated with Meshy (meshy.ai).",
+   "estado": "pendente",
+   "pendencia": "Conferir no site do Meshy o plano da conta na data da geração. Plano pago: o modelo é do Felipe, sem crédito obrigatório. Plano grátis: CC BY 4.0, com crédito ao Meshy. Na dúvida o crédito fica nos créditos do jogo. Sai do jogo na VIS-04 (os 3 estágios da comunidade a substituem).",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_canhao_1",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Canhão, estágio 1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Canhao_1.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Canhao_1_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196d11d-3599-7b70-8f8e-e6a28d7ff2fb",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_canhao_2",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Canhão, estágio 2",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Canhao_2.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Canhao_2_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196d123-4168-7b70-af30-d236c36a97e1",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_canhao_3",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Canhão, estágio 3",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Canhao_3.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Canhao_3_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196d120-afca-7245-a903-93cf8eea5859",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_morteiro_1",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Morteiro, estágio 1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Morteiro_1.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Morteiro_1_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196eb6f-bf01-7694-9256-8af08f04a19b",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_morteiro_2",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Morteiro, estágio 2",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Morteiro_2.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Morteiro_2_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196eb27-c03d-72b9-b24a-edbab7772722",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_morteiro_3",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Morteiro, estágio 3",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Morteiro_3.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Morteiro_3_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196eb28-83fb-768d-8d73-600b9507239e",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_gelo_1",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Gelo, estágio 1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Gelo_1.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Gelo_1_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0195b5e8-ef56-7797-b75a-c95e4097097e",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_gelo_2",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Gelo, estágio 2",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Gelo_2.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Gelo_2_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0195b5e8-80e5-7c4f-9d05-485670cf70fb",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_gelo_3",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Gelo, estágio 3",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Gelo_3.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Gelo_3_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0198cf42-cdd1-7e79-915d-4f9361b12a22",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_sentinela_1",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Sentinela, estágio 1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Sentinela_1.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Sentinela_1_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0195b183-5b65-7bd6-95b9-f1ced30c476a",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_sentinela_2",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Sentinela, estágio 2",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Sentinela_2.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Sentinela_2_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0195b184-d3a5-7bd6-a84a-7276babc1525",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_sentinela_3",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Sentinela, estágio 3",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Sentinela_3.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Sentinela_3_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/01993651-8ab0-7422-a4d7-3f816ca68d2a",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_fogo_1",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Fogo, estágio 1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Fogo_1.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Fogo_1_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/01968ebf-2658-7143-ae45-7b0860f1306f",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_fogo_2",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Fogo, estágio 2",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Fogo_2.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Fogo_2_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/01968ec1-1603-7143-a89e-3e8e35a754dc",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_fogo_3",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Fogo, estágio 3",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Fogo_3.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Fogo_3_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/01968ec2-efd3-7411-b372-cddccfc159e3",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_ar_1",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Ar, estágio 1",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Ar_1.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Ar_1_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196d669-1c66-7c06-b4c1-d6dc21d8e954",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_ar_2",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Ar, estágio 2",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Ar_2.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Ar_2_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196f062-cbe6-76c3-9d8d-5f1c5942e127",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-torre_ar_3",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Torre de Ar, estágio 3",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Torre_Ar_3.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Torre_Ar_3_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Karrades",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/0196d66d-75b9-77dc-95fb-c9654be19573",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Torres (18 estágios): Karrades (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-fortaleza",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Fortaleza",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Fortaleza.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Fortaleza_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "Matson",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/01964efc-a77f-73fd-b7b1-bbc7bc5c3d91",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Fortaleza: Matson (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "comunidade-acampamento",
+   "grupo": "Torres, fortaleza e acampamento (galeria da comunidade do Meshy, CC0)",
+   "titulo": "Acampamento",
+   "caminhos": [
+    "Assets/Resources/TDFende/Torres/Acampamento.fbx",
+    "Assets/Resources/TDFende/Torres/Textures/Acampamento_*"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy, baixado pelo site em 04/10/2026",
+   "autor": "nathi.mashabane",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/posts/019741d2-5909-7308-9462-a123fe58f217",
+   "derivacao": "escala, corte em Shaft/Top (torres) e texturas em 1024 px (Tools/ConverterTorres)",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0: o diálogo de publicação diz \"Models: CC0 — free for anyone to use, no credit needed\". Os modelos são gerados por IA por terceiros; o jogo precisa declarar isso na página da Steam.",
+   "credito": "cortesia",
+   "creditoTexto": "Acampamento: nathi.mashabane (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "mixamo",
+   "grupo": "Personagens (Mixamo, só no PC)",
+   "titulo": "Personagens e animações do Mixamo",
+   "caminhos": [
+    "Assets/Resources/TDFende/Personagens/**"
+   ],
+   "excecoes": [
+    "Assets/Resources/TDFende/Personagens/LEIA-ME.txt"
+   ],
+   "origem": "Mixamo (Adobe), baixados pelo Felipe",
+   "autor": "Adobe Systems (Mixamo)",
+   "licenca": "Adobe-Mixamo",
+   "link": "https://www.mixamo.com",
+   "derivacao": "usados como baixados",
+   "ia": "nao",
+   "repoPublico": false,
+   "nota": "A licença da Adobe libera o uso em jogo, mas não a redistribuição do arquivo cru: ficam só no PC, nunca no git público."
+  }
+ ]
+}

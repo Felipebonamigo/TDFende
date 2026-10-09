@@ -306,12 +306,39 @@ script, a janela nasce sem foco e o Unity pausa o jogo.
 
 ## 7. Licenças (regras do projeto)
 
-- Pode ir para o GitHub: CC0, CC BY (com crédito no `THIRD_PARTY.md`), modelos gerados pela
-  conta do Felipe no Meshy.
-- Só no PC: Asset Store, Fab, qualquer EULA que proíba redistribuir.
-- Não usar: origem não comprovada (reuploads, ripados de jogos, pacotes pagos republicados).
+**Fonte única: [`docs/licencas/manifesto.json`](licencas/manifesto.json)** (TEC-22). Toda arte em
+`Assets/Resources` (e em `Assets/_Privado`, `Assets/StreamingAssets`) tem que casar com **uma**
+entrada: origem, autor, licença, link, o que alteramos, `ia` (propria/terceiro/nao), plano do
+Meshy quando a origem é o Meshy, crédito e estado. Dali saem o `THIRD_PARTY.md` e o
+`Assets/Resources/TDFende/creditos.txt` (a tela de créditos, META-02, lê este).
+
+- **Asset novo = entrada nova no mesmo commit**, e depois
+  `dotnet run --project Tools/AuditaLicencas -v quiet --nologo -- --gera`. Não edite
+  `THIRD_PARTY.md` nem `creditos.txt` à mão: o pre-commit reprova se estiverem fora de sincronia.
+- **Quem confere:** o pre-commit (`--git`: o que está no índice), o GitHub Actions (igual) e o
+  `GerarExecutavel.ps1` (`--disco`: o disco inteiro, inclusive o que o `.gitignore` esconde, como
+  Mixamo e pacotes pagos; `-PularLicencas` só em emergência). Reprova: arquivo sem entrada,
+  entrada ambígua (dois padrões casando), licença com NC/ND/"uso pessoal" ou fora da lista,
+  CC BY/MIT sem crédito, origem Meshy sem plano, Meshy com `ia: nao`, e arquivo de licença que
+  proíbe redistribuir (`repoPublico: false`: Mixamo, Asset Store, Fab) **dentro do git**.
+- **`estado: "pendente"` só avisa**, e diz o que falta conferir (hoje: o plano do Meshy na data
+  em que o javali, o tigre e a primeira Torre_Canhao foram gerados). Pendente precisa fechar
+  antes da página da Steam.
+- Licença nova (ex.: uma de loja) não passa em silêncio: leia os termos, acrescente em
+  `Program.cs` (tabela `Licencas`, com o que ela exige) e só então use no manifesto.
+- Arquivo que **não** pode ir para o GitHub público (EULA que proíbe redistribuir): entrada com
+  `"repoPublico": false`; fica só no PC. Vale também para a futura camada privada (TEC-23).
+
+Regras gerais:
+- Pode ir para o GitHub: CC0, CC BY (com crédito), MIT/Apache (com aviso), modelos gerados pela
+  conta do Felipe no Meshy, e o que a comunidade do Meshy publicou (a galeria é CC0).
+- Só no PC: Asset Store, Fab, Mixamo, qualquer EULA que proíba redistribuir.
+- Não usar: origem não comprovada (reuploads, ripados de jogo, pacotes pagos republicados).
   O pacote "Realistic Animated Pack" está em `C:\Users\Felip\TDFende-quarentena` por isso.
-- Todo asset novo: registrar autor, link e licença no `THIRD_PARTY.md` no mesmo commit.
+- **IA e Steam (regra de jan/2026):** conteúdo gerado por IA que o jogador vê precisa ser
+  declarado na página; ferramenta de desenvolvimento (assistente de código) não. O campo `ia` do
+  manifesto alimenta essa declaração: hoje há modelos do Meshy `propria` (conta do Felipe) e
+  `terceiro` (comunidade).
 
 ## 8. Direção de arte
 

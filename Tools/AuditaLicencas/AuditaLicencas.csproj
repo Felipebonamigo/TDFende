@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Auditoria de licenças da arte (TEC-22). Lê docs/licencas/manifesto.json e confere cada
+    arquivo de Assets/Resources (e das outras raízes do manifesto) contra ele.
+
+    Roda no pre-commit (modo git: o que está no índice), no GerarExecutavel.ps1 (modo disco: o que
+    está no disco, inclusive o que o .gitignore esconde) e a qualquer momento (modo gera escreve
+    THIRD_PARTY.md e creditos.txt a partir do manifesto). Os argumentos estão em Program.cs.
+
+    Sem pacotes NuGet de propósito: o hook precisa funcionar num clone novo e offline.
+    RollForward: o PC do Felipe tem o SDK 10 (FlowSim), a sessão na nuvem o 8.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

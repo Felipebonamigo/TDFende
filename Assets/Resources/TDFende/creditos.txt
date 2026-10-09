@@ -1,0 +1,25 @@
+TDFende — créditos de arte de terceiros
+(gerado por Tools/AuditaLicencas a partir de docs/licencas/manifesto.json; não edite à mão)
+
+== Créditos exigidos pela licença ==
+
+Textures from the Open 3D Engine (O3DE) ReferenceMaterials, MIT License, Copyright Contributors to the Open 3D Engine (full notice in THIRD_PARTY.md).
+"Black Rat (Free download)" by Nestaeric (https://sketchfab.com/3d-models/black-rat-free-download-3db3acb4140d4de8bd62a171212bad9c) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+"Police Dog" by Chenchanchong (https://sketchfab.com/3d-models/police-dog-414a3970c7674bc0bedbab32350f56b6) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+"Animated Wolf Scene" by Roo (roo3d) (https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+"Red-tailed Hawk - in Flight" by osuecampus (OSU.Multimedia) (https://sketchfab.com/3d-models/red-tailed-hawk-in-flight-4abcab5af9044a939fb5a55bff9e5000) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+"Realistic Animated Bear 3D Model" by WildMesh 3D (https://sketchfab.com/3d-models/realistic-animated-bear-3d-model-bffc3c87d2d148ff8533e1cc8a11c9f1) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+"Rhino Rebuilt" by kenchoo (a partir de "Gray Rhino", AIUM2, CC BY) (https://sketchfab.com/3d-models/rhino-rebuilt-5626816de2734e748f68cb0c00151d3b) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+"African Elephant" by jimmyho905 (https://sketchfab.com/3d-models/african-elephant-b960467b14f34cfc84feeb3361a21f54) is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified.
+3D models generated with Meshy (meshy.ai).
+
+== Agradecimentos (a licença é CC0 e não exige crédito) ==
+
+"castle_brick_02_red" — Poly Haven (polyhaven.com), CC0
+"Rock030" — ambientCG (ambientcg.com), CC0
+"RoofTile e Slate" — Poly Haven (polyhaven.com), CC0
+Cenário (barris, pedras, troncos, tocos): Poly Haven (polyhaven.com), CC0
+Grama, chão e céu HDRI: Poly Haven (polyhaven.com), CC0
+Torres (18 estágios): Karrades (comunidade do Meshy), CC0
+Fortaleza: Matson (comunidade do Meshy), CC0
+Acampamento: nathi.mashabane (comunidade do Meshy), CC0

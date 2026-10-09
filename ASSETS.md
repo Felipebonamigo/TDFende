@@ -64,6 +64,9 @@ na conta (em 04/10/2026 não gastou crédito); depois é o mesmo caminho do `Con
 Meshy só em último caso, e perguntando antes de gastar crédito. Modelo antigo da galeria às vezes
 vem sem o botão de download: aí não tem como baixar, escolha outro.
 
+**Toda arte nova entra em `docs/licencas/manifesto.json`** no mesmo commit (MANUAL, seção 7): sem entrada,
+o pre-commit e o `GerarExecutavel.ps1` recusam.
+
 **Estágios (já no projeto):** cada torre tem 3 modelos da comunidade, `Torre_<tipo>_1` (níveis 1-2),
 `_2` (3-4) e `_3` (5-6), e o jogo troca o modelo quando a torre sobe de estágio (`TowerStages`,
 `ArtFactory.StageFor`). Dentro do estágio o fuste ainda cresce um pouco. A torreta do código vai no

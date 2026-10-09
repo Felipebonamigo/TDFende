@@ -1,4 +1,4 @@
-# Testes da lógica pura (Tools/FlowSim) a cada push na main. O pre-commit local faz o mesmo,
+# Testes da lógica pura (Tools/FlowSim) e auditoria de licenças da arte (Tools/AuditaLicencas) a cada push na main. O pre-commit local faz o mesmo,
 # mas depende do core.hooksPath do PC: sessão na nuvem, clone novo ou --no-verify passam sem
 # teste. O CompileCheck precisa das DLLs do Unity e continua só no pre-commit local.
 #
@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - name: Licenças da arte (AuditaLicencas)
+        run: dotnet run --project Tools/AuditaLicencas -v quiet --nologo -- --git
       - name: Testes da lógica (FlowSim)
         env:
           TDFENDE_FALHA_DE_PROPOSITO: ${{ inputs.falha_de_proposito && '1' || '' }}

@@ -26,6 +26,15 @@ if [ -n "$GRANDES" ]; then
     exit 1
 fi
 
+# Licenças (TEC-22): todo arquivo de arte do índice precisa de entrada em docs/licencas/manifesto.json,
+# sem licença NC/ND, e THIRD_PARTY.md e creditos.txt têm que estar em dia com o manifesto.
+echo "[pre-commit] conferindo licenças da arte..."
+if ! dotnet run --project "$ROOT/Tools/AuditaLicencas" -v quiet --nologo -- --git > /tmp/tdfende-lic.log 2>&1; then
+    cat /tmp/tdfende-lic.log
+    exit 1
+fi
+grep -E "PENDENTE" /tmp/tdfende-lic.log | cut -c1-200 || true
+
 echo "[pre-commit] compilando scripts do Unity..."
 if ! dotnet build "$ROOT/Tools/CompileCheck" -v quiet --nologo > /tmp/tdfende-cc.log 2>&1; then
     echo "[pre-commit] FALHOU a compilação do lado Unity:"
