@@ -2,12 +2,14 @@
 # quarentena e o último executável. O D: é outro disco físico (o C: é o disco 1, o D: o 0).
 #   powershell -ExecutionPolicy Bypass -File Tools\Backup.ps1 [-Destino D:\TDFende-backup]
 # robocopy /E sem /PURGE: o que for apagado no PC continua no D:. Sai com 0 (ok) ou 1 (erro).
-# Restaurar: copie de volta a pasta de D:\TDFende-backup\<item> para o lugar listado abaixo.
+# Restaurar: copie de volta a pasta de D:\TDFende-backup\<item> para o lugar listado abaixo
+# (camada-privada -> Assets\_Privado; o Unity refaz os .meta ao abrir).
 param([string]$Destino = 'D:\TDFende-backup')
 $raiz = Split-Path -Parent $PSScriptRoot
 $itens = @(
     @{ de = "$raiz\Tools\ConverterBichos\glb"; para = 'ConverterBichos-glb' },
     @{ de = "$raiz\Tools\ConverterTorres\glb"; para = 'ConverterTorres-glb' },
+    @{ de = "$raiz\Assets\_Privado"; para = 'camada-privada' },
     @{ de = "$env:USERPROFILE\TDFende-quarentena"; para = 'quarentena' },
     @{ de = "$raiz\Builds\Windows"; para = 'executavel' }
 )

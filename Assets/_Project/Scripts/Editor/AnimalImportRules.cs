@@ -20,7 +20,7 @@ namespace TDFende.EditorTools
 
         void OnPreprocessModel()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             var mi = (ModelImporter)assetImporter;
             mi.animationType = ModelImporterAnimationType.Legacy;
             mi.importAnimation = true;
@@ -31,7 +31,7 @@ namespace TDFende.EditorTools
 
         void OnPreprocessTexture()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             var ti = (TextureImporter)assetImporter;
             string file = Path.GetFileNameWithoutExtension(assetPath);
             if (file.EndsWith("_normal")) ti.textureType = TextureImporterType.NormalMap;
@@ -45,7 +45,7 @@ namespace TDFende.EditorTools
 
         void OnPreprocessAnimation()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             var mi = (ModelImporter)assetImporter;
             var clips = mi.defaultClipAnimations;
             if (clips.Length == 0) return;

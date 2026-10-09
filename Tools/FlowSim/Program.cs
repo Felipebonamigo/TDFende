@@ -144,6 +144,7 @@ class Program
         // ================= TOWER WARS =================
         Console.WriteLine();
         TowerWarsTests();
+        ArtLayerTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
         Console.WriteLine();
@@ -364,6 +365,28 @@ class Program
     {
         int steps = (int)Math.Round(seconds / (double)TowerWarsConfig.FixedStep);
         for (int i = 0; i < steps; i++) lane.Tick(TowerWarsConfig.FixedStep);
+    }
+
+    /// <summary>Camada privada de arte (TEC-23): o caminho privado espelha o público dentro de TDFende/Privado.</summary>
+    static void ArtLayerTests()
+    {
+        Check(ArtLayerPaths.PrivatePath("TDFende/Torres/Torre_Gelo_1") == "TDFende/Privado/Torres/Torre_Gelo_1", "camada privada: torre vira TDFende/Privado/Torres/...");
+        Check(ArtLayerPaths.PrivatePath("TDFende/Bichos") == "TDFende/Privado/Bichos", "camada privada: pasta de bichos");
+        Check(ArtLayerPaths.PrivatePath("TDFende/Bichos/") == "TDFende/Privado/Bichos/", "camada privada: barra final preservada");
+        Check(ArtLayerPaths.PrivatePath("Art/Ground/leafy_grass_diff_2k") == "TDFende/Privado/Art/Ground/leafy_grass_diff_2k", "camada privada: Art/ também espelha");
+        Check(ArtLayerPaths.PrivatePath("TDFende/Privado/Bichos/lobo") == null, "camada privada: caminho já privado não tem camada acima");
+        Check(ArtLayerPaths.PrivatePath("TDFende/Privado") == null, "camada privada: a própria pasta privada não tem camada acima");
+        Check(ArtLayerPaths.PrivatePath("") == null && ArtLayerPaths.PrivatePath(null) == null, "camada privada: caminho vazio ou nulo");
+        Check(ArtLayerPaths.PrivatePath("TDFendeX/Torres/a") == "TDFende/Privado/TDFendeX/Torres/a", "camada privada: TDFendeX não é TDFende/");
+        // regras de importação do editor valem na pasta privada igual na pública
+        const string pub = "Assets/Resources/TDFende/Bichos/", priv = "Assets/_Privado/Resources/TDFende/Privado/Bichos/";
+        Check(TDFende.EditorTools.ArtRoots.Under(pub + "lobo.fbx", pub), "camada privada (editor): arquivo público casa a pasta pública");
+        Check(TDFende.EditorTools.ArtRoots.Under(priv + "lobo.fbx", pub), "camada privada (editor): arquivo privado casa o espelho da pasta pública");
+        Check(!TDFende.EditorTools.ArtRoots.Under(priv + "lobo.fbx", "Assets/Resources/TDFende/Torres/"), "camada privada (editor): bicho privado não casa a pasta de torres");
+        Check(TDFende.EditorTools.ArtRoots.Under("Assets/_Privado/Resources/TDFende/Privado/Art/Sky/c.hdr", "Assets/Resources/Art/Sky/"), "camada privada (editor): Art/Sky espelha");
+        Check(!TDFende.EditorTools.ArtRoots.Under("Assets/_Privado/Resources/TDFende/Privado2/Bichos/x", pub) && !TDFende.EditorTools.ArtRoots.Under("Assets/Outra/Bichos/x", pub), "camada privada (editor): pasta parecida não casa");
+        Check(ArtLayerPaths.IsPrivate("TDFende/Privado/Torres/a") && !ArtLayerPaths.IsPrivate("TDFende/Torres/a") && !ArtLayerPaths.IsPrivate("TDFende/PrivadoX/a"), "camada privada: IsPrivate");
+        Check(ArtLayerPaths.PublicPath("TDFende/Privado/Torres/a") == "TDFende/Torres/a" && ArtLayerPaths.PublicPath("TDFende/Privado/Art/Sky/x") == "Art/Sky/x", "camada privada: PublicPath desfaz o espelho");
     }
 
     static void TowerWarsTests()

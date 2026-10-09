@@ -95,8 +95,8 @@ namespace TDFende
 
             foreach (var name in Kinds)
             {
-                var prefab = Resources.Load<GameObject>(ArtPath + name + "_1k");
-                var tex = Resources.Load<Texture2D>(ArtPath + name + "_diffalpha_1k");
+                var prefab = ArtLayers.Load<GameObject>(ArtPath + name + "_1k");
+                var tex = ArtLayers.Load<Texture2D>(ArtPath + name + "_diffalpha_1k");
                 if (prefab == null || tex == null) continue;
 
                 var variants = ExtractVariants(prefab);

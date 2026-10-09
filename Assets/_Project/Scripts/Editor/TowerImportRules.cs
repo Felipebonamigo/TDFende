@@ -16,7 +16,7 @@ namespace TDFende.EditorTools
 
         void OnPreprocessModel()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             var mi = (ModelImporter)assetImporter;
             mi.materialImportMode = ModelImporterMaterialImportMode.None;
             mi.importAnimation = false;

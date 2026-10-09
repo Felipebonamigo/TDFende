@@ -25,7 +25,7 @@ if (-not $p.WaitForExit($Tempo * 1000)) {
     Write-Host "TRAVOU: o jogo não fechou em $Tempo s (veja $log)"
     exit 2
 }
-Select-String -Path $log -Pattern '\[TDFende\] captura(, cobertura|, desempenho|, REPROVA|: PASSOU|: REPROVOU)' |
+Select-String -Path $log -Pattern '\[TDFende\] captura(, cobertura|, desempenho|, camada privada|, REPROVA|: PASSOU|: REPROVOU)' |
     ForEach-Object { $_.Line }
 # orçamento de desempenho (só aviso): a linha e os itens acima do teto logo abaixo dela
 Select-String -Path $log -Pattern '\[TDFende\] captura, orçamento' -Context 0,30 | ForEach-Object {

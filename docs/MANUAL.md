@@ -263,6 +263,32 @@ script, a janela nasce sem foco e o Unity pausa o jogo.
   `Tools/ConverterBichos/glb/` (fora do git). Os do tigre e do javali feitos pelo Felipe
   (image-to-3d, 270 MB) estão em `glb/originais-meshy/`.
 
+### Camada privada de arte (TEC-23)
+Para pacote pago e arte cuja licença **proíbe redistribuir** (Asset Store, Fab, Mixamo...): o
+repositório é público, então o arquivo fica só no PC.
+- **Onde:** `Assets/_Privado/Resources/TDFende/Privado/`, **fora do git** (`.gitignore`) e dentro do
+  `Tools\Backup.ps1` (item `camada-privada`). O Unity junta todas as pastas `Resources` no build, então
+  o executável do Felipe leva a camada e o de um clone novo (ou da nuvem e do GitHub) roda sem ela.
+- **Espelha a pública:** o que o jogo procura em `TDFende/Torres/Torre_Gelo_1` procura antes em
+  `TDFende/Privado/Torres/Torre_Gelo_1`; `Art/Ground/x` em `TDFende/Privado/Art/Ground/x`. Achou, usa;
+  não achou, cai no público; sem arquivo nenhum, o procedural. A regra está em `ArtLayerPaths` (pura,
+  com teste no FlowSim) e `ArtLayers` (todo carregador de arte passa por ela, e o áudio da Fase 8 também
+  deve). Bicho privado do mesmo animal vence o público (`AnimalLoader`); os clipes são procurados na pasta
+  da camada de onde o bicho veio.
+- **Importação:** as regras do editor (`ArtRoots`) valem nas duas pastas, então um pacote entra com as
+  mesmas configurações (Legacy, clipes em loop, normal map) dos baixados.
+- **Licença:** todo arquivo da camada privada também entra em `docs/licencas/manifesto.json`, com
+  `"repoPublico": false` e licença `EULA-loja` ou `Adobe-Mixamo` (seção 7). O `GerarExecutavel.ps1`
+  (modo `--disco`) recusa o build com arquivo privado sem entrada; o pre-commit reprova se algum
+  arquivo `repoPublico: false` entrar no índice. **Nunca** `git add -f` na pasta.
+- **Prova no executável:** o `-captura` escreve `[TDFende] captura, camada privada: com privado (N
+  arquivos ...)` ou `sem privado`, e `camada_privada` no `print_metricas.json`. O log do jogo diz cada
+  arquivo servido: `[TDFende] camada privada: <caminho> (no lugar de <público>)`. Um print "com privado"
+  não vale como prova do que um clone novo vai ver.
+- **Testar a camada** sem comprar nada: copie um FBX de bicho para
+  `Assets/_Privado/Resources/TDFende/Privado/Bichos/` (e dê a ele a entrada do manifesto), gere o exe e
+  confira o log; apague a pasta, gere de novo e confira que cai no público.
+
 ### Poly Haven (CC0)
 - API: `https://api.polyhaven.com/assets?t=models|textures`, `.../files/<id>`; mande
   User-Agent `TDFende-BaixarArte/1.0`. Script: `Tools/BaixarArte.ps1`.

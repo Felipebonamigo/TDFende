@@ -22,13 +22,13 @@ namespace TDFende.EditorTools
 
         void OnPreprocessTexture()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             Apply((TextureImporter)assetImporter, assetPath);
         }
 
         void OnPreprocessModel()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             var mi = (ModelImporter)assetImporter;
             mi.materialImportMode = ModelImporterMaterialImportMode.None; // material vem do código
             mi.importAnimation = false;
@@ -50,7 +50,7 @@ namespace TDFende.EditorTools
                 changed = true;
             }
 
-            if (path.StartsWith(Root + "Sky/"))
+            if (ArtRoots.Under(path, Root + "Sky/"))
             {
                 Set(ti.textureShape, TextureImporterShape.Texture2D, v => ti.textureShape = v);
                 // Mip LIGADO: o céu nunca aparece na tela (câmera a 55° para baixo), ele só

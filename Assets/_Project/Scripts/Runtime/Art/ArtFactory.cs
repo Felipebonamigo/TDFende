@@ -133,8 +133,8 @@ namespace TDFende
         {
             var ext = MatSpec.External(m);
             if (ext == null) return false;
-            var albedoBytes = Resources.Load<TextAsset>(TexturePath + ext.Value.albedo);
-            var normalBytes = Resources.Load<TextAsset>(TexturePath + ext.Value.normal);
+            var albedoBytes = ArtLayers.Load<TextAsset>(TexturePath + ext.Value.albedo);
+            var normalBytes = ArtLayers.Load<TextAsset>(TexturePath + ext.Value.normal);
             if (albedoBytes == null || normalBytes == null) return false;
 
             var albedo = new Texture2D(2, 2, TextureFormat.RGBA32, true, false) { name = $"{m}_Albedo" };
@@ -256,7 +256,7 @@ namespace TDFende
             int stage = TowerStages.ForLevel(level);
             string key = TowerStages.ModelName(def.Name, stage);
             if (!StageModels.TryGetValue(key, out bool has))
-                StageModels[key] = has = Resources.Load<GameObject>(TowerPath + key) != null;
+                StageModels[key] = has = ArtLayers.Load<GameObject>(TowerPath + key) != null;
             return has ? stage : 0;
         }
 
@@ -299,12 +299,12 @@ namespace TDFende
             }
 
             GameObject prefab = null;
-            if (stage > 0) prefab = Resources.Load<GameObject>(TowerPath + TowerStages.ModelName(def.Name, stage));
+            if (stage > 0) prefab = ArtLayers.Load<GameObject>(TowerPath + TowerStages.ModelName(def.Name, stage));
             if (prefab == null)
             {
                 stage = 0;
-                prefab = Resources.Load<GameObject>("TDFende/" + def.Name);
-                if (prefab == null) prefab = Resources.Load<GameObject>(TowerPath + def.Name);
+                prefab = ArtLayers.Load<GameObject>("TDFende/" + def.Name);
+                if (prefab == null) prefab = ArtLayers.Load<GameObject>(TowerPath + def.Name);
             }
             var fromPrefab = new HashSet<string>();
             if (prefab != null)
@@ -372,7 +372,7 @@ namespace TDFende
             if (!BodyMats.TryGetValue(name, out var mat))
             {
                 mat = null;
-                var cor = Resources.Load<TextAsset>(TowerPath + "Textures/" + name + "_cor");
+                var cor = ArtLayers.Load<TextAsset>(TowerPath + "Textures/" + name + "_cor");
                 var albedo = cor != null ? LoadBodyTex(cor, name + "_cor", false) : null;
                 if (albedo != null)
                 {
@@ -380,7 +380,7 @@ namespace TDFende
                     mat = new Material(_lit) { name = name, enableInstancing = true };
                     mat.SetTexture(_baseMap, albedo);
                     mat.SetColor(_baseColor, Color.white);
-                    var nrm = Resources.Load<TextAsset>(TowerPath + "Textures/" + name + "_normal");
+                    var nrm = ArtLayers.Load<TextAsset>(TowerPath + "Textures/" + name + "_normal");
                     var normal = nrm != null ? LoadBodyTex(nrm, name + "_normal", true) : null;
                     if (normal != null)
                     {

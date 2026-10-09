@@ -78,7 +78,7 @@ namespace TDFende
 
         static Material MakeHdriSky()
         {
-            var hdr = Resources.Load<Texture2D>(SkyPath);
+            var hdr = ArtLayers.Load<Texture2D>(SkyPath);
             if (hdr == null) return null;
 
             var shader = ShaderRefs.SkyboxPanoramic;

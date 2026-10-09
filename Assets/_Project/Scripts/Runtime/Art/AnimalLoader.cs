@@ -41,6 +41,8 @@ namespace TDFende
         };
 
         static Dictionary<string, GameObject> _byModel;
+        /// <summary>Pasta de Resources de onde cada bicho veio: a pública ou a privada (TEC-23).</summary>
+        static Dictionary<string, string> _folderOf;
         static AnimationClip[] _clips;
 
         static string Plain(string s)
@@ -82,18 +84,31 @@ namespace TDFende
         {
             if (_byModel != null) return;
             _byModel = new Dictionary<string, GameObject>();
-            foreach (var go in Resources.LoadAll<GameObject>(Folder))
+            _folderOf = new Dictionary<string, string>();
+            // a camada privada (pacote pago, fora do git) vem primeiro e nunca perde para o público
+            string privateFolder = ArtLayerPaths.PrivatePath(Folder);
+            var fromPrivate = new HashSet<string>();
+            void Add(GameObject go, string folder, bool isPrivate)
             {
-                if (go == null || go.name.Contains("@")) continue; // "@Walk" é só animação
+                if (go == null || go.name.Contains("@")) return; // "@Walk" é só animação
                 // prefab já separado de um pacote ("Inimigo_Elefante", pasta Gerados) vence
-                // qualquer outro arquivo do mesmo bicho
+                // qualquer outro arquivo do mesmo bicho da mesma camada
                 string model = go.name.StartsWith("Inimigo_") ? go.name : ModelFor(go.name);
-                if (model == null) continue;
-                if (!_byModel.ContainsKey(model) || go.name.StartsWith("Inimigo_")) _byModel[model] = go;
+                if (model == null) return;
+                if (!isPrivate && fromPrivate.Contains(model)) return;
+                if (!_byModel.ContainsKey(model) || go.name.StartsWith("Inimigo_") || (isPrivate && !fromPrivate.Contains(model)))
+                {
+                    _byModel[model] = go;
+                    _folderOf[model] = folder;
+                    if (isPrivate) fromPrivate.Add(model);
+                }
             }
-            _clips = Resources.LoadAll<AnimationClip>(Folder);
+            foreach (var go in ArtLayers.LoadAllPrivate<GameObject>(Folder)) Add(go, privateFolder, true);
+            foreach (var go in Resources.LoadAll<GameObject>(Folder)) Add(go, Folder, false);
+            _clips = ArtLayers.LoadAll<AnimationClip>(Folder);
             if (_byModel.Count > 0)
-                Debug.Log($"[TDFende] bichos de verdade: {string.Join(", ", _byModel.Keys)}");
+                Debug.Log($"[TDFende] bichos de verdade: {string.Join(", ", _byModel.Keys)}"
+                    + (fromPrivate.Count > 0 ? $" (da camada privada: {string.Join(", ", fromPrivate)})" : ""));
         }
 
         public static bool Has(ModelDef def)
@@ -128,7 +143,7 @@ namespace TDFende
                 if (animator != null) Object.DestroyImmediate(animator);
                 anim = host.AddComponent<Animation>();
             }
-            AddClips(anim, prefab.name);
+            AddClips(anim, prefab.name, _folderOf.TryGetValue(def.Name, out var folder) ? folder : Folder);
             anim.cullingType = AnimationCullingType.BasedOnRenderers;
             // pose do jogo ANTES de medir: a escala que vale é a da malha animada, não a do arquivo
             string pose = anim.GetClip("Walk") != null ? "Walk" : anim.GetClip("Idle") != null ? "Idle" : null;
@@ -180,10 +195,10 @@ namespace TDFende
         /// bicho. Cada clipe vai para o estado certo pelo nome; se houver dois de andar, fica o
         /// primeiro.
         /// </summary>
-        static void AddClips(Animation anim, string fileName)
+        static void AddClips(Animation anim, string fileName, string folder)
         {
             string model = fileName.StartsWith("Inimigo_") ? fileName : ModelFor(fileName);
-            var mine = new List<AnimationClip>(Resources.LoadAll<AnimationClip>(Folder + "/" + fileName));
+            var mine = new List<AnimationClip>(Resources.LoadAll<AnimationClip>(folder + "/" + fileName));
             // prefab separado de um pacote já traz os clipes do bicho no componente Animation:
             // tira e devolve cada um com o nome do estado (Walk, Run, Idle, Death)
             var existing = new List<AnimationClip>();

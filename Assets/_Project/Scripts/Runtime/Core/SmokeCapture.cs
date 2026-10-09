@@ -502,6 +502,7 @@ namespace TDFende
             json.Append("  \"setpass_max\": " + Recorded(_setPass, _setPassMax) + ",\n");
             json.Append("  \"excecoes\": " + _exceptions + ",\n  \"erros\": " + _errors + ",\n");
             json.Append("  \"estresse\": " + (_stress ? "true" : "false") + ",\n");
+            json.Append("  \"camada_privada\": {\"usada\": " + (ArtLayers.PrivateServed > 0 ? "true" : "false") + ", \"arquivos\": " + ArtLayers.PrivateServed + "},\n");
             json.Append("  \"bichos_vivos_max\": " + _aliveMax + ",\n");
             json.Append("  \"orcamento\": [\n    " + string.Join(",\n    ", Budget(p95)) + "\n  ],\n");
             json.Append("  \"bichos\": [\n    " + string.Join(",\n    ", AnimalsJson()) + "\n  ]\n}\n");
@@ -513,6 +514,10 @@ namespace TDFende
                                     "triângulos {3}, draws {4}, SetPass {5}; boot {6:0.0} s; bichos vivos no máximo {7}{8}",
                                     p50, p95, p99, Recorded(_tris, _triMax), Recorded(_draws, _drawMax),
                                     Recorded(_setPass, _setPassMax), _bootAt, _aliveMax, _stress ? " (estresse)" : ""));
+            // build com pacote pago (fora do git) não é o mesmo que o de um clone novo: o log diz qual é (TEC-23)
+            Debug.Log("[TDFende] captura, camada privada: " + (ArtLayers.PrivateServed > 0
+                ? $"com privado ({ArtLayers.PrivateServed} arquivos vieram de {ArtLayerPaths.PrivateFolder})"
+                : "sem privado (só a arte pública e a procedural)"));
             Debug.Log(passed ? "[TDFende] captura: PASSOU"
                              : "[TDFende] captura: REPROVOU (" + _failures.Count + "): " + string.Join(" | ", _failures));
             Application.Quit(passed ? 0 : 1);

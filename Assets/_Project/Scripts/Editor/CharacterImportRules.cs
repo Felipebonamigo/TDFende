@@ -24,7 +24,7 @@ namespace TDFende.EditorTools
 
         void OnPreprocessModel()
         {
-            if (!assetPath.StartsWith(Root)) return;
+            if (!ArtRoots.Under(assetPath, Root)) return;
             var mi = (ModelImporter)assetImporter;
             mi.animationType = ModelImporterAnimationType.Legacy;
             mi.importCameras = false;
@@ -37,7 +37,7 @@ namespace TDFende.EditorTools
 
         void OnPreprocessAnimation()
         {
-            if (!assetPath.StartsWith(Root) || !IsClipFile(assetPath)) return;
+            if (!ArtRoots.Under(assetPath, Root) || !IsClipFile(assetPath)) return;
             var mi = (ModelImporter)assetImporter;
             var clips = mi.defaultClipAnimations;
             if (clips.Length == 0) return;

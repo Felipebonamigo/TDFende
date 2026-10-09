@@ -43,10 +43,10 @@ namespace TDFende
 
         public static Terrain Build(IReadOnlyList<Rect> playAreas, int seed = 7)
         {
-            var laneDiff = Resources.Load<Texture2D>(LaneTex + "_diff_2k");
-            var laneNor = Resources.Load<Texture2D>(LaneTex + "_nor_gl_2k");
-            var fieldDiff = Resources.Load<Texture2D>(FieldTex + "_diff_2k");
-            var fieldNor = Resources.Load<Texture2D>(FieldTex + "_nor_gl_2k");
+            var laneDiff = ArtLayers.Load<Texture2D>(LaneTex + "_diff_2k");
+            var laneNor = ArtLayers.Load<Texture2D>(LaneTex + "_nor_gl_2k");
+            var fieldDiff = ArtLayers.Load<Texture2D>(FieldTex + "_diff_2k");
+            var fieldNor = ArtLayers.Load<Texture2D>(FieldTex + "_nor_gl_2k");
             if (laneDiff == null || fieldDiff == null)
             {
                 Debug.LogWarning("[TDFende] texturas de chão não encontradas em Resources/Art/Ground; " +

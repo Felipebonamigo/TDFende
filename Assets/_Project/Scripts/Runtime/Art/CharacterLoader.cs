@@ -26,7 +26,7 @@ namespace TDFende
         public static GameObject TrySpawn(ModelDef def, Transform root, Color team, out Animation anim)
         {
             anim = null;
-            var prefab = Resources.Load<GameObject>(Folder + def.Name);
+            var prefab = ArtLayers.Load<GameObject>(Folder + def.Name);
             if (prefab == null) return null;
 
             var inst = Object.Instantiate(prefab, root, false);
@@ -63,7 +63,7 @@ namespace TDFende
 
         static IEnumerable<AnimationClip> ClipsFor(string name)
         {
-            if (_allClips == null) _allClips = Resources.LoadAll<AnimationClip>(Folder.TrimEnd('/'));
+            if (_allClips == null) _allClips = ArtLayers.LoadAll<AnimationClip>(Folder.TrimEnd('/'));
             string prefix = name + "@";
             foreach (var c in _allClips)
                 if (c != null && c.name.StartsWith(prefix)) yield return c;

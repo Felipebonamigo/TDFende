@@ -44,7 +44,7 @@ namespace TDFende
             if (Cache.TryGetValue(category, out var v)) return v;
             var list = new List<Variant>();
             int rejected = 0;
-            foreach (var prefab in Resources.LoadAll<GameObject>(Folder + category))
+            foreach (var prefab in ArtLayers.LoadAll<GameObject>(Folder + category))
             {
                 var pieces = new List<Piece>();
                 bool usable = true;

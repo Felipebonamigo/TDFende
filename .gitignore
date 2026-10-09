@@ -70,3 +70,8 @@ Tools/ComunidadeMeshy/out/
 
 # cache do Python dos conversores
 __pycache__/
+
+# Camada privada de arte (TEC-23): pacote pago e arte que proíbe redistribuir. Só no PC, com
+# backup no D: (Tools/Backup.ps1). Espelha a pasta pública sob TDFende/Privado (MANUAL, seção 6).
+/Assets/_Privado/
+/Assets/_Privado.meta
