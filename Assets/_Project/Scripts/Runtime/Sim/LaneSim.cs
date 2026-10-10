@@ -138,6 +138,15 @@ namespace TDFende
         /// </summary>
         public event System.Action<Vector3, DespawnReason> EnemyDespawned;
 
+        // ---- TEC-17: eventos só de vista (ver SimEvents.cs). Nenhum deles muda estado nem sorteio. ----
+        public event System.Action<EnemySpawnedEvent> EnemySpawned;
+        public event System.Action<EnemyHitEvent> EnemyHit;
+        public event System.Action<StatusAppliedEvent> StatusApplied;
+        public event System.Action<BountyPaidEvent> BountyPaid;
+        public event System.Action<IncomeTickEvent> IncomeTick;
+        public event System.Action<SendBoughtEvent> SendBought;
+        public event System.Action<LifeLostEvent> LifeLost;
+
         /// <summary>Disparado quando uma torre é construída ou sobe de nível.</summary>
         public event System.Action<Vector3, int> TowerChanged;
 
@@ -211,6 +220,7 @@ namespace TDFende
             if (_incomeTimer < TowerWarsConfig.IncomeTickSeconds) return 0;
             _incomeTimer -= TowerWarsConfig.IncomeTickSeconds;
             Gold += Income;
+            IncomeTick?.Invoke(new IncomeTickEvent(Id, Income));
             return Income;
         }
 
@@ -231,14 +241,17 @@ namespace TDFende
 
         // ---------------- construção ----------------
 
-        public bool CanBuild(Vector2Int cell, int typeId = 0)
+        public bool CanBuild(Vector2Int cell, int typeId = 0) => BuildBlocker(cell, typeId) == RejectReason.None;
+
+        /// <summary>Por que NÃO dá para construir ali agora (None = dá). Mesma ordem de checagem de sempre.</summary>
+        public RejectReason BuildBlocker(Vector2Int cell, int typeId = 0)
         {
-            if (Dead) return false;
-            if (!Map.InBounds(cell.x, cell.y) || Map.IsBlocked(cell)) return false;
-            if (cell == _goalCell) return false;
+            if (Dead) return RejectReason.Dead;
+            if (!Map.InBounds(cell.x, cell.y) || Map.IsBlocked(cell)) return RejectReason.CellInvalid;
+            if (cell == _goalCell) return RejectReason.CellInvalid;
             for (int i = 0; i < _spawnCells.Count; i++)
-                if (cell == _spawnCells[i]) return false;
-            if (Gold < TowerCatalog.Get(typeId).Cost) return false;
+                if (cell == _spawnCells[i]) return RejectReason.CellInvalid;
+            if (Gold < TowerCatalog.Get(typeId).Cost) return RejectReason.NotEnoughGold;
 
             // não construir em cima de inimigo
             var center = Map.CellToWorld(cell);
@@ -247,12 +260,33 @@ namespace TDFende
                 if (!_enemies[i].Active) continue;
                 var d = _enemies[i].Pos - center;
                 d.y = 0f;
-                if (d.sqrMagnitude < 0.8f * 0.8f) return false;
+                if (d.sqrMagnitude < 0.8f * 0.8f) return RejectReason.EnemyInCell;
             }
 
             // nunca deixar murar por completo
-            return !Flow.PlacementBlocksPath(cell, _spawnCells);
+            return Flow.PlacementBlocksPath(cell, _spawnCells) ? RejectReason.BlocksPath : RejectReason.None;
         }
+
+        /// <summary>Por que o upgrade da torre da célula seria recusado (None = dá).</summary>
+        public RejectReason UpgradeBlocker(Vector2Int cell)
+        {
+            if (Dead) return RejectReason.Dead;
+            int i = TowerIndexAt(cell);
+            if (i < 0) return RejectReason.NoTower;
+            var t = _towers[i];
+            if (t.Level >= TowerWarsConfig.MaxTowerLevel) return RejectReason.MaxLevel;
+            return Gold < TowerCatalog.UpgradeCost(t.TypeId, t.Level) ? RejectReason.NotEnoughGold : RejectReason.None;
+        }
+
+        /// <summary>Por que a venda da torre da célula seria recusada (None = dá).</summary>
+        public RejectReason SellBlocker(Vector2Int cell) =>
+            Dead ? RejectReason.Dead : TowerIndexAt(cell) < 0 ? RejectReason.NoTower : RejectReason.None;
+
+        /// <summary>Por que a compra do envio seria recusada (None = dá).</summary>
+        public RejectReason SendBlocker(int sendId) =>
+            Dead ? RejectReason.Dead
+            : !SendCatalog.TryGet(sendId, out var u) ? RejectReason.UnknownType
+            : Gold < u.Cost ? RejectReason.NotEnoughGold : RejectReason.None;
 
         public bool TryBuildTower(Vector2Int cell, int typeId = 0)
         {
@@ -524,6 +558,7 @@ namespace TDFende
             TotalSent += u.Count;
             SendsByType[sendId]++;
 
+            SendBought?.Invoke(new SendBoughtEvent(Id, target.Id, sendId, u.Cost, u.Count, u.IncomeBonus));
             for (int i = 0; i < u.Count; i++)
                 target.SpawnIncoming(sendId, rng, Id);
             return true;
@@ -566,6 +601,7 @@ namespace TDFende
             _enemies[slot].SenderId = senderId;
             _enemies[slot].Laps = 0;
             _enemyCount++;
+            EnemySpawned?.Invoke(new EnemySpawnedEvent(Id, slot, sendId, senderId, pos, false));
         }
 
         /// <summary>
@@ -599,6 +635,7 @@ namespace TDFende
             _enemies[slot].Laps = carried.Laps + 1;
             _enemyCount++;
             TotalReentries++;
+            EnemySpawned?.Invoke(new EnemySpawnedEvent(Id, slot, carried.TypeId, carried.SenderId, pos, true));
         }
 
         int AllocEnemy()
@@ -646,6 +683,7 @@ namespace TDFende
                     if (_enemies[i].Hp <= 0f)
                     {
                         Gold += _enemies[i].Bounty;
+                        PaidBounty(i, DespawnReason.KilledByTower);
                         KilledByTower++;
                         EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.KilledByTower);
                         Kill(i);
@@ -664,6 +702,7 @@ namespace TDFende
                     if (_enemies[i].Hp <= 0f)
                     {
                         Gold += _enemies[i].Bounty;
+                        PaidBounty(i, DespawnReason.KilledByAttrition);
                         KilledByAttrition++;
                         EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.KilledByAttrition);
                         Kill(i);
@@ -677,6 +716,7 @@ namespace TDFende
                 {
                     Lives--;
                     TotalLeaked++;
+                    LifeLost?.Invoke(new LifeLostEvent(Id, Lives, _enemies[i].TypeId, _enemies[i].Laps));
                     EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.Leaked);
                     // não morreu: segue para a próxima base com a vida que tem
                     if (CarryLeaks) _outgoing.Add(_enemies[i]);
@@ -775,6 +815,7 @@ namespace TDFende
                 _enemies[slot].SlowFactor = _enemies[slot].SlowLeft > 0f
                     ? Math.Min(_enemies[slot].SlowFactor, factor) : factor;
                 _enemies[slot].SlowLeft = type.SlowSeconds;
+                StatusApplied?.Invoke(new StatusAppliedEvent(Id, slot, _enemies[slot].TypeId, StatusKind.Slow, type.SlowSeconds));
 
                 // Congelar: cada acerto junta frio; frio cheio = parado no lugar por um instante.
                 // Depois fica um tempo imune, senão uma bateria de Gelo travava a marcha para
@@ -788,6 +829,7 @@ namespace TDFende
                         _enemies[slot].Chill = 0f;
                         _enemies[slot].FrozenLeft = freeze;
                         _enemies[slot].FreezeGuard = freeze + TowerWarsConfig.FreezeGuardSeconds;
+                        StatusApplied?.Invoke(new StatusAppliedEvent(Id, slot, _enemies[slot].TypeId, StatusKind.Freeze, freeze));
                     }
                 }
             }
@@ -801,6 +843,7 @@ namespace TDFende
                 _enemies[slot].BurnPct = Math.Min(_enemies[slot].BurnPct + perStack,
                     perStack * TowerWarsConfig.MaxBurnStacks);
                 _enemies[slot].BurnLeft = type.BurnSeconds;
+                StatusApplied?.Invoke(new StatusAppliedEvent(Id, slot, _enemies[slot].TypeId, StatusKind.Burn, type.BurnSeconds));
             }
 
             // Na morte súbita o vento não segura mais ninguém: a partida TEM que acabar.
@@ -808,13 +851,20 @@ namespace TDFende
                 Knock(slot, type.Knockback);
 
             _enemies[slot].Hp -= damage;
+            if (EnemyHit != null)
+                EnemyHit(new EnemyHitEvent(Id, slot, _enemies[slot].TypeId, TowerCatalog.IdOf(type.Key), damage,
+                    Math.Max(0f, _enemies[slot].Hp), _enemies[slot].Hp <= 0f));
             if (_enemies[slot].Hp > 0f) return;
 
             Gold += _enemies[slot].Bounty;
+            PaidBounty(slot, DespawnReason.KilledByTower);
             KilledByTower++;
             EnemyDespawned?.Invoke(_enemies[slot].Pos, DespawnReason.KilledByTower);
             Kill(slot);
         }
+
+        void PaidBounty(int slot, DespawnReason reason) =>
+            BountyPaid?.Invoke(new BountyPaidEvent(Id, slot, _enemies[slot].TypeId, _enemies[slot].Bounty, reason, _enemies[slot].Pos));
 
         /// <summary>
         /// Empurra o inimigo de volta pelo caminho: anda CONTRA o flow field em passos
@@ -837,6 +887,7 @@ namespace TDFende
             }
             _enemies[slot].Pos = pos;
             _enemies[slot].KnockGuard = 1.6f;
+            StatusApplied?.Invoke(new StatusAppliedEvent(Id, slot, _enemies[slot].TypeId, StatusKind.Knockback, 0f));
         }
 
         void TickProjectiles(float dt)

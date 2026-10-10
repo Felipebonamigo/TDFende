@@ -20,6 +20,7 @@
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SimSignature.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CatalogJson.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerCatalog.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SimEvents.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LaneSim.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LeakRouter.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Art\TowerStages.cs" />

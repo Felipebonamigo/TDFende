@@ -35,6 +35,19 @@ namespace TDFende
         /// <summary>Disparado quando um comando é ACEITO, com o tique em que valeu.</summary>
         public event System.Action<int, MatchCommand> CommandApplied;
 
+        // ---- TEC-17: eventos só de vista (SimEvents.cs); não mudam estado nem sorteio ----
+
+        /// <summary>Comando RECUSADO: tique, o comando e o motivo. Recusado não entra no replay.</summary>
+        public event System.Action<int, MatchCommand, RejectReason> CommandRejected;
+
+        /// <summary>A morte súbita começou (uma vez por partida), no tique informado.</summary>
+        public event System.Action<int> SuddenDeathStarted;
+
+        /// <summary>A partida terminou (uma vez): tique e id da lane que PERDEU (a que ficou sem vidas).</summary>
+        public event System.Action<int, int> MatchEnded;
+
+        bool _suddenDeathAnnounced, _endAnnounced;
+
         public MatchRunner(int seed, TowerWarsAi.Personality difficulty, int width, int height)
         {
             Seed = seed;
@@ -58,6 +71,7 @@ namespace TDFende
             {
                 var cmd = _pending.Dequeue();
                 if (Apply(cmd)) CommandApplied?.Invoke(TickCount, cmd);
+                else CommandRejected?.Invoke(TickCount, cmd, WhyRejected(cmd));
             }
 
             float dt = TowerWarsConfig.FixedStep;
@@ -67,6 +81,32 @@ namespace TDFende
             // quem passou da base volta a correr, na lane do próximo adversário
             LeakRouter.Route(_lanes, _rng);
             TickCount++;
+
+            if (!_suddenDeathAnnounced && Player.InSuddenDeath)
+            {
+                _suddenDeathAnnounced = true;
+                SuddenDeathStarted?.Invoke(TickCount);
+            }
+            if (!_endAnnounced && Over)
+            {
+                _endAnnounced = true;
+                MatchEnded?.Invoke(TickCount, Player.Dead ? Player.Id : Foe.Id);
+            }
+        }
+
+        /// <summary>Motivo da recusa de um comando que acabou de falhar (o estado não mudou, então a pergunta ainda vale).</summary>
+        RejectReason WhyRejected(MatchCommand cmd)
+        {
+            switch (cmd.Kind)
+            {
+                case CommandKind.Build:
+                    if (cmd.TowerType < 0 || cmd.TowerType >= TowerCatalog.Count) return RejectReason.UnknownType;
+                    return Player.BuildBlocker(new Vector2Int(cmd.X, cmd.Y), cmd.TowerType);
+                case CommandKind.Upgrade: return Player.UpgradeBlocker(new Vector2Int(cmd.X, cmd.Y));
+                case CommandKind.Send: return Player.SendBlocker(cmd.SendId);
+                case CommandKind.Sell: return Player.SellBlocker(new Vector2Int(cmd.X, cmd.Y));
+                default: return RejectReason.UnknownCommand;
+            }
         }
 
         /// <summary>Devolve false se o comando foi recusado (sem ouro, célula inválida...).</summary>

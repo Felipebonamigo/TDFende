@@ -148,6 +148,7 @@ class Program
         FingerprintTests();
         CatalogMergeTests();
         CatalogKeyTests();
+        SimEventTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -587,6 +588,134 @@ class Program
               && SendCatalog.Get(SendCatalog.IdOf("lobo")).Key == "lobo" && SendCatalog.Count == 9, "LoadFrom: carrega, completa por chave e deixa o aviso em LastWarning");
         SendCatalog.ResetToDefaults();
         Check(SendCatalog.LastWarning == null, "ResetToDefaults limpa o aviso");
+    }
+
+    /// <summary>
+    /// TEC-17: eventos só de vista. Dispara-se no ponto em que o fato acontece e nada é lido de volta: com ou sem
+    /// assinante, a partida é a mesma (fingerprint). E os eventos têm que FECHAR a conta: o ouro final sai da soma
+    /// dos eventos, as vidas perdidas, as compras e os abates também.
+    /// </summary>
+    static void SimEventTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        int canhao = TowerCatalog.IdOf("canhao"), gelo = TowerCatalog.IdOf("gelo"), fogo = TowerCatalog.IdOf("fogo"),
+            ar = TowerCatalog.IdOf("ar"), morteiro = TowerCatalog.IdOf("morteiro");
+
+        // jogador sintético e determinístico: constrói todos os tipos perto do corredor, sobe e envia
+        void Script(MatchRunner m, int seed, int ticks, bool rich)
+        {
+            var r = new Random(seed);
+            var types = new[] { canhao, gelo, fogo, ar, morteiro };
+            if (rich) m.Player.DebugGrantGold(30000);
+            for (int t = 0; t < ticks && !m.Over; t++)
+            {
+                if (t % (rich ? 9 : 47) == 0)
+                    m.Enqueue(MatchCommand.Build(4 + r.Next(14), 5 + r.Next(7), types[r.Next(types.Length)]));
+                if (t % 131 == 0) m.Enqueue(MatchCommand.Upgrade(4 + r.Next(14), 5 + r.Next(7)));
+                if (t % 89 == 0) m.Enqueue(MatchCommand.Send(r.Next(SendCatalog.Count)));
+                if (t % 500 == 250) m.Enqueue(MatchCommand.Sell(4 + r.Next(14), 5 + r.Next(7)));
+                m.Step();
+            }
+        }
+
+        // ---- a mesma partida COM todos os assinantes e SEM nenhum: fingerprint idêntico ----
+        var withSubs = new MatchRunner(4242, TowerWarsAi.Personality.Normal, 24, 16);
+        var spawned = new List<EnemySpawnedEvent>();
+        var hits = new List<EnemyHitEvent>();
+        var status = new List<StatusAppliedEvent>();
+        var bounty = new List<BountyPaidEvent>();
+        var income = new List<IncomeTickEvent>();
+        var bought = new List<SendBoughtEvent>();
+        var lost = new List<LifeLostEvent>();
+        var refunds = new int[2];
+        var rejected = new List<RejectReason>();
+        int sdCount = 0, endCount = 0, loser = -9;
+        foreach (var lane in new[] { withSubs.Player, withSubs.Foe })
+        {
+            var ln = lane;
+            ln.EnemySpawned += spawned.Add; ln.EnemyHit += hits.Add; ln.StatusApplied += status.Add;
+            ln.BountyPaid += bounty.Add; ln.IncomeTick += income.Add; ln.SendBought += bought.Add; ln.LifeLost += lost.Add;
+            ln.TowerSold += (pos, idx, refund) => refunds[ln.Id] += refund;
+        }
+        withSubs.CommandRejected += (t, c, why) => rejected.Add(why);
+        withSubs.SuddenDeathStarted += t => sdCount++;
+        withSubs.MatchEnded += (t, l) => { endCount++; loser = l; };
+        Script(withSubs, 7, 20000, false);
+
+        var bare = new MatchRunner(4242, TowerWarsAi.Personality.Normal, 24, 16);
+        Script(bare, 7, 20000, false);
+        Check(withSubs.StateFingerprint() == bare.StateFingerprint(),
+            "Eventos: o fingerprint é idêntico com e sem assinantes");
+
+        // ---- a conta fecha, lane a lane ----
+        bool goldOk = true, livesOk = true, buyOk = true, spawnOk = true, killOk = true;
+        foreach (var lane in new[] { withSubs.Player, withSubs.Foe })
+        {
+            int id = lane.Id;
+            int inc = 0, bty = 0, bountyN = 0, cost = 0, units = 0, lives = 0, carried = 0, incoming = 0;
+            foreach (var e in income) if (e.Lane == id) inc += e.Amount;
+            foreach (var e in bounty) if (e.Lane == id) { bty += e.Amount; bountyN++; }
+            foreach (var e in bought) if (e.Lane == id) { cost += e.Cost; units += e.Count; }
+            foreach (var e in lost) if (e.Lane == id) lives++;
+            foreach (var e in spawned) if (e.Lane == id) { if (e.Carried) carried++; else incoming++; }
+            int sentToMe = 0;
+            foreach (var e in bought) if (e.TargetLane == id) sentToMe += e.Count;
+            goldOk &= lane.Gold == TowerWarsConfig.StartGold + inc + bty + refunds[id] - lane.GoldSpentOnTowers - lane.GoldSpentOnSends;
+            livesOk &= lives == TowerWarsConfig.StartLives - lane.Lives && lives == lane.TotalLeaked;
+            buyOk &= units == lane.TotalSent && cost == lane.GoldSpentOnSends;
+            spawnOk &= incoming == sentToMe && carried == lane.TotalReentries;
+            killOk &= bountyN == lane.KilledByTower + lane.KilledByAttrition;
+        }
+        Check(goldOk, "Eventos: ouro final = inicial + rendas + abates + reembolsos - gasto em torres e envios (soma dos eventos)");
+        Check(livesOk, "Eventos: LifeLost soma as vidas perdidas");
+        Check(buyOk, "Eventos: SendBought soma o custo e a quantidade comprados");
+        Check(spawnOk, "Eventos: EnemySpawned = envios recebidos + repassados");
+        Check(killOk, "Eventos: um BountyPaid por abate (torre, fogo ou atrito)");
+        Check(hits.Count > 0 && hits.TrueForAll(h => h.HpAfter >= 0f && h.Damage > 0f), "Eventos: EnemyHit chega com dano e vida restante");
+        var kinds = new HashSet<StatusKind>();
+        foreach (var e in status) kinds.Add(e.Kind);
+        Check(kinds.Contains(StatusKind.Slow) && kinds.Contains(StatusKind.Burn) && kinds.Contains(StatusKind.Knockback),
+            $"Eventos: StatusApplied cobre lentidão, queima e empurrão ({string.Join(",", kinds)})");
+        Check(income.Count > 0 && bought.Count > 0 && bounty.Count > 0, "Eventos: renda, compra e abate aconteceram na partida");
+        Check(endCount == (withSubs.Over ? 1 : 0) && (!withSubs.Over || loser == (withSubs.Player.Dead ? 0 : 1)),
+            $"Eventos: MatchEnded dispara uma vez, com a lane que perdeu ({endCount}, perdeu {loser})");
+
+        // ---- morte súbita: uma vez só, no tique certo ----
+        var long1 = new MatchRunner(99, TowerWarsAi.Personality.Easy, 24, 16);
+        int sd1 = 0, sdTick = -1;
+        long1.SuddenDeathStarted += t => { sd1++; sdTick = t; };
+        Script(long1, 5, 26000, true);
+        int expected = (int)Math.Ceiling(TowerWarsConfig.SuddenDeathMinutes * 60f / TowerWarsConfig.FixedStep);
+        Check(sd1 == 1 && Math.Abs(sdTick - expected) <= 2,
+            $"Eventos: SuddenDeathStarted dispara uma vez perto do tique {expected} (disparou {sd1}x no tique {sdTick})");
+
+        // ---- recusas com motivo ----
+        var rm = new MatchRunner(1, TowerWarsAi.Personality.Normal, 24, 16);
+        var why = new List<RejectReason>();
+        rm.CommandRejected += (t, c, w) => why.Add(w);
+        int elefante = SendCatalog.IdOf("elefante");
+        rm.Enqueue(MatchCommand.Send(elefante));                 // 90 de 120: aceito
+        rm.Enqueue(MatchCommand.Send(elefante));                 // sem ouro
+        rm.Enqueue(MatchCommand.Send(99));                       // id inexistente
+        rm.Enqueue(MatchCommand.Build(-5, -5, canhao));          // fora do mapa
+        rm.Enqueue(MatchCommand.Build(10, 8, canhao));           // 30 de 30: aceito...
+        rm.Enqueue(MatchCommand.Build(10, 8, canhao));           // ...célula já ocupada
+        rm.Enqueue(MatchCommand.Upgrade(3, 3));                  // sem torre
+        rm.Enqueue(MatchCommand.Sell(3, 3));                     // sem torre
+        rm.Step();
+        Check(why.Count == 6 && why[0] == RejectReason.NotEnoughGold && why[1] == RejectReason.UnknownType
+              && why[2] == RejectReason.CellInvalid && why[4] == RejectReason.NoTower && why[5] == RejectReason.NoTower,
+            "Eventos: CommandRejected diz o motivo (" + string.Join(",", why) + ")");
+        Check(rm.Player.TotalSent == 1, "Eventos: comando recusado não muda a partida");
+        var maxed = new MatchRunner(2, TowerWarsAi.Personality.Normal, 24, 16);
+        maxed.Player.DebugGrantGold(50000);
+        var why2 = new List<RejectReason>();
+        maxed.CommandRejected += (t, c, w) => why2.Add(w);
+        maxed.Enqueue(MatchCommand.Build(10, 8, canhao));
+        for (int i = 0; i < TowerWarsConfig.MaxTowerLevel; i++) maxed.Enqueue(MatchCommand.Upgrade(10, 8)); // 5 sobem, a 6ª passa do máximo
+        maxed.Step();
+        Check(why2.Count == 1 && why2[0] == RejectReason.MaxLevel, "Eventos: upgrade além do nível máximo é recusado como MaxLevel (" + string.Join(",", why2) + ")");
     }
 
     /// <summary>

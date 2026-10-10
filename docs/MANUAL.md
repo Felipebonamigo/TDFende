@@ -114,6 +114,14 @@ em passos de 1/256: 0,01 de deslocamento muda o hash, ruído de 1e-3 não. **Nã
 IA; o que ela decide aparece em torres, envios e ouro. Mexeu em regra da Sim: rode `dotnet run --project Tools/FlowSim
 -v quiet -- match 12` antes e depois e compare a saída (deve ser idêntica se a regra não mudou de propósito).
 
+### Eventos só de vista (TEC-17)
+
+`LaneSim` dispara `EnemySpawned`, `EnemyHit`, `StatusApplied`, `BountyPaid`, `IncomeTick`, `SendBought` e `LifeLost`;
+`MatchRunner` dispara `CommandRejected` (com `RejectReason`), `SuddenDeathStarted` e `MatchEnded` (`Sim/SimEvents.cs`).
+São síncronos, só carregam dados e **nada é lido de volta**: o fingerprint é idêntico com e sem assinante, e o FlowSim fecha a
+conta (ouro final = soma dos eventos). Evento novo na Sim: dispare-o no ponto do fato, sem mexer em estado nem em sorteio, e
+acrescente a conta ao `SimEventTests`. A vista que quiser fila enfileira no próprio assinante.
+
 ### Bicho ou torre novo: a chave (TEC-12)
 
 Todo `SendUnit` e `TowerType` tem `Key` (ASCII minúsculo, não muda com o tema; `Name` é só o texto exibido). Para acrescentar
