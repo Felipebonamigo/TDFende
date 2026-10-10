@@ -111,7 +111,7 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 
 - [x] **TEC-31** — Fingerprint com hash quantizado de posições — 09/10/2026 (52accc2)
 - [x] **BUG-04** — SendCatalog completa por nome e valida id — 10/10/2026 (c9835ef; design: docs/designs/bug-04-catalogo-de-envios.md)
-- [ ] **BUG-05** — Assinatura do replay cobre todos os campos (design aprovado pelo Felipe em 09/10/2026: docs/designs/; reservado: sessão na nuvem, 09/10/2026)
+- [x] **BUG-05** — Assinatura do replay cobre todos os campos — 10/10/2026 (fced89f; design: docs/designs/bug-05-assinatura-do-replay.md)
 - [ ] **TEC-12** — Conteúdo por chave estável
 - [ ] **TEC-17** — Eventos só de vista
 - [ ] **DES-05** — Envios com papel econômico
