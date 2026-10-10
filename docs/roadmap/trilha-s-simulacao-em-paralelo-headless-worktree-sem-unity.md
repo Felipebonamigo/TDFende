@@ -28,7 +28,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-31 — Fingerprint com hash quantizado de posições — 09/10/2026 (52accc2)
 - [x] BUG-04 — SendCatalog completa por nome e valida id — 10/10/2026 (c9835ef)
 - [x] BUG-05 — Assinatura do replay cobre todos os campos — 10/10/2026 (fced89f)
-- [ ] TEC-12 — Conteúdo por chave estável
+- [x] TEC-12 — Conteúdo por chave estável — 10/10/2026 (34fd131; vista a conferir no -captura do PC)
 - [ ] TEC-17 — Eventos só de vista
 - [ ] DES-05 — Envios com papel econômico
 - [ ] DES-04 — Vazamento pesa pelo porte
