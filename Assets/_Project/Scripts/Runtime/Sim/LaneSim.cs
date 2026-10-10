@@ -159,7 +159,7 @@ namespace TDFende
         /// </summary>
         public event System.Action<Vector3, int, int> TowerSold;
 
-        /// <summary>Sobe a cada torre construída ou vendida: a vista sabe quando refazer o território.</summary>
+        /// <summary>Sobe a cada torre construída, vendida ou melhorada: a vista sabe quando refazer o território.</summary>
         public int TowerVersion { get; private set; }
         public int TotalSold { get; private set; }
 
@@ -318,7 +318,7 @@ namespace TDFende
         {
             _towerRadii.Clear();
             for (int i = 0; i < _towers.Count; i++)
-                _towerRadii.Add(TowerCatalog.Get(_towers[i].TypeId).BorderRadius);
+                _towerRadii.Add(TowerCatalog.BorderAt(_towers[i].TypeId, _towers[i].Level));
             Territory.Rebuild(_towerCells, _towerRadii);
         }
 
@@ -371,6 +371,8 @@ namespace TDFende
             _towers[i] = t;
             TotalUpgrades++;
             TowerChanged?.Invoke(t.Pos, t.Level);
+            TowerVersion++; // a vista redesenha a fronteira
+            RebuildTerritory(); // o nível amplia a fronteira (TORRE-03)
             return true;
         }
 
@@ -429,6 +431,8 @@ namespace TDFende
             _towers[i] = t;
             TotalUpgrades++;
             TowerChanged?.Invoke(t.Pos, t.Level);
+            TowerVersion++; // a vista redesenha a fronteira
+            RebuildTerritory(); // o nível amplia a fronteira (TORRE-03)
             return true;
         }
 
@@ -498,6 +502,8 @@ namespace TDFende
             _towers[pick] = t;
             TotalUpgrades++;
             TowerChanged?.Invoke(t.Pos, t.Level);
+            TowerVersion++; // a vista redesenha a fronteira
+            RebuildTerritory(); // o nível amplia a fronteira (TORRE-03)
             return true;
         }
 

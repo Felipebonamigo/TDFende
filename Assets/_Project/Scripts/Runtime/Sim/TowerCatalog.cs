@@ -172,6 +172,19 @@ namespace TDFende
         public static int UpgradeCost(int typeId, int currentLevel) =>
             (int)System.Math.Round(Get(typeId).Cost * 0.8f) * currentLevel;
 
+        /// <summary>
+        /// Raio de território da torre no nível dado (TORRE-03): o raio base mais <see cref="TowerWarsConfig.BorderPerLevel"/>
+        /// por nível acima do 1, com teto de <see cref="TowerWarsConfig.BorderCapFactor"/> vezes o raio base. Torre que não
+        /// projeta fronteira (raio 0) continua sem projetar. Pura: a Sim, a IA e a vista leem daqui.
+        /// </summary>
+        public static float BorderAt(int typeId, int level)
+        {
+            float baseRadius = Get(typeId).BorderRadius;
+            if (baseRadius <= 0f) return 0f;
+            float r = baseRadius + TowerWarsConfig.BorderPerLevel * (System.Math.Max(level, 1) - 1);
+            return System.Math.Min(r, baseRadius * TowerWarsConfig.BorderCapFactor);
+        }
+
         public static float DamageAtLevel(int typeId, int level) =>
             Get(typeId).Damage * (1f + (level - 1) * TowerWarsConfig.TowerDamagePerLevel);
     }

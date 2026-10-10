@@ -150,6 +150,7 @@ class Program
         CatalogKeyTests();
         SimEventTests();
         SendSpectrumTests();
+        BorderAtTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -632,6 +633,60 @@ class Program
             int id = SendCatalog.IdOf(k);
             Check(income[id] <= mx, $"Espectro: {SendCatalog.Get(id).Name} é pressão (renda por ouro abaixo da média)");
         }
+    }
+
+    /// <summary>
+    /// TORRE-03: subir de nível amplia a fronteira. BorderAt(tipo, nível) é a função pura que a Sim, a IA e o fantasma
+    /// usam: +BorderPerLevel por nível acima do 1, com teto por tipo (BorderCapFactor x o raio base).
+    /// </summary>
+    static void BorderAtTests()
+    {
+        TowerCatalog.ResetToDefaults();
+        int canhao = TowerCatalog.IdOf("canhao"), sentinela = TowerCatalog.IdOf("sentinela");
+        float baseC = TowerCatalog.Get(canhao).BorderRadius;
+        Check(Math.Abs(TowerCatalog.BorderAt(canhao, 1) - baseC) < 1e-5f, "BorderAt: nível 1 é o raio base do catálogo");
+        Check(Math.Abs(TowerCatalog.BorderAt(canhao, 3) - (baseC + 2 * TowerWarsConfig.BorderPerLevel)) < 1e-4f,
+            "BorderAt: cada nível acima do 1 soma BorderPerLevel");
+        Check(TowerCatalog.BorderAt(canhao, 6) <= baseC * TowerWarsConfig.BorderCapFactor + 1e-4f
+              && TowerCatalog.BorderAt(canhao, 6) > TowerCatalog.BorderAt(canhao, 5) - 1e-5f,
+            "BorderAt: respeita o teto por tipo (BorderCapFactor x o raio base) e nunca diminui");
+        float sentCap = TowerCatalog.Get(sentinela).BorderRadius * TowerWarsConfig.BorderCapFactor;
+        Check(Math.Abs(TowerCatalog.BorderAt(sentinela, TowerWarsConfig.MaxTowerLevel) - sentCap) < 1e-4f,
+            "BorderAt: a Sentinela (raio pequeno) bate no teto antes do nível máximo");
+        Check(Math.Abs(TowerCatalog.BorderAt(canhao, 0) - baseC) < 1e-5f && Math.Abs(TowerCatalog.BorderAt(-1, 3) - TowerCatalog.BorderAt(0, 3)) < 1e-5f,
+            "BorderAt: nível < 1 vale 1 e tipo inválido cai no básico (como o Get)");
+
+        // a Sim usa: Canhão nível 4 cobre mais células que o nível 1
+        var lane = new LaneSim(24, 16);
+        lane.DebugGrantGold(5000);
+        lane.TryBuildTower(new Vector2Int(12, 8), canhao);
+        int cells1 = TerritoryCells(lane);
+        lane.TryUpgradeTowerAt(new Vector2Int(12, 8)); lane.TryUpgradeTowerAt(new Vector2Int(12, 8)); lane.TryUpgradeTowerAt(new Vector2Int(12, 8));
+        int cells4 = TerritoryCells(lane);
+        Check(cells4 > cells1, $"Fronteira: Canhão nível 4 cobre mais células que o nível 1 ({cells4} > {cells1})");
+        int v0 = lane.TowerVersion;
+        lane.TryUpgradeTowerAt(new Vector2Int(12, 8));
+        Check(lane.Territory.Contains(12 + 3, 8) || cells4 <= TerritoryCells(lane), "Fronteira: o upgrade refaz o território");
+
+        // IA e TryUpgradeBest/Cheapest também refazem
+        var l2 = new LaneSim(24, 16);
+        l2.DebugGrantGold(5000);
+        l2.TryBuildTower(new Vector2Int(12, 8), canhao);
+        int c2a = TerritoryCells(l2);
+        for (int i = 0; i < 4; i++) l2.TryUpgradeBest();
+        Check(TerritoryCells(l2) > c2a, "Fronteira: TryUpgradeBest também amplia");
+        var l3 = new LaneSim(24, 16);
+        l3.DebugGrantGold(5000);
+        l3.TryBuildTower(new Vector2Int(12, 8), canhao);
+        int c3a = TerritoryCells(l3);
+        for (int i = 0; i < 4; i++) l3.TryUpgradeCheapestTower();
+        Check(TerritoryCells(l3) > c3a, "Fronteira: TryUpgradeCheapestTower também amplia");
+
+        // a constante está na assinatura
+        var seen = new HashSet<string>();
+        SimSignature.Rules(seen);
+        Check(seen.Contains("TowerWarsConfig.BorderPerLevel") && seen.Contains("TowerWarsConfig.BorderCapFactor"),
+            "Assinatura: BorderPerLevel e BorderCapFactor entram em rules");
     }
 
     /// <summary>
@@ -1927,5 +1982,5 @@ static class SimSignatureExpected
 {
     public const string Sends = "be3b34ce94f36c29";
     public const string Towers = "7cb8cd3f7c5ce6cd";
-    public const string Rules = "64a5774d21c5f64a";
+    public const string Rules = "a8c054f9008766a9";
 }

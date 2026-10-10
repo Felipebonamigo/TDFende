@@ -40,6 +40,11 @@ namespace TDFende
         // Fronteira + atrito
         public const float BorderRadius = 2.75f;
 
+        /// <summary>TORRE-03: cada nível acima do 1 soma isto ao raio de território da torre (em células).</summary>
+        public const float BorderPerLevel = 0.2f;
+        /// <summary>TORRE-03: teto do raio por tipo, como múltiplo do raio base dele (1,35 = no máximo +35%).</summary>
+        public const float BorderCapFactor = 1.35f;
+
         /// <summary>
         /// Atrito em PORCENTAGEM da vida máxima por segundo, não em dano fixo.
         /// Dano fixo vira irrelevante assim que os envios escalam — a fronteira
