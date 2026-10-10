@@ -116,19 +116,21 @@ namespace TDFende
                 error = "catálogo já em uso: carregue no boot, antes da primeira partida";
                 return false;
             }
-            if (!CatalogJson.TryParseTowers(text, out var parsed, out error)) return false;
-            // Arquivo exportado antes de uma torre nova existir não pode fazê-la sumir do
-            // jogo: toda torre de fábrica que o arquivo não cita entra com o valor padrão.
-            var merged = new System.Collections.Generic.List<TowerType>(parsed);
-            foreach (var d in Defaults)
-            {
-                bool listed = false;
-                foreach (var p in parsed)
-                    if (p.Name == d.Name) { listed = true; break; }
-                if (!listed) merged.Add(d);
-            }
-            All = merged.ToArray();
+            if (!Merge(Defaults, text, out var merged, out error)) return false;
+            All = merged;
             return true;
+        }
+
+        /// <summary>
+        /// Mesma regra do <see cref="SendCatalog.Merge"/>: ordem da fábrica, casamento por nome, campo
+        /// omitido vale o da torre de fábrica. Antes a ordem do arquivo mandava, e duas linhas trocadas
+        /// de lugar trocavam o Gelo pelo Fogo em silêncio.
+        /// </summary>
+        public static bool Merge(TowerType[] factory, string text, out TowerType[] result, out string error)
+        {
+            result = null;
+            if (!CatalogJson.TryParseTowers(text, factory, out var parsed, out var lines, out error)) return false;
+            return CatalogMerge.Apply(factory, parsed, lines, t => t.Name, "torres", out result, out error);
         }
 
         public static void ResetToDefaults()

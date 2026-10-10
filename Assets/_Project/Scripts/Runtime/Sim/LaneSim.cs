@@ -506,7 +506,8 @@ namespace TDFende
 
         // ---------------- envio ----------------
 
-        public bool CanAfford(int sendId) => !Dead && Gold >= SendCatalog.Get(sendId).Cost;
+        // Id inválido (comando de fora, replay torto) é recusado aqui, sem estourar nem tocar no estado.
+        public bool CanAfford(int sendId) => !Dead && SendCatalog.TryGet(sendId, out var u) && Gold >= u.Cost;
 
         /// <summary>
         /// Compra um envio: paga daqui, sobe a renda DAQUI, e os bonecos nascem

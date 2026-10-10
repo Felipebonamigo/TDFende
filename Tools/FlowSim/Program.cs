@@ -146,6 +146,7 @@ class Program
         TowerWarsTests();
         ArtLayerTests();
         FingerprintTests();
+        CatalogMergeTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
         Console.WriteLine();
@@ -366,6 +367,118 @@ class Program
     {
         int steps = (int)Math.Round(seconds / (double)TowerWarsConfig.FixedStep);
         for (int i = 0; i < steps; i++) lane.Tick(TowerWarsConfig.FixedStep);
+    }
+
+    /// <summary>
+    /// BUG-04: o arquivo de balanceamento COMPLETA o catálogo de fábrica por nome, na ordem da fábrica, em vez de
+    /// substituí-lo. Antes, um envios.txt de 9 linhas apagava o 10º bicho e um torres.txt com linhas trocadas trocava
+    /// as torres de índice em silêncio. A fábrica entra como parâmetro: o teste usa um catálogo de 10 envios que só existe aqui.
+    /// </summary>
+    static void CatalogMergeTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        var factory9 = (SendUnit[])SendCatalog.All.Clone();
+        var hiena = new SendUnit { Name = "Hiena", Cost = 33, Hp = 90f, Speed = 3f, IncomeBonus = 3, Bounty = 11, Count = 1, AttritionScale = 1f };
+        var factory10 = new SendUnit[factory9.Length + 1];
+        factory9.CopyTo(factory10, 0);
+        factory10[factory9.Length] = hiena;
+        string text9 = CatalogJson.SerializeSends(); // exportado quando o jogo tinha 9 bichos
+
+        // 1) o caso do cartão: fábrica de 10 e arquivo de 9 linhas
+        Check(SendCatalog.Merge(factory10, text9, out var m10, out string e10) && m10.Length == 10,
+            $"Merge: arquivo de 9 linhas num jogo de 10 envios continua com 10 ({m10?.Length}; {e10})");
+        Check(m10 != null && m10[9].Name == "Hiena" && m10[9].Cost == 33 && m10[9].Hp == 90f,
+            "Merge: o 10º envio ausente do arquivo entra com os valores de fábrica");
+
+        // 2) a ordem das linhas do arquivo não importa: o índice é a identidade
+        var lines = text9.Split('\n');
+        System.Array.Reverse(lines);
+        bool sameOrder = SendCatalog.Merge(factory10, string.Join("\n", lines), out var mRev, out _);
+        for (int i = 0; sameOrder && i < factory10.Length; i++) sameOrder &= mRev[i].Name == factory10[i].Name;
+        Check(sameOrder, "Merge: arquivo com as linhas em ordem invertida sai na ordem da fábrica");
+
+        // 3) campo omitido = valor de fábrica DO MESMO BICHO, não um genérico
+        Check(SendCatalog.Merge(factory10, "name=Lobo;cost=40", out var mLobo, out _)
+              && mLobo[2].Name == "Lobo" && mLobo[2].Cost == 40
+              && mLobo[2].Hp == factory9[2].Hp && mLobo[2].Speed == factory9[2].Speed
+              && mLobo[2].Bounty == factory9[2].Bounty && mLobo[0].Cost == factory9[0].Cost,
+            "Merge: linha só com o custo muda o custo e mantém vida, velocidade e recompensa do Lobo de fábrica");
+
+        // 4) nome que não existe: o arquivo é recusado, com a lista e a dica de acento
+        Check(!SendCatalog.Merge(factory10, "name=Aguia;cost=1", out var mUnk, out string eUnk) && mUnk == null
+              && eUnk.Contains("Aguia") && eUnk.Contains("Águia") && eUnk.Contains("Rato") && eUnk.Contains("linha 1"),
+            "Merge: nome desconhecido recusa o arquivo, lista os nomes e sugere o acento (" + eUnk + ")");
+        Check(!SendCatalog.Merge(factory10, "name=Lobo;cost=40\nname=Unicornio;cost=9", out _, out string eUnk2) && eUnk2.Contains("linha 2"),
+            "Merge: um nome ruim recusa o arquivo inteiro e aponta a linha");
+
+        // 5) nome repetido
+        Check(!SendCatalog.Merge(factory10, "name=Lobo;cost=40\nname=Lobo;cost=50", out _, out string eDup)
+              && eDup.Contains("Lobo") && eDup.Contains("linha 2") && eDup.Contains("linha 1"),
+            "Merge: nome repetido é recusado e aponta as duas linhas (" + eDup + ")");
+
+        // 6) arquivo de uma versão antiga: nenhum nome bate
+        Check(!SendCatalog.Merge(factory10, "name=Recruta;cost=10;hp=40\nname=Colosso;cost=90;hp=400", out _, out string eOld)
+              && eOld.Contains("versão antiga"), "Merge: arquivo de soldados (nenhum nome bate) segue recusado com a mensagem antiga");
+
+        // 7) ida e volta: o que o jogo exporta, lido de novo, devolve exatamente a fábrica
+        bool roundTrip = SendCatalog.Merge(factory9, text9, out var mRound, out _) && mRound.Length == factory9.Length;
+        for (int i = 0; roundTrip && i < factory9.Length; i++)
+            roundTrip &= mRound[i].Name == factory9[i].Name && mRound[i].Cost == factory9[i].Cost && mRound[i].Hp == factory9[i].Hp
+                         && mRound[i].Speed == factory9[i].Speed && mRound[i].IncomeBonus == factory9[i].IncomeBonus
+                         && mRound[i].Bounty == factory9[i].Bounty && mRound[i].Count == factory9[i].Count
+                         && mRound[i].AttritionScale == factory9[i].AttritionScale;
+        Check(roundTrip, "Merge: o arquivo exportado, relido, devolve exatamente o catálogo de fábrica");
+
+        // 8) Get com id inválido FALHA ALTO, com mensagem, e nunca devolve outro bicho
+        string getMsg = null;
+        bool threw = false;
+        foreach (int bad in new[] { -1, SendCatalog.Count, 99 })
+        {
+            try { SendCatalog.Get(bad); }
+            catch (System.ArgumentOutOfRangeException ex) { threw = true; getMsg = ex.Message; }
+            Check(threw, $"Get({bad}): lança ArgumentOutOfRangeException em vez de estourar sem explicação ou cair em outro id");
+            threw = false;
+        }
+        try { SendCatalog.Get(99); } catch (System.ArgumentOutOfRangeException ex) { getMsg = ex.Message; }
+        Check(getMsg != null && getMsg.Contains("99") && getMsg.Contains(SendCatalog.Count.ToString()),
+            "Get(99): a mensagem diz o id e quantos envios existem (" + getMsg + ")");
+        Check(SendCatalog.IsValidId(0) && SendCatalog.IsValidId(SendCatalog.Count - 1)
+              && !SendCatalog.IsValidId(-1) && !SendCatalog.IsValidId(SendCatalog.Count),
+            "IsValidId: 0 a Count-1");
+        Check(SendCatalog.TryGet(1, out var ok1) && ok1.Name == SendCatalog.Get(1).Name && !SendCatalog.TryGet(99, out _),
+            "TryGet: devolve o envio válido e false para o inválido");
+
+        // 9) a borda do sistema RECUSA id inválido em vez de estourar
+        var payer = new LaneSim(24, 16);
+        var target = new LaneSim(24, 16);
+        int g0 = payer.Gold, inc0 = payer.Income;
+        Check(!payer.CanAfford(-1) && !payer.CanAfford(99), "CanAfford: id inválido é false");
+        Check(!payer.TrySend(99, target, new Random(1)) && !payer.TrySend(-1, target, new Random(1))
+              && payer.Gold == g0 && payer.Income == inc0 && payer.TotalSent == 0 && target.EnemiesAlive == 0,
+            "TrySend: id inválido é recusado sem tocar ouro, renda, contadores nem a lane alvo");
+        var runner = new MatchRunner(3, TowerWarsAi.Personality.Normal, 24, 16);
+        int applied = 0;
+        runner.CommandApplied += (t, c) => applied++;
+        runner.Enqueue(MatchCommand.Send(99));
+        runner.Step();
+        Check(applied == 0 && runner.Player.TotalSent == 0, "MatchRunner: comando de envio com id inválido é recusado (não aplica nem entra no replay)");
+
+        // 10) as torres (D3): mesma regra, e o caso que trocava as torres de lugar
+        TowerCatalog.ResetToDefaults();
+        var towers6 = (TowerType[])TowerCatalog.All.Clone();
+        string gelo = "name=Gelo;cost=41;range=3.2;cooldown=0.9;damage=4;slow=0.55;slowsecs=1.6";
+        string canhao = "name=Canhão;cost=30";
+        Check(TowerCatalog.Merge(towers6, gelo + "\n" + canhao, out var mt, out string et) && mt.Length == towers6.Length
+              && mt[0].Name == "Canhão" && mt[2].Name == "Gelo" && mt[0].Cost == 30 && mt[2].Cost == 41,
+            $"Merge de torres: Gelo escrito antes do Canhão NÃO troca os índices ({(mt == null ? et : mt[0].Name + "/" + mt[2].Name)})");
+        Check(mt != null && mt[0].BorderRadius == towers6[0].BorderRadius && mt[0].Range == towers6[0].Range
+              && mt[4].Name == "Fogo" && mt[4].BurnPctPerSecond == towers6[4].BurnPctPerSecond,
+            "Merge de torres: campo omitido mantém o da torre de fábrica (fronteira e alcance do Canhão) e as não citadas entram inteiras");
+        Check(!TowerCatalog.Merge(towers6, "name=Cano;cost=9", out _, out string etUnk) && etUnk.Contains("Cano") && etUnk.Contains("Canhão"),
+            "Merge de torres: nome desconhecido recusa o arquivo e lista as torres (" + etUnk + ")");
+        Check(!TowerCatalog.Merge(towers6, canhao + "\n" + canhao, out _, out string etDup) && etDup.Contains("linha 2"),
+            "Merge de torres: nome repetido é recusado");
     }
 
     /// <summary>

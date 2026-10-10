@@ -11,7 +11,12 @@ COMO USAR
 
 REGRAS DO FORMATO
   - Uma linha por unidade/torre.
-  - Campo ausente usa o padrão, então dá para escrever só o que muda.
+  - Campo ausente usa o valor de FÁBRICA daquele bicho/torre, então dá para escrever só o que muda
+    (ex.: "name=Lobo;cost=40" muda só o custo do Lobo).
+  - O nome é a chave, escrito igual ao do jogo (com acento e maiúscula): "Águia", não "Aguia".
+    Nome que o jogo não conhece ou repetido recusa o arquivo inteiro, com a linha no aviso.
+  - Bicho ou torre que o arquivo não cita continua no jogo com os valores de fábrica, e a ordem
+    das linhas não importa: o jogo mantém a sua.
   - Linha começando com # é comentário.
   - DECIMAL COM PONTO: 2.75, nunca 2,75.
   - Salve em UTF-8 (é como estes arquivos já estão) para os acentos não quebrarem.
@@ -21,9 +26,9 @@ SE ERRAR
   problema, e a partida roda com os valores de fábrica. Apagar os arquivos volta ao padrão.
 
 O QUE NÃO DÁ PARA MUDAR AQUI
-  A quantidade de tipos. O jogo dimensiona vetores pelo tamanho do catálogo quando a
-  primeira partida nasce, então acrescentar ou remover linhas funciona, mas só é lido no
-  boot — nunca no meio de uma partida.
+  A quantidade de tipos, a ordem e os nomes: vêm do jogo. Apagar uma linha não remove o
+  bicho (ele volta com os valores de fábrica). O arquivo só é lido no boot — nunca no meio
+  de uma partida.
 
 MEDIR O EFEITO
   cd Tools/FlowSim

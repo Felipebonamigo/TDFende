@@ -54,7 +54,29 @@ namespace TDFende
         static readonly SendUnit[] Defaults = (SendUnit[])All.Clone();
 
         public static int Count => All.Length;
-        public static SendUnit Get(int id) => All[id];
+
+        public static bool IsValidId(int id) => id >= 0 && id < All.Length;
+
+        /// <summary>Para quem recebe id de FORA (comando, tecla, arquivo): não estoura, diz se existe.</summary>
+        public static bool TryGet(int id, out SendUnit unit)
+        {
+            if (IsValidId(id)) { unit = All[id]; return true; }
+            unit = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Id inválido é erro de quem chamou: lança, com o id e quantos envios existem, em vez de
+        /// estourar sem explicação. A borda do sistema (LaneSim.TrySend, MatchRunner) usa
+        /// <see cref="IsValidId"/> e recusa o comando antes de chegar aqui.
+        /// </summary>
+        public static SendUnit Get(int id)
+        {
+            if (id < 0 || id >= All.Length)
+                throw new System.ArgumentOutOfRangeException(nameof(id), id,
+                    $"envio {id} não existe (o catálogo tem {All.Length}: 0..{All.Length - 1})");
+            return All[id];
+        }
 
         /// <summary>
         /// Trancado assim que a primeira lane nasce. LaneSim e a IA dimensionam vetores
@@ -67,7 +89,8 @@ namespace TDFende
         /// <summary>
         /// Substitui o catálogo pelo conteúdo de um arquivo de balanceamento.
         /// Os valores acima viram o PADRÃO de fábrica, não a verdade única — assim o
-        /// Felipe ajusta número sem recompilar e sem me chamar.
+        /// Felipe ajusta número sem recompilar e sem me chamar. O arquivo COMPLETA a fábrica por
+        /// nome: bicho que ele não cita continua no jogo, e a ordem das linhas não muda os índices.
         /// Tem que ser chamado no boot, ANTES de qualquer partida existir.
         /// </summary>
         public static bool LoadFrom(string text, out string error)
@@ -77,20 +100,21 @@ namespace TDFende
                 error = "catálogo já em uso: carregue no boot, antes da primeira partida";
                 return false;
             }
-            if (!CatalogJson.TryParseSends(text, out var parsed, out error)) return false;
-            // Arquivo exportado quando o exército era de soldados (Recruta, Colosso...): nenhum
-            // nome bate com o de agora. Carregar traria os soldados de volta sem modelo novo.
-            bool anyKnown = false;
-            foreach (var p in parsed)
-                foreach (var d in Defaults)
-                    if (p.Name == d.Name) anyKnown = true;
-            if (!anyKnown)
-            {
-                error = "arquivo de envios de uma versão antiga (soldados); exporte de novo para editar os bichos";
-                return false;
-            }
-            All = parsed;
+            if (!Merge(Defaults, text, out var merged, out error)) return false;
+            All = merged;
             return true;
+        }
+
+        /// <summary>
+        /// Junta o texto à fábrica dada (BUG-04), sem tocar no catálogo do jogo: o resultado tem a
+        /// ordem e o tamanho da fábrica, campo omitido vale o da fábrica, nome repetido ou desconhecido
+        /// recusa o arquivo. Ver <see cref="CatalogMerge"/>.
+        /// </summary>
+        public static bool Merge(SendUnit[] factory, string text, out SendUnit[] result, out string error)
+        {
+            result = null;
+            if (!CatalogJson.TryParseSends(text, factory, out var parsed, out var lines, out error)) return false;
+            return CatalogMerge.Apply(factory, parsed, lines, u => u.Name, "envios", out result, out error);
         }
 
         /// <summary>Volta ao catálogo compilado. Existe para o teste não vazar estado.</summary>

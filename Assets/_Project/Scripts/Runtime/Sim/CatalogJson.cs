@@ -14,8 +14,9 @@ namespace TDFende
     ///   3. arquivo de balanceamento é lido e editado por HUMANO, e uma linha por
     ///      unidade compara melhor num diff do que um objeto espalhado em 12 linhas.
     ///
-    /// Campo que faltar usa o padrão do código, então adicionar um campo novo não
-    /// invalida os arquivos que já existem.
+    /// Campo que faltar numa linha usa o valor de FÁBRICA do bicho/torre de mesmo nome (BUG-04),
+    /// então adicionar um campo novo não invalida os arquivos que já existem. Sem a fábrica de
+    /// referência (nome desconhecido, ou o parser chamado sem ela) valem os padrões genéricos.
     /// </summary>
     public static class CatalogJson
     {
@@ -45,30 +46,48 @@ namespace TDFende
             return sb.ToString();
         }
 
-        public static bool TryParseSends(string text, out SendUnit[] units, out string error)
+        /// <summary>Lê só o texto, com os padrões genéricos nos campos que faltam (ida e volta, testes de parser).</summary>
+        public static bool TryParseSends(string text, out SendUnit[] units, out string error) =>
+            TryParseSends(text, null, out units, out _, out error);
+
+        /// <summary>
+        /// Lê o texto usando, para cada linha, a unidade de fábrica de mesmo nome como base dos campos
+        /// que faltam. Devolve as unidades NA ORDEM DO ARQUIVO e a linha de cada uma; quem junta com a
+        /// fábrica é o <see cref="CatalogMerge"/>.
+        /// </summary>
+        public static bool TryParseSends(string text, SendUnit[] factory, out SendUnit[] units, out int[] lineNos, out string error)
         {
             units = null;
+            lineNos = null;
             var list = new List<SendUnit>();
+            var lns = new List<int>();
             foreach (var (fields, lineNo) in Lines(text))
             {
+                var b = new SendUnit { Name = "?", Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
+                string name = Str(fields, "name", "?");
+                if (factory != null)
+                    foreach (var f in factory)
+                        if (f.Name == name) { b = f; break; }
                 var u = new SendUnit
                 {
-                    Name = Str(fields, "name", "?"),
-                    Cost = Int(fields, "cost", 10),
-                    IncomeBonus = Int(fields, "income", 1),
-                    Hp = Flt(fields, "hp", 40f),
-                    Speed = Flt(fields, "speed", 2.2f),
-                    Count = Int(fields, "count", 1),
-                    Bounty = Int(fields, "bounty", 4),
-                    AttritionScale = Flt(fields, "attrition", 1f)
+                    Name = name,
+                    Cost = Int(fields, "cost", b.Cost),
+                    IncomeBonus = Int(fields, "income", b.IncomeBonus),
+                    Hp = Flt(fields, "hp", b.Hp),
+                    Speed = Flt(fields, "speed", b.Speed),
+                    Count = Int(fields, "count", b.Count),
+                    Bounty = Int(fields, "bounty", b.Bounty),
+                    AttritionScale = Flt(fields, "attrition", b.AttritionScale)
                 };
                 if (u.Cost <= 0) { error = $"linha {lineNo}: custo tem que ser > 0"; return false; }
                 if (u.Hp <= 0f) { error = $"linha {lineNo}: vida tem que ser > 0"; return false; }
                 if (u.Count <= 0) { error = $"linha {lineNo}: quantidade tem que ser > 0"; return false; }
                 list.Add(u);
+                lns.Add(lineNo);
             }
             if (list.Count == 0) { error = "nenhum envio no arquivo"; return false; }
             units = list.ToArray();
+            lineNos = lns.ToArray();
             error = null;
             return true;
         }
@@ -101,27 +120,39 @@ namespace TDFende
             return sb.ToString();
         }
 
-        public static bool TryParseTowers(string text, out TowerType[] towers, out string error)
+        /// <summary>Lê só o texto, com os padrões genéricos nos campos que faltam.</summary>
+        public static bool TryParseTowers(string text, out TowerType[] towers, out string error) =>
+            TryParseTowers(text, null, out towers, out _, out error);
+
+        /// <summary>Como <see cref="TryParseSends(string,SendUnit[],out SendUnit[],out int[],out string)"/>, para torres.</summary>
+        public static bool TryParseTowers(string text, TowerType[] factory, out TowerType[] towers, out int[] lineNos, out string error)
         {
             towers = null;
+            lineNos = null;
             var list = new List<TowerType>();
+            var lns = new List<int>();
             foreach (var (fields, lineNo) in Lines(text))
             {
+                var b = new TowerType { Name = "?", Cost = 25, Range = 3.5f, Cooldown = 0.65f, Damage = 12f, SlowFactor = 1f, VsFlyingMultiplier = 1f };
+                string name = Str(fields, "name", "?");
+                if (factory != null)
+                    foreach (var f in factory)
+                        if (f.Name == name) { b = f; break; }
                 var t = new TowerType
                 {
-                    Name = Str(fields, "name", "?"),
-                    Cost = Int(fields, "cost", 25),
-                    Range = Flt(fields, "range", 3.5f),
-                    Cooldown = Flt(fields, "cooldown", 0.65f),
-                    Damage = Flt(fields, "damage", 12f),
-                    SplashRadius = Flt(fields, "splash", 0f),
-                    SlowFactor = Flt(fields, "slow", 1f),
-                    SlowSeconds = Flt(fields, "slowsecs", 0f),
-                    VsFlyingMultiplier = Flt(fields, "vsflying", 1f),
-                    BorderRadius = Flt(fields, "border", 0f),
-                    BurnPctPerSecond = Flt(fields, "burn", 0f),
-                    BurnSeconds = Flt(fields, "burnsecs", 0f),
-                    Knockback = Flt(fields, "push", 0f)
+                    Name = name,
+                    Cost = Int(fields, "cost", b.Cost),
+                    Range = Flt(fields, "range", b.Range),
+                    Cooldown = Flt(fields, "cooldown", b.Cooldown),
+                    Damage = Flt(fields, "damage", b.Damage),
+                    SplashRadius = Flt(fields, "splash", b.SplashRadius),
+                    SlowFactor = Flt(fields, "slow", b.SlowFactor),
+                    SlowSeconds = Flt(fields, "slowsecs", b.SlowSeconds),
+                    VsFlyingMultiplier = Flt(fields, "vsflying", b.VsFlyingMultiplier),
+                    BorderRadius = Flt(fields, "border", b.BorderRadius),
+                    BurnPctPerSecond = Flt(fields, "burn", b.BurnPctPerSecond),
+                    BurnSeconds = Flt(fields, "burnsecs", b.BurnSeconds),
+                    Knockback = Flt(fields, "push", b.Knockback)
                 };
                 if (t.Cost <= 0) { error = $"linha {lineNo}: custo tem que ser > 0"; return false; }
                 if (t.Cooldown <= 0f) { error = $"linha {lineNo}: cadência tem que ser > 0"; return false; }
@@ -135,9 +166,11 @@ namespace TDFende
                 if (t.Knockback < 0f || t.Knockback > 3f)
                 { error = $"linha {lineNo}: push tem que estar entre 0 e 3"; return false; }
                 list.Add(t);
+                lns.Add(lineNo);
             }
             if (list.Count == 0) { error = "nenhuma torre no arquivo"; return false; }
             towers = list.ToArray();
+            lineNos = lns.ToArray();
             error = null;
             return true;
         }

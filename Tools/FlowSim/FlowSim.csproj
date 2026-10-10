@@ -16,6 +16,7 @@
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Core\DespawnReason.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerWarsConfig.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SendCatalog.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CatalogMerge.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CatalogJson.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerCatalog.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LaneSim.cs" />
