@@ -36,7 +36,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [ ] TORRE-01 — Mira inteligente (fase 1)
 - [ ] BICHO-05 — Armadura no Rinoceronte (Sim)
 - [ ] BICHO-06 — Urso regenera fora da fronteira (Sim)
-- [ ] TEC-14 — Matriz de contras medida (relatório)
+- [x] TEC-14 — Matriz de contras medida (relatório) — 10/10/2026 (210247c; relatório, sem portão ainda)
 - [ ] DES-03s — Chaves do laboratório da tese
 - [ ] TEC-27 — Spike de determinismo: float × ponto fixo, e lockstep virtual
 - [ ] MERC-01s — Regras do segundo mercado e do primeiro sabotador
