@@ -114,7 +114,7 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 - [x] **BUG-05** — Assinatura do replay cobre todos os campos — 10/10/2026 (fced89f; design: docs/designs/bug-05-assinatura-do-replay.md)
 - [x] **TEC-12** — Conteúdo por chave estável — 10/10/2026 (34fd131; Sim, testes e compilação verificados na nuvem; a vista falta conferir no -captura do PC)
 - [x] **TEC-17** — Eventos só de vista — 10/10/2026 (911b809)
-- [ ] **DES-05** — Envios com papel econômico (reservado: sessão na nuvem, 10/10/2026)
+- [x] **DES-05** — Envios com papel econômico — 10/10/2026 (c7a78c5)
 - [ ] **DES-04** — Vazamento pesa pelo porte
 - [ ] **TORRE-03** — Upgrade amplia a fronteira
 - [ ] **TORRE-01** — Mira inteligente (fase 1)

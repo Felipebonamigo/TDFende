@@ -30,7 +30,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] BUG-05 — Assinatura do replay cobre todos os campos — 10/10/2026 (fced89f)
 - [x] TEC-12 — Conteúdo por chave estável — 10/10/2026 (34fd131; vista a conferir no -captura do PC)
 - [x] TEC-17 — Eventos só de vista — 10/10/2026 (911b809)
-- [ ] DES-05 — Envios com papel econômico
+- [x] DES-05 — Envios com papel econômico — 10/10/2026 (c7a78c5)
 - [ ] DES-04 — Vazamento pesa pelo porte
 - [ ] TORRE-03 — Upgrade amplia a fronteira
 - [ ] TORRE-01 — Mira inteligente (fase 1)
