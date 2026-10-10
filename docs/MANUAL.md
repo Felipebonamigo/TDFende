@@ -114,6 +114,22 @@ em passos de 1/256: 0,01 de deslocamento muda o hash, ruído de 1e-3 não. **Nã
 IA; o que ela decide aparece em torres, envios e ouro. Mexeu em regra da Sim: rode `dotnet run --project Tools/FlowSim
 -v quiet -- match 12` antes e depois e compare a saída (deve ser idêntica se a regra não mudou de propósito).
 
+### Assinatura do replay e `SimRules.Version` (BUG-05)
+
+O replay (formato 2, `tdfende-replay 2`) grava três assinaturas de 64 bits (`SimSignature`): `sends` (todos os campos de
+cada bicho, nome inclusive), `towers` (idem, torres) e `rules` (`TowerWarsConfig`, as 3 personalidades da IA,
+`GameConfig.CellSize` e `SimRules.Version`). `FlowSim replay <arquivo>` **recusa** reproduzir se alguma difere e diz qual
+(`--forcar` reproduz assim mesmo). Formato 1 é recusado: regrave. Com `final` no arquivo, a reprodução confere o
+fingerprint final e só **avisa** se divergiu (mudou lógica, ou o float deu outro resultado: TEC-27).
+
+Regras de processo:
+- **Mudou fórmula ou lógica da Sim** (gelo, fogo, escalada, mira, pathfinding, IA): incremente `SimRules.Version`
+  (`Sim/SimSignature.cs`). A assinatura só enxerga dado; a versão é o que invalida o replay antigo.
+- **Campo novo** em `SendUnit`, `TowerType`, `Personality` ou `TowerWarsConfig`: acrescente a linha em `SimSignature`. O
+  teste de guarda do FlowSim reprova com o nome do campo se esquecer.
+- Balanceou de propósito: o teste "assinatura de fábrica fixa" cai; atualize `SimSignatureExpected` em
+  `Tools/FlowSim/Program.cs` e regrave os replays usados como regressão.
+
 ## 4. Ver o jogo sem o Felipe: `-captura`
 
 ```

@@ -26,11 +26,28 @@ namespace TDFende
 
         public void Add(ulong v)
         {
-            for (int i = 0; i < 8; i++)
-            {
-                _h ^= (v >> (i * 8)) & 0xFF;
-                _h *= Prime;
-            }
+            for (int i = 0; i < 8; i++) AddByte((byte)((v >> (i * 8)) & 0xFF));
+        }
+
+        /// <summary>Um byte cru no FNV-1a. É o núcleo: os outros Add são fluxos de bytes canônicos.</summary>
+        public void AddByte(byte b)
+        {
+            _h ^= b;
+            _h *= Prime;
+        }
+
+        /// <summary>Texto em UTF-8 SEM prefixo de tamanho (é o que os vetores públicos do FNV-1a medem).</summary>
+        public void AddUtf8(string s)
+        {
+            foreach (byte b in System.Text.Encoding.UTF8.GetBytes(s ?? "")) AddByte(b);
+        }
+
+        /// <summary>Texto com o tamanho em bytes na frente: "ab"+"c" não se confunde com "a"+"bc". Nunca GetHashCode.</summary>
+        public void Add(string s)
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(s ?? "");
+            Add(bytes.Length);
+            foreach (byte b in bytes) AddByte(b);
         }
 
         public void Add(long v) => Add(unchecked((ulong)v));

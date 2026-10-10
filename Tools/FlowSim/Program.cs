@@ -55,7 +55,7 @@ class Program
         // `dotnet run -- replay <arquivo>` reproduz uma partida gravada no jogo (F9)
         // e imprime o que aconteceu. É como um "achei estranho" vira estado inspecionável.
         if (args.Length > 1 && args[0] == "replay")
-            return RunReplay(args[1]);
+            return RunReplay(args[1], System.Array.IndexOf(args, "--forcar") >= 0);
 
         const int W = 24, H = 16;
 
@@ -147,6 +147,7 @@ class Program
         ArtLayerTests();
         FingerprintTests();
         CatalogMergeTests();
+        SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
         Console.WriteLine();
@@ -297,7 +298,7 @@ class Program
         return n;
     }
 
-    static int RunReplay(string path)
+    static int RunReplay(string path, bool force)
     {
         if (!System.IO.File.Exists(path))
         {
@@ -315,19 +316,19 @@ class Program
                           $"grid {replay.Width}x{replay.Height} | {replay.Ticks} tiques " +
                           $"({replay.Ticks * TowerWarsConfig.FixedStep:0.0}s) | {replay.Commands.Count} comandos");
 
-        // Catálogo diferente = outros números = OUTRA partida. Sem este aviso, o relatório
-        // sairia plausível e errado, e a investigação perseguiria um bug que não existe.
-        string nowSig = Replay.CurrentCatalogSignature();
-        if (replay.CatalogSignature.Length == 0)
-            Console.WriteLine("  AVISO: gravação sem assinatura de catálogo (arquivo antigo); " +
-                              "não dá para saber se os números batem.");
-        else if (replay.CatalogSignature != nowSig)
+        // Regras diferentes = outros números = OUTRA partida. Sem esta recusa, o relatório sairia
+        // plausível e errado, e a investigação perseguiria um bug que não existe (BUG-05).
+        var diff = replay.Verify();
+        if (diff != SignatureDiff.None)
         {
-            Console.WriteLine($"  ERRO: catálogo diferente do da gravação " +
-                              $"(arquivo {replay.CatalogSignature}, atual {nowSig}).");
-            Console.WriteLine("  A reprodução usaria outros números e daria um desfecho que " +
-                              "nunca aconteceu. Restaure o balanceamento da gravação e rode de novo.");
-            return 3;
+            Console.WriteLine($"  {(force ? "AVISO (--forcar)" : "ERRO")}: {Replay.Describe(diff)}.");
+            if (!force)
+            {
+                Console.WriteLine("  A reprodução usaria outros números e daria um desfecho que nunca aconteceu.");
+                Console.WriteLine("  Restaure o balanceamento da gravação (ou volte ao código dela) e rode de novo; " +
+                                  "para reproduzir assim mesmo: replay <arquivo> --forcar.");
+                return 3;
+            }
         }
 
         // resumo do que o jogador fez, para ver a estratégia sem assistir
@@ -356,6 +357,11 @@ class Program
         Console.WriteLine();
         Console.WriteLine($"  {(r.Over ? (r.Player.Dead ? "derrota" : "vitória") : "partida não terminou na gravação")}");
         Console.WriteLine($"  fingerprint: {r.StateFingerprint()}");
+        bool? same = replay.FinalMatches(r);
+        if (same == true) Console.WriteLine("  estado final igual ao gravado.");
+        else if (same == false)
+            Console.WriteLine($"  AVISO: estado final DIVERGIU do gravado ({replay.Final}); mudou a lógica da Sim, " +
+                              "ou o float deu outro resultado neste runtime (TEC-27).");
         return 0;
     }
 
@@ -479,6 +485,159 @@ class Program
             "Merge de torres: nome desconhecido recusa o arquivo e lista as torres (" + etUnk + ")");
         Check(!TowerCatalog.Merge(towers6, canhao + "\n" + canhao, out _, out string etDup) && etDup.Contains("linha 2"),
             "Merge de torres: nome repetido é recusado");
+    }
+
+    /// <summary>
+    /// BUG-05: a assinatura do replay cobre TODOS os campos de balanceamento (envios, torres, regras), em 64 bits,
+    /// sem GetHashCode. Antes, queima, empurrão, nomes, atrito e escalada podiam mudar sem a assinatura notar.
+    /// </summary>
+    static void SimSignatureTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        var sends = (SendUnit[])SendCatalog.All.Clone();
+        var towers = (TowerType[])TowerCatalog.All.Clone();
+
+        // 0) a implementação do FNV-1a confere com os vetores públicos
+        var v0 = new StateHash();
+        var v1 = new StateHash();
+        v1.AddUtf8("a");
+        Check(v0.Value == 0xcbf29ce484222325UL && v1.Value == 0xaf63dc4c8601ec8cUL,
+            "FNV-1a: vetores públicos (\"\" e \"a\")");
+
+        // 1) cada campo de SendUnit e de TowerType, mudado um a um, muda o bloco
+        string sig0 = SimSignature.Sends(sends), tsig0 = SimSignature.Towers(towers);
+        foreach (var f in typeof(SendUnit).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            var alt = (SendUnit[])sends.Clone();
+            object boxed = alt[3];
+            f.SetValue(boxed, Bump(f.FieldType, f.GetValue(boxed)));
+            alt[3] = (SendUnit)boxed;
+            Check(SimSignature.Sends(alt) != sig0, $"Assinatura dos envios muda com o campo {f.Name}");
+        }
+        foreach (var f in typeof(TowerType).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            var alt = (TowerType[])towers.Clone();
+            object boxed = alt[4];
+            f.SetValue(boxed, Bump(f.FieldType, f.GetValue(boxed)));
+            alt[4] = (TowerType)boxed;
+            Check(SimSignature.Towers(alt) != tsig0, $"Assinatura das torres muda com o campo {f.Name}");
+        }
+
+        // 2) guarda: todo campo público dos tipos de balanceamento está na lista da assinatura
+        var seen = new HashSet<string>();
+        SimSignature.Sends(sends, seen);
+        SimSignature.Towers(towers, seen);
+        SimSignature.Rules(seen);
+        var missing = new List<string>();
+        void Guard(System.Type t, System.Reflection.BindingFlags flags)
+        {
+            foreach (var f in t.GetFields(System.Reflection.BindingFlags.Public | flags))
+                if (!seen.Contains(t.Name + "." + f.Name)) missing.Add(t.Name + "." + f.Name);
+        }
+        Guard(typeof(SendUnit), System.Reflection.BindingFlags.Instance);
+        Guard(typeof(TowerType), System.Reflection.BindingFlags.Instance);
+        Guard(typeof(TowerWarsAi.Personality), System.Reflection.BindingFlags.Instance);
+        Guard(typeof(TowerWarsConfig), System.Reflection.BindingFlags.Static);
+        if (!seen.Contains("GameConfig.CellSize")) missing.Add("GameConfig.CellSize");
+        Check(missing.Count == 0,
+            "Guarda: todo campo de balanceamento entra na assinatura (faltam: " + string.Join(", ", missing) + ")");
+
+        // 3) regras: atrito, escalada, personalidade da IA e versão
+        string r0 = SimSignature.Rules();
+        float attr = TowerWarsConfig.AttritionPctPerSecond, scale = TowerWarsConfig.SendScalePerMinute;
+        TowerWarsConfig.AttritionPctPerSecond = attr + 0.01f;
+        Check(SimSignature.Rules() != r0, "Regras: mudar o atrito muda a assinatura");
+        TowerWarsConfig.AttritionPctPerSecond = attr;
+        TowerWarsConfig.SendScalePerMinute = scale + 0.01f;
+        Check(SimSignature.Rules() != r0, "Regras: mudar a escalada dos envios muda a assinatura");
+        TowerWarsConfig.SendScalePerMinute = scale;
+        Check(SimSignature.Rules() == r0, "Regras: restaurados os valores, a assinatura volta");
+        var hard = TowerWarsAi.Personality.Hard;
+        hard.CounterStrength += 0.1f;
+        Check(SimSignature.Rules(TowerWarsAi.Personality.Easy, TowerWarsAi.Personality.Normal, hard) != r0,
+            "Regras: mudar a personalidade Difícil da IA muda a assinatura");
+        Check(SimSignature.Rules(TowerWarsAi.Personality.Easy, TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Hard,
+                  SimRules.Version + 1) != r0, "Regras: SimRules.Version entra na assinatura");
+
+        // 4) ordem, determinismo, formato
+        var swapped = (SendUnit[])sends.Clone();
+        (swapped[0], swapped[1]) = (swapped[1], swapped[0]);
+        Check(SimSignature.Sends(swapped) != sig0, "Envios: trocar a ordem de dois muda a assinatura");
+        Check(SimSignature.Sends(sends) == sig0 && SimSignature.Rules() == r0, "Assinatura: mesma entrada, mesma saída");
+        Check(sig0.Length == 16 && System.Text.RegularExpressions.Regex.IsMatch(sig0, "^[0-9a-f]{16}$"),
+            "Assinatura: 16 dígitos hexa (64 bits)");
+        Check(sig0 != tsig0 && tsig0 != r0, "Assinatura: os três blocos são diferentes entre si");
+        // constante de fábrica: uma mudança involuntária de formato aparece no diff deste teste
+        Check(sig0 == SimSignatureExpected.Sends && tsig0 == SimSignatureExpected.Towers && r0 == SimSignatureExpected.Rules,
+            $"Assinatura de fábrica fixa (sends {sig0}, towers {tsig0}, rules {r0}); se mudou de propósito, atualize SimSignatureExpected");
+
+        // 5) -0 = +0, qualquer NaN igual
+        var negZero = (TowerType[])towers.Clone();
+        var posZero = (TowerType[])towers.Clone();
+        negZero[0].Knockback = -0f; posZero[0].Knockback = 0f;
+        Check(SimSignature.Towers(negZero) == SimSignature.Towers(posZero), "Assinatura: -0 e +0 são o mesmo valor");
+        var nan1 = (TowerType[])towers.Clone();
+        var nan2 = (TowerType[])towers.Clone();
+        nan1[0].Damage = float.NaN;
+        nan2[0].Damage = System.BitConverter.Int32BitsToSingle(unchecked((int)0xFFC12345));
+        Check(SimSignature.Towers(nan1) == SimSignature.Towers(nan2), "Assinatura: todo NaN é o mesmo valor");
+
+        // 6) replay formato 2
+        var rep = new Replay { Seed = 5, Difficulty = "Normal", Ticks = 30, Final = "t30 abc #123" };
+        rep.Record(3, MatchCommand.Send(1));
+        string txt = rep.Serialize();
+        Check(txt.StartsWith("tdfende-replay 2\n") && txt.Contains("\nsends " + sig0 + "\n")
+              && txt.Contains("\ntowers " + tsig0 + "\n") && txt.Contains("\nrules " + r0 + "\n"),
+            "Replay 2: cabeçalho e os três blocos de assinatura no arquivo");
+        Check(Replay.TryParse(txt, out var back, out string be) && back.Verify() == SignatureDiff.None
+              && back.Final == "t30 abc #123" && back.Commands.Count == 1,
+            "Replay 2: ida e volta preserva assinaturas, comando e a linha final (" + be + ")");
+
+        Check(!Replay.TryParse("tdfende-replay 1\nseed 1\n", out _, out string old1) && old1.Contains("formato 1") && old1.Contains("regrave"),
+            "Replay: cabeçalho do formato 1 é recusado com a instrução de regravar (" + old1 + ")");
+        Check(!Replay.TryParse(txt.Replace("\n3 send 1", "\ncatalog 1234abcd\n3 send 1"), out _, out _),
+            "Replay 2: linha desconhecida (a antiga 'catalog') continua falhando alto");
+
+        Replay Tampered(string block)
+        {
+            var lines = txt.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+                if (lines[i].StartsWith(block + " ")) lines[i] = block + " 0000000000000000";
+            Replay.TryParse(string.Join("\n", lines), out var r, out _);
+            return r;
+        }
+        Check(Tampered("sends").Verify() == SignatureDiff.Sends, "Verify: bloco sends adulterado é acusado");
+        Check(Tampered("towers").Verify() == SignatureDiff.Towers, "Verify: bloco towers adulterado é acusado");
+        Check(Tampered("rules").Verify() == SignatureDiff.Rules, "Verify: bloco rules adulterado é acusado");
+        Check(Replay.TryParse(Replay.Header + "\nseed 1\n", out var bare, out _) && bare.Verify() == SignatureDiff.Missing,
+            "Verify: arquivo sem assinaturas é acusado como sem assinatura");
+        string described = Replay.Describe(SignatureDiff.Sends | SignatureDiff.Rules);
+        Check(described.Contains("envios") && described.Contains("regras") && !described.Contains("torres"),
+            "Describe: diz quais blocos diferem (" + described + ")");
+
+        // a linha final é conferida na reprodução e só avisa
+        var live2 = new MatchRunner(31, TowerWarsAi.Personality.Normal, 24, 16);
+        var rec2 = new Replay { Seed = 31, Difficulty = "Normal" };
+        live2.CommandApplied += rec2.Record;
+        for (int t = 0; t < 600; t++) { if (t == 5) live2.Enqueue(MatchCommand.Build(8, 8, 0)); live2.Step(); }
+        rec2.Ticks = live2.TickCount;
+        rec2.Final = live2.StateFingerprint();
+        Replay.TryParse(rec2.Serialize(), out var back2, out _);
+        Check(back2.FinalMatches(back2.Run()) == true, "Replay: estado final igual ao gravado é confirmado");
+        back2.Final = "t600 errado";
+        Check(back2.FinalMatches(back2.Run()) == false, "Replay: estado final diferente é acusado");
+        back2.Final = "";
+        Check(back2.FinalMatches(back2.Run()) == null, "Replay: sem linha final não há o que conferir");
+    }
+
+    // Soma o mínimo que muda o valor, qualquer que seja o tipo do campo.
+    static object Bump(System.Type t, object v)
+    {
+        if (t == typeof(int)) return (int)v + 1;
+        if (t == typeof(float)) return (float)v + 0.5f;
+        if (t == typeof(string)) return (string)v + "x";
+        throw new System.InvalidOperationException("tipo de campo sem regra de teste: " + t.Name);
     }
 
     /// <summary>
@@ -963,10 +1122,10 @@ class Program
         Check(!Replay.TryParse(Replay.Header + $"\n10 build 5 5 {TowerCatalog.Count}\n", out _, out _),
             "Replay: torre fora do catálogo é recusada");
 
-        // assinatura do catálogo viaja com o arquivo
-        Check(rec.Serialize().Contains("catalog "), "Replay: arquivo carrega a assinatura do catálogo");
-        Check(parsed.CatalogSignature == Replay.CurrentCatalogSignature(),
-            "Replay: assinatura lida bate com o catálogo em uso");
+        // as assinaturas viajam com o arquivo (BUG-05)
+        Check(rec.Serialize().Contains("\nsends ") && rec.Serialize().Contains("\nrules "),
+            "Replay: arquivo carrega as assinaturas dos envios, torres e regras");
+        Check(parsed.Verify() == SignatureDiff.None, "Replay: assinaturas lidas batem com as regras em uso");
 
         // comando aplicado em fronteira de TIQUE: mesma lista, mesmo resultado, sempre
         var r1 = rec.Run().StateFingerprint();
@@ -1486,4 +1645,12 @@ class Program
         }
         return false;
     }
+}
+
+/// <summary>Assinaturas do catálogo e das regras de FÁBRICA (BUG-05). Muda de propósito => atualizar aqui e dizer no commit.</summary>
+static class SimSignatureExpected
+{
+    public const string Sends = "facf2847c7ad3c66";
+    public const string Towers = "a2d502e5d5a1df35";
+    public const string Rules = "567e6995bddd6d61";
 }

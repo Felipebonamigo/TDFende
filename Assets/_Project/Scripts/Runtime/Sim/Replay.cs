@@ -15,9 +15,27 @@ namespace TDFende
     /// Formato de texto simples de propósito: legível a olho, diffável, e sem
     /// depender de nenhuma biblioteca de JSON no lado headless.
     /// </summary>
+    /// <summary>Quais blocos de regras diferem entre a gravação e o jogo atual (BUG-05).</summary>
+    [System.Flags]
+    public enum SignatureDiff
+    {
+        None = 0,
+        Sends = 1,
+        Towers = 2,
+        Rules = 4,
+        /// <summary>O arquivo não traz as três assinaturas: não dá para saber se os números batem.</summary>
+        Missing = 8
+    }
+
     public class Replay
     {
-        public const string Header = "tdfende-replay 1";
+        /// <summary>
+        /// Formato 2 (BUG-05): assinaturas completas em três blocos (sends, towers, rules) e a linha opcional final.
+        /// O formato 1 tinha uma assinatura de 32 bits que não via queima, empurrão, nomes, atrito nem escalada;
+        /// é recusado de propósito, e basta regravar.
+        /// </summary>
+        public const string Header = "tdfende-replay 2";
+        const string OldHeader1 = "tdfende-replay 1";
 
         public int Seed;
         public string Difficulty = "Normal";
@@ -31,8 +49,15 @@ namespace TDFende
         /// </summary>
         public int Ticks;
 
-        /// <summary>Assinatura dos catálogos na gravação. Vazio = arquivo anterior a este campo.</summary>
-        public string CatalogSignature = "";
+        /// <summary>Assinaturas gravadas (16 hexa cada, ver <see cref="SimSignature"/>). Vazio = ausente no arquivo.</summary>
+        public string SendsSignature = "", TowersSignature = "", RulesSignature = "";
+
+        /// <summary>
+        /// Fingerprint do estado final na gravação (opcional). Só diagnóstico: pega mudança de LÓGICA que a assinatura
+        /// de dados não vê e mede se o float reproduz entre runtimes (TEC-27). Nunca recusa a reprodução.
+        /// </summary>
+        public string Final = "";
+
         public readonly List<(int Tick, MatchCommand Cmd)> Commands = new List<(int, MatchCommand)>();
 
         public void Record(int tick, MatchCommand cmd) => Commands.Add((tick, cmd));
@@ -45,7 +70,10 @@ namespace TDFende
             sb.Append("difficulty ").Append(Difficulty).Append('\n');
             sb.Append("grid ").Append(Width).Append(' ').Append(Height).Append('\n');
             sb.Append("ticks ").Append(Ticks.ToString(CultureInfo.InvariantCulture)).Append('\n');
-            sb.Append("catalog ").Append(CurrentCatalogSignature()).Append('\n');
+            sb.Append("sends ").Append(SimSignature.Sends()).Append('\n');
+            sb.Append("towers ").Append(SimSignature.Towers()).Append('\n');
+            sb.Append("rules ").Append(SimSignature.Rules()).Append('\n');
+            if (!string.IsNullOrEmpty(Final)) sb.Append("final ").Append(Final).Append('\n');
             foreach (var (tick, cmd) in Commands)
                 sb.Append(tick.ToString(CultureInfo.InvariantCulture)).Append(' ').Append(cmd).Append('\n');
             return sb.ToString();
@@ -58,6 +86,11 @@ namespace TDFende
             if (string.IsNullOrWhiteSpace(text)) { error = "arquivo vazio"; return false; }
 
             var lines = text.Replace("\r\n", "\n").Split('\n');
+            if (lines.Length > 0 && lines[0].Trim() == OldHeader1)
+            {
+                error = "gravação do formato 1 (anterior à assinatura completa): regrave a partida";
+                return false;
+            }
             if (lines.Length == 0 || lines[0].Trim() != Header)
             {
                 error = $"cabeçalho inesperado (esperava \"{Header}\")";
@@ -91,9 +124,19 @@ namespace TDFende
                         replay.Difficulty = p[1];
                         break;
 
-                    case "catalog":
-                        if (p.Length < 2) { error = $"linha {i + 1}: assinatura de catálogo ausente"; return false; }
-                        replay.CatalogSignature = p[1];
+                    case "sends":
+                    case "towers":
+                    case "rules":
+                        if (p.Length < 2 || p[1].Length != 16)
+                        { error = $"linha {i + 1}: assinatura \"{p[0]}\" ausente ou fora do formato (16 dígitos hexa)"; return false; }
+                        if (p[0] == "sends") replay.SendsSignature = p[1];
+                        else if (p[0] == "towers") replay.TowersSignature = p[1];
+                        else replay.RulesSignature = p[1];
+                        break;
+
+                    case "final":
+                        // o resto da linha: o fingerprint tem espaços
+                        replay.Final = line.Length > 6 ? line.Substring(6).Trim() : "";
                         break;
 
                     case "ticks":
@@ -184,42 +227,40 @@ namespace TDFende
         }
 
         /// <summary>
-        /// Impressão digital dos catálogos em uso. Um arquivo de balanceamento editado
-        /// muda a partida inteira, e sem isto a reprodução usaria números diferentes dos
-        /// da gravação e reportaria um desfecho que nunca aconteceu.
+        /// Compara as assinaturas gravadas com as regras em uso. Um balanceamento editado, um atrito ou uma
+        /// escalada diferente mudam a partida inteira; sem esta conferência a reprodução usaria números diferentes
+        /// dos da gravação e reportaria um desfecho que nunca aconteceu.
         /// </summary>
-        public static string CurrentCatalogSignature()
+        public SignatureDiff Verify()
         {
-            unchecked
-            {
-                int h = 17;
-                for (int i = 0; i < SendCatalog.Count; i++)
-                {
-                    var u = SendCatalog.Get(i);
-                    h = h * 31 + u.Cost;
-                    h = h * 31 + u.IncomeBonus;
-                    h = h * 31 + u.Count;
-                    h = h * 31 + u.Bounty;
-                    h = h * 31 + u.Hp.GetHashCode();
-                    h = h * 31 + u.Speed.GetHashCode();
-                    h = h * 31 + u.AttritionScale.GetHashCode();
-                }
-                for (int i = 0; i < TowerCatalog.Count; i++)
-                {
-                    var t = TowerCatalog.Get(i);
-                    h = h * 31 + t.Cost;
-                    h = h * 31 + t.Range.GetHashCode();
-                    h = h * 31 + t.Cooldown.GetHashCode();
-                    h = h * 31 + t.Damage.GetHashCode();
-                    h = h * 31 + t.SplashRadius.GetHashCode();
-                    h = h * 31 + t.SlowFactor.GetHashCode();
-                    h = h * 31 + t.SlowSeconds.GetHashCode();
-                    h = h * 31 + t.VsFlyingMultiplier.GetHashCode();
-                    h = h * 31 + t.BorderRadius.GetHashCode();
-                }
-                return h.ToString("x8", CultureInfo.InvariantCulture);
-            }
+            if (SendsSignature.Length == 0 || TowersSignature.Length == 0 || RulesSignature.Length == 0)
+                return SignatureDiff.Missing;
+            var d = SignatureDiff.None;
+            if (SendsSignature != SimSignature.Sends()) d |= SignatureDiff.Sends;
+            if (TowersSignature != SimSignature.Towers()) d |= SignatureDiff.Towers;
+            if (RulesSignature != SimSignature.Rules()) d |= SignatureDiff.Rules;
+            return d;
         }
+
+        /// <summary>Texto para o aviso: o que mudou desde a gravação.</summary>
+        public static string Describe(SignatureDiff d)
+        {
+            if (d == SignatureDiff.None) return "regras iguais às da gravação";
+            if ((d & SignatureDiff.Missing) != 0)
+                return "a gravação não traz as assinaturas (sends, towers, rules); não dá para saber se os números batem";
+            var parts = new List<string>();
+            if ((d & SignatureDiff.Sends) != 0) parts.Add("os envios (bichos)");
+            if ((d & SignatureDiff.Towers) != 0) parts.Add("as torres");
+            if ((d & SignatureDiff.Rules) != 0) parts.Add("as regras (economia, atrito, escalada, IA ou versão da Sim)");
+            return "mudaram desde a gravação: " + string.Join(", ", parts);
+        }
+
+        /// <summary>
+        /// Confere o estado final da reprodução com o gravado. null = a gravação não traz a linha final.
+        /// Só diagnóstico: quem chama avisa, nunca recusa.
+        /// </summary>
+        public bool? FinalMatches(MatchRunner runner) =>
+            string.IsNullOrEmpty(Final) ? (bool?)null : runner.StateFingerprint() == Final;
 
         /// <summary>
         /// Reconstrói a partida e devolve o runner no estado final.

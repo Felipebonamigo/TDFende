@@ -356,6 +356,7 @@ namespace TDFende
                 string file = System.IO.Path.Combine(dir,
                     $"tdfende-{System.DateTime.Now:yyyyMMdd-HHmmss}.txt");
                 _replay.Ticks = _runner.TickCount;
+                _replay.Final = _runner.StateFingerprint(); // diagnóstico (BUG-05): o headless confere ao reproduzir
                 System.IO.File.WriteAllText(file, _replay.Serialize());
                 _lastSaveMessage = $"replay salvo: {file}";
                 Debug.Log($"[TDFende] {_lastSaveMessage}");
