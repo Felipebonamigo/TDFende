@@ -55,6 +55,7 @@ namespace TDFende
             _rng = new CountingRandom(seed);
             Player = new LaneSim(width, height) { Id = 0, CarryLeaks = true };
             Foe = new LaneSim(width, height) { Id = 1, CarryLeaks = true };
+            Player.InfiniteGold = TowerWarsConfig.InfiniteGold; // chave do laboratório (DES-03s)
             _lanes = new[] { Player, Foe };
             _foeAi = new TowerWarsAi(Foe, Player, difficulty, _rng);
         }

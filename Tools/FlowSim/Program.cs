@@ -156,6 +156,7 @@ class Program
         SendSpectrumTests();
         BorderAtTests();
         CounterMatrixTests();
+        LabSwitchTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -748,6 +749,117 @@ class Program
         string txt = CounterMatrix.ToContrasTxt(good);
         Check(txt.Contains("tower=canhao;goodvs=") && txt.Contains("tower=gelo;goodvs=") && !txt.Contains("Canhão"),
             "Matriz: contras.txt usa chaves, não nomes exibidos");
+    }
+
+    /// <summary>
+    /// DES-03s: as chaves do laboratório da tese (atrito, fronteira dobrada, ouro infinito, renda 2x), que voltam ao padrão;
+    /// as métricas de virada e de tensão, testadas com fixture; e o sorteio cego do modo, revelado só depois da nota.
+    /// </summary>
+    static void LabSwitchTests()
+    {
+        LabSwitches.Reset();
+        float attr0 = TowerWarsConfig.AttritionPctPerSecond;
+        string rules0 = SimSignature.Rules();
+        Check(LabSwitches.Current == LabMode.Normal && TowerWarsConfig.BorderScale == 1f && TowerWarsConfig.IncomeMultiplier == 1f
+              && !TowerWarsConfig.InfiniteGold, "Chaves: o padrão é o jogo normal");
+
+        // sem atrito
+        LabSwitches.Apply(LabMode.SemAtrito);
+        Check(TowerWarsConfig.AttritionPctPerSecond == 0f && SimSignature.Rules() != rules0, "Chaves: SemAtrito zera o atrito e muda a assinatura das regras");
+        var noAttr = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 31).Run();
+        Check(noAttr.AttritionKillsA + noAttr.AttritionKillsB == 0, "Chaves: sem atrito, nenhuma morte por atrito");
+        LabSwitches.Reset();
+        Check(TowerWarsConfig.AttritionPctPerSecond == attr0 && SimSignature.Rules() == rules0, "Chaves: Reset devolve o atrito e a assinatura ao padrão");
+
+        // fronteira dobrada
+        TowerCatalog.ResetToDefaults();
+        int canhao = TowerCatalog.IdOf("canhao");
+        var one = new LaneSim(24, 16);
+        one.DebugGrantGold(1000);
+        one.TryBuildTower(new Vector2Int(12, 8), canhao);
+        int cellsNormal = TerritoryCells(one);
+        LabSwitches.Apply(LabMode.FronteiraDobrada);
+        var two = new LaneSim(24, 16);
+        two.DebugGrantGold(1000);
+        two.TryBuildTower(new Vector2Int(12, 8), canhao);
+        int cellsDouble = TerritoryCells(two);
+        Check(Math.Abs(TowerCatalog.BorderAt(canhao, 1) - 2f * TowerCatalog.Get(canhao).BorderRadius) < 1e-4f && cellsDouble > 2 * cellsNormal,
+            $"Chaves: FronteiraDobrada dobra o raio e mais que dobra a área ({cellsNormal} -> {cellsDouble} células)");
+        LabSwitches.Reset();
+        Check(TowerWarsConfig.BorderScale == 1f && TerritoryCells(one) == cellsNormal, "Chaves: Reset devolve a fronteira");
+
+        // renda 2x
+        var inc = new LaneSim(24, 16);
+        int g0 = inc.Gold;
+        Advance(inc, TowerWarsConfig.IncomeTickSeconds + 0.1f);
+        int normalIncome = inc.Gold - g0;
+        LabSwitches.Apply(LabMode.Renda2x);
+        var inc2 = new LaneSim(24, 16);
+        Advance(inc2, TowerWarsConfig.IncomeTickSeconds + 0.1f);
+        Check(inc2.Gold - g0 == 2 * normalIncome && normalIncome > 0, $"Chaves: Renda2x paga o dobro por pingo ({normalIncome} -> {inc2.Gold - g0})");
+        LabSwitches.Reset();
+
+        // ouro infinito: só a lane do jogador (Id 0) da partida
+        LabSwitches.Apply(LabMode.OuroInfinito);
+        var rich = new MatchRunner(5, TowerWarsAi.Personality.Normal, 24, 16);
+        rich.Enqueue(MatchCommand.Send(SendCatalog.IdOf("elefante")));
+        for (int i = 0; i < 5; i++) rich.Enqueue(MatchCommand.Send(SendCatalog.IdOf("elefante")));
+        rich.Step();
+        Check(rich.Player.Gold > 5000 && rich.Player.TotalSent == 6 && rich.Foe.Gold < 5000,
+            $"Chaves: OuroInfinito deixa o jogador comprar sem parar e não mexe na IA (ouro {rich.Player.Gold}/{rich.Foe.Gold})");
+        LabSwitches.Reset();
+        var plain = new MatchRunner(5, TowerWarsAi.Personality.Normal, 24, 16);
+        Check(plain.Player.Gold == TowerWarsConfig.StartGold, "Chaves: depois do Reset o ouro volta ao inicial");
+
+        // ---- métricas, com fixture ----
+        // quem lidera é quem tem mais vidas; empate de vidas desempata por renda; empate total mantém o líder anterior
+        var series = new List<MatchMetrics.Sample>
+        {
+            new MatchMetrics.Sample(20, 20, 10, 10),   // sem líder
+            new MatchMetrics.Sample(20, 20, 14, 10),   // A pela renda
+            new MatchMetrics.Sample(18, 20, 14, 10),   // B por vidas  -> virada 1
+            new MatchMetrics.Sample(18, 18, 10, 12),   // B pela renda (continua B)
+            new MatchMetrics.Sample(16, 18, 10, 12),   // B
+            new MatchMetrics.Sample(16, 12, 10, 12),   // A por vidas  -> virada 2
+            new MatchMetrics.Sample(12, 12, 8, 8),     // empate total: mantém A
+        };
+        var m = MatchMetrics.Compute(series);
+        Check(m.Turnarounds == 2, $"Métrica: viradas contadas no fixture (esperava 2, deu {m.Turnarounds})");
+        Check(MatchMetrics.Compute(new List<MatchMetrics.Sample>()).Turnarounds == 0
+              && MatchMetrics.Compute(new List<MatchMetrics.Sample> { new MatchMetrics.Sample(20, 20, 10, 10) }).Turnarounds == 0,
+            "Métrica: partida sem amostra ou sem líder não tem virada");
+        // tensão: diferença de vidas <= 4 E alguém com <= 12 vidas
+        var tense = new List<MatchMetrics.Sample>
+        {
+            new MatchMetrics.Sample(20, 20, 10, 10),   // não: ninguém em perigo
+            new MatchMetrics.Sample(18, 20, 10, 10),   // não
+            new MatchMetrics.Sample(10, 14, 10, 10),   // sim: 4 de diferença, alguém com 10
+            new MatchMetrics.Sample(6, 14, 10, 10),    // não: 8 de diferença
+            new MatchMetrics.Sample(2, 14, 10, 10),    // não
+        };
+        double t = MatchMetrics.Compute(tense).Tension;
+        Check(Math.Abs(t - 0.2) < 1e-9, $"Métrica: tensão = fração de amostras com jogo aberto e alguém em perigo (esperava 0,20, deu {t:0.00})");
+        var runLab = new MatchSim(TowerWarsAi.Personality.Normal, TowerWarsAi.Personality.Normal, 77).Run();
+        Check(runLab.Tension >= 0.0 && runLab.Tension <= 1.0 && runLab.Turnarounds >= 0 && runLab.Samples >= 10,
+            $"Métrica: o laboratório mede viradas e tensão de uma partida real ({runLab.Turnarounds} viradas, tensão {runLab.Tension:0.00}, {runLab.Samples} amostras)");
+
+        // ---- sorteio cego ----
+        var pool = new[] { LabMode.Normal, LabMode.SemAtrito };
+        var first = BlindSession.Start(1234, pool);
+        Check(first.Reveal() == null && BlindSession.Current != null, "Cego: o modo não é revelado antes da nota");
+        bool applied = LabSwitches.Current == first.ModeForLabOnly;
+        Check(applied, "Cego: o modo sorteado vale na partida");
+        Check(!first.Rate(0) && !first.Rate(11) && first.Rate(7), "Cego: a nota é de 1 a 10 e só uma vez");
+        string line = first.Reveal();
+        Check(line != null && line.Contains(first.ModeForLabOnly.ToString()) && line.Contains("1234") && line.Contains(";7;"),
+            "Cego: depois da nota, o diário recebe semente, modo e nota (" + line + ")");
+        Check(LabSwitches.Current == LabMode.Normal && BlindSession.Current == null, "Cego: revelar encerra a sessão e devolve as chaves ao padrão");
+        Check(BlindSession.Start(1234, pool).ModeForLabOnly == first.ModeForLabOnly, "Cego: o sorteio é determinístico pela semente");
+        BlindSession.Current?.Abort();
+        var seen = new HashSet<LabMode>();
+        for (int sd = 0; sd < 60; sd++) { var b = BlindSession.Start(sd, pool); seen.Add(b.ModeForLabOnly); b.Abort(); }
+        Check(seen.Count == pool.Length, "Cego: os dois modos do conjunto saem (sorteio de verdade)");
+        LabSwitches.Reset();
     }
 
     /// <summary>
@@ -2043,5 +2155,5 @@ static class SimSignatureExpected
 {
     public const string Sends = "be3b34ce94f36c29";
     public const string Towers = "7cb8cd3f7c5ce6cd";
-    public const string Rules = "a8c054f9008766a9";
+    public const string Rules = "61cfd13721b00399";
 }

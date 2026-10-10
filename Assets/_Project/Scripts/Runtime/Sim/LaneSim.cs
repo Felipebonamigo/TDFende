@@ -219,9 +219,10 @@ namespace TDFende
             _incomeTimer += dt;
             if (_incomeTimer < TowerWarsConfig.IncomeTickSeconds) return 0;
             _incomeTimer -= TowerWarsConfig.IncomeTickSeconds;
-            Gold += Income;
-            IncomeTick?.Invoke(new IncomeTickEvent(Id, Income));
-            return Income;
+            int pay = TowerWarsConfig.IncomeMultiplier == 1f ? Income : (int)Math.Round(Income * TowerWarsConfig.IncomeMultiplier);
+            Gold += pay;
+            IncomeTick?.Invoke(new IncomeTickEvent(Id, pay));
+            return pay;
         }
 
         /// <summary>Segundos até o próximo pingo de renda — a IA usa para decidir se espera.</summary>
@@ -655,9 +656,19 @@ namespace TDFende
 
         // ---------------- passo da simulação ----------------
 
+        /// <summary>Ouro infinito (chave do laboratório, DES-03s): enquanto ligado, o ouro nunca cai abaixo de <see cref="InfiniteGoldFloor"/>.</summary>
+        public bool InfiniteGold
+        {
+            get => _infiniteGold;
+            set { _infiniteGold = value; if (value && Gold < InfiniteGoldFloor) Gold = InfiniteGoldFloor; }
+        }
+        bool _infiniteGold;
+        public const int InfiniteGoldFloor = 100000;
+
         public void Tick(float dt)
         {
             if (Dead) return;
+            if (_infiniteGold && Gold < InfiniteGoldFloor) Gold = InfiniteGoldFloor;
             MatchTime += dt;
             TickIncome(dt);
             TickEnemies(dt);

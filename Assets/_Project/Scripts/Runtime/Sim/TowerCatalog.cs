@@ -182,7 +182,7 @@ namespace TDFende
             float baseRadius = Get(typeId).BorderRadius;
             if (baseRadius <= 0f) return 0f;
             float r = baseRadius + TowerWarsConfig.BorderPerLevel * (System.Math.Max(level, 1) - 1);
-            return System.Math.Min(r, baseRadius * TowerWarsConfig.BorderCapFactor);
+            return System.Math.Min(r, baseRadius * TowerWarsConfig.BorderCapFactor) * TowerWarsConfig.BorderScale;
         }
 
         public static float DamageAtLevel(int typeId, int level) =>

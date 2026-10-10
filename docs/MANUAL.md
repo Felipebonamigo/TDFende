@@ -114,6 +114,15 @@ em passos de 1/256: 0,01 de deslocamento muda o hash, ruído de 1e-3 não. **Nã
 IA; o que ela decide aparece em torres, envios e ouro. Mexeu em regra da Sim: rode `dotnet run --project Tools/FlowSim
 -v quiet -- match 12` antes e depois e compare a saída (deve ser idêntica se a regra não mudou de propósito).
 
+### Laboratório da tese: chaves, métricas e sorteio cego (DES-03s)
+
+`LabSwitches.Apply(LabMode.…)` liga `SemAtrito`, `FronteiraDobrada` (`BorderScale` 2), `OuroInfinito` (só a lane 0 de um `MatchRunner`)
+ou `Renda2x`; `LabSwitches.Reset()` sempre volta ao padrão. Mexem só em números de `TowerWarsConfig`, que a assinatura do replay
+enxerga (`rules`). `MatchMetrics` mede **viradas** (o líder, por vidas e depois por renda, trocou de lado) e **tensão** (fração das
+amostras de 5 s com diferença de vidas <= 4 e alguém com <= 12); o `match` do FlowSim imprime as duas. `BlindSession.Start(semente,
+modos)` sorteia e esconde o modo; só `Reveal()` depois da nota (1 a 10) devolve a linha do diário `semente;modo;nota;viradas;tensão`.
+O protocolo A/B, o menu e a regra de decisão ficam no DES-03 (Fase 3).
+
 ### Eventos só de vista (TEC-17)
 
 `LaneSim` dispara `EnemySpawned`, `EnemyHit`, `StatusApplied`, `BountyPaid`, `IncomeTick`, `SendBought` e `LifeLost`;

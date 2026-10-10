@@ -45,6 +45,14 @@ namespace TDFende
         /// <summary>TORRE-03: teto do raio por tipo, como múltiplo do raio base dele (1,35 = no máximo +35%).</summary>
         public const float BorderCapFactor = 1.35f;
 
+        // ---- chaves do laboratório da tese (DES-03s, ver LabSwitches): voltam ao padrão com LabSwitches.Reset() ----
+        /// <summary>Multiplica TODO raio de território (2 = fronteira dobrada). Padrão 1.</summary>
+        public static float BorderScale = 1f;
+        /// <summary>Multiplica cada pingo de renda (2 = renda dobrada). Padrão 1.</summary>
+        public static float IncomeMultiplier = 1f;
+        /// <summary>Ouro infinito para o JOGADOR (lane 0) de uma MatchRunner. Padrão desligado.</summary>
+        public static bool InfiniteGold = false;
+
         /// <summary>
         /// Atrito em PORCENTAGEM da vida máxima por segundo, não em dano fixo.
         /// Dano fixo vira irrelevante assim que os envios escalam — a fronteira

@@ -13,6 +13,9 @@ namespace TDFende
         public LaneSim B { get; }
         public float Elapsed { get; private set; }
 
+        /// <summary>De quantos em quantos segundos o laboratório amostra o placar para as métricas de virada e tensão.</summary>
+        public const float SampleEverySeconds = 5f;
+
         readonly TowerWarsAi _aiA;
         readonly TowerWarsAi _aiB;
         readonly Random _rng;
@@ -35,6 +38,8 @@ namespace TDFende
         {
             float dt = TowerWarsConfig.FixedStep;
             bool flip = false;
+            var samples = new System.Collections.Generic.List<MatchMetrics.Sample>();
+            float nextSample = 0f;
             while (Elapsed < TowerWarsConfig.MatchTimeLimit && !A.Dead && !B.Dead)
             {
                 // Alterna quem decide primeiro a cada passo. Com ordem fixa, o segundo
@@ -59,6 +64,11 @@ namespace TDFende
                 B.Tick(dt);
                 LeakRouter.Route(_lanes, _rng);
                 Elapsed += dt;
+                if (Elapsed >= nextSample) // amostra só para as métricas do laboratório: não toca na simulação
+                {
+                    samples.Add(new MatchMetrics.Sample(A.Lives, B.Lives, A.Income, B.Income));
+                    nextSample += SampleEverySeconds;
+                }
             }
 
             int winner;
@@ -68,8 +78,12 @@ namespace TDFende
             else if (A.Lives != B.Lives) winner = A.Lives > B.Lives ? 1 : 2; // tempo esgotou
             else winner = 0;
 
+            var metrics = MatchMetrics.Compute(samples);
             return new MatchResult
             {
+                Turnarounds = metrics.Turnarounds,
+                Tension = metrics.Tension,
+                Samples = metrics.Samples,
                 Winner = winner,
                 Seconds = Elapsed,
                 LivesA = A.Lives,
@@ -89,6 +103,8 @@ namespace TDFende
     public struct MatchResult
     {
         public int Winner; // 0 = empate, 1 = A, 2 = B
+        public int Turnarounds, Samples; // métricas do laboratório (MatchMetrics)
+        public double Tension;
         public float Seconds;
         public int LivesA, LivesB;
         public int IncomeA, IncomeB;

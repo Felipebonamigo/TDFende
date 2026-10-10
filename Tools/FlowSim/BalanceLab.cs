@@ -121,7 +121,7 @@ static class BalanceLab
     static void Duel(string label, TowerWarsAi.Personality pa, TowerWarsAi.Personality pb, int matches)
     {
         int winA = 0, winB = 0, draw = 0, timeouts = 0;
-        double secs = 0, attritionShare = 0, incomeA = 0, incomeB = 0, towersA = 0, towersB = 0;
+        double turns = 0, tension = 0, secs = 0, attritionShare = 0, incomeA = 0, incomeB = 0, towersA = 0, towersB = 0;
 
         for (int s = 0; s < matches; s++)
         {
@@ -131,6 +131,8 @@ static class BalanceLab
             else draw++;
             if (r.Seconds >= TowerWarsConfig.MatchTimeLimit - 0.05f) timeouts++;
 
+            turns += r.Turnarounds;
+            tension += r.Tension;
             secs += r.Seconds;
             attritionShare += r.AttritionShare;
             incomeA += r.IncomeA;
@@ -146,6 +148,7 @@ static class BalanceLab
         Console.WriteLine($"  renda final     A {incomeA / n:0.0}  |  B {incomeB / n:0.0}        (base {TowerWarsConfig.BaseIncome})");
         Console.WriteLine($"  torres          A {towersA / n:0.0}  |  B {towersB / n:0.0}");
         Console.WriteLine($"  mortes por atrito: {100.0 * attritionShare / n:0.0}% do total");
+        Console.WriteLine($"  viradas/partida {turns / n:0.0}   tensão {100.0 * tension / n:0}% das amostras (DES-03s)");
         Console.WriteLine();
     }
 }
