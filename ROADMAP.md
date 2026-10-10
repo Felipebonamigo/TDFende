@@ -115,7 +115,7 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 - [x] **TEC-12** — Conteúdo por chave estável — 10/10/2026 (34fd131; Sim, testes e compilação verificados na nuvem; a vista falta conferir no -captura do PC)
 - [x] **TEC-17** — Eventos só de vista — 10/10/2026 (911b809)
 - [x] **DES-05** — Envios com papel econômico — 10/10/2026 (c7a78c5)
-- [ ] **DES-04** — Vazamento pesa pelo porte
+- [ ] **DES-04** — Vazamento pesa pelo porte (design escrito, aguarda aprovação do Felipe: docs/designs/des-04-bicho-05-bicho-06-campos-do-envio.md)
 - [x] **TORRE-03** — Upgrade amplia a fronteira — 10/10/2026 (1c66680; o fantasma de colocação mostra só o alcance, sem mudança)
 - [ ] **TORRE-01** — Mira inteligente (fase 1)
 - [ ] **BICHO-05** — Armadura no Rinoceronte (Sim)
