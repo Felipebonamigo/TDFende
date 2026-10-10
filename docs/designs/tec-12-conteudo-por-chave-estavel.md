@@ -2,8 +2,8 @@
 
 [← cronograma](../../ROADMAP.md) · cartão: [Trilha S, TEC-12](../roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md)
 
-**Estado:** escrito, **aguardando aprovação do Felipe** (tarefa "architectural": acrescenta campo em struct da Sim, muda o
-formato do catálogo e a assinatura do replay). Nenhum código escrito. Esforço estimado: 1 a 2 sessões (a parte da Sim e
+**Estado:** escrito e **aprovado pelo Felipe em 10/10/2026, com D1 a D5 como recomendado** (tarefa "architectural": acrescenta campo em struct da Sim, muda o
+formato do catálogo e a assinatura do replay). Esforço estimado: 1 a 2 sessões (a parte da Sim e
 dos testes na nuvem; a parte da vista só se confere no `-captura` da sessão do PC). Vem **depois** do BUG-04 e do BUG-05, já feitos.
 
 ## 1. O problema, como o código está hoje
