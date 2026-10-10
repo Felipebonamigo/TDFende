@@ -3,7 +3,7 @@
 [← cronograma](../../ROADMAP.md) · cartão: [Trilha S, BUG-04](../roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md)
 
 **Estado:** escrito e **aprovado pelo Felipe em 09/10/2026, com D1 a D4 como recomendado** (tarefa "architectural": mexe no
-formato do catálogo). Implementação em andamento. Esforço estimado: meia sessão. Vem **antes** do BUG-05.
+formato do catálogo). Implementado em 10/10/2026 (c9835ef). Esforço estimado: meia sessão. Vem **antes** do BUG-05.
 
 ## 1. O problema, como o código está hoje
 

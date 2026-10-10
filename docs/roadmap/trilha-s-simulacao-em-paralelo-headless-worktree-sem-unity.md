@@ -26,7 +26,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 ## Tarefas, em ordem
 
 - [x] TEC-31 — Fingerprint com hash quantizado de posições — 09/10/2026 (52accc2)
-- [ ] BUG-04 — SendCatalog completa por nome e valida id
+- [x] BUG-04 — SendCatalog completa por nome e valida id — 10/10/2026 (c9835ef)
 - [ ] BUG-05 — Assinatura do replay cobre todos os campos
 - [ ] TEC-12 — Conteúdo por chave estável
 - [ ] TEC-17 — Eventos só de vista

@@ -110,7 +110,7 @@ _O Felipe abre o TDFende.exe gerado da main e vê os 9 bichos com o FPS de volta
 _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado e cada fase de conteúdo só precise da vista. Roda desde a Fase 0 até a Fase 12, em sessões próprias que não pisam no executável._
 
 - [x] **TEC-31** — Fingerprint com hash quantizado de posições — 09/10/2026 (52accc2)
-- [ ] **BUG-04** — SendCatalog completa por nome e valida id (design aprovado pelo Felipe em 09/10/2026: docs/designs/; reservado: sessão na nuvem, 09/10/2026)
+- [x] **BUG-04** — SendCatalog completa por nome e valida id — 10/10/2026 (c9835ef; design: docs/designs/bug-04-catalogo-de-envios.md)
 - [ ] **BUG-05** — Assinatura do replay cobre todos os campos (design aprovado pelo Felipe em 09/10/2026: docs/designs/; reservado: sessão na nuvem, 09/10/2026)
 - [ ] **TEC-12** — Conteúdo por chave estável
 - [ ] **TEC-17** — Eventos só de vista
