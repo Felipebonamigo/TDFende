@@ -11,7 +11,7 @@ namespace TDFende
     /// </summary>
     public static class SimRules
     {
-        public const int Version = 1;
+        public const int Version = 2; // 2 (DES-05): a IA pondera a renda dos envios pelo relógio
     }
 
     /// <summary>

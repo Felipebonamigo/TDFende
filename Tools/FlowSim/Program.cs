@@ -149,6 +149,7 @@ class Program
         CatalogMergeTests();
         CatalogKeyTests();
         SimEventTests();
+        SendSpectrumTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -588,6 +589,49 @@ class Program
               && SendCatalog.Get(SendCatalog.IdOf("lobo")).Key == "lobo" && SendCatalog.Count == 9, "LoadFrom: carrega, completa por chave e deixa o aviso em LastWarning");
         SendCatalog.ResetToDefaults();
         Check(SendCatalog.LastWarning == null, "ResetToDefaults limpa o aviso");
+    }
+
+    /// <summary>
+    /// DES-05: os envios formam um espectro INVESTIMENTO x PRESSÃO. Quem rende mais renda por ouro tem corpo fraco
+    /// (Cachorro); quem aperta (Rato, Lobo, Tigre) rende pouca renda e muita vida por ouro. Com a renda por ouro plana
+    /// (0,08 a 0,10 em todos) o Elefante dominava e o A/B do Portão 1 media um núcleo cego. A medida é a correlação de
+    /// Pearson entre renda por ouro e vida por ouro, sobre a tabela de fábrica.
+    /// </summary>
+    static void SendSpectrumTests()
+    {
+        SendCatalog.ResetToDefaults();
+        int n = SendCatalog.Count;
+        var income = new double[n];
+        var body = new double[n];
+        for (int i = 0; i < n; i++)
+        {
+            var u = SendCatalog.Get(i);
+            income[i] = (double)u.IncomeBonus / u.Cost;
+            body[i] = u.Hp * u.Count / u.Cost;
+        }
+        double mx = 0, my = 0;
+        for (int i = 0; i < n; i++) { mx += income[i] / n; my += body[i] / n; }
+        double sxy = 0, sxx = 0, syy = 0;
+        for (int i = 0; i < n; i++)
+        {
+            sxy += (income[i] - mx) * (body[i] - my);
+            sxx += (income[i] - mx) * (income[i] - mx);
+            syy += (body[i] - my) * (body[i] - my);
+        }
+        double r = sxy / Math.Sqrt(sxx * syy);
+        Check(r <= -0.4, $"Espectro: renda por ouro e vida por ouro têm correlação negativa (r = {r:0.00}, exige <= -0.40)");
+
+        int cao = SendCatalog.IdOf("cachorro"), ele = SendCatalog.IdOf("elefante");
+        int best = 0;
+        for (int i = 1; i < n; i++) if (income[i] > income[best]) best = i;
+        Check(best == cao, $"Espectro: o Cachorro é o investimento puro (maior renda por ouro: {SendCatalog.Get(best).Name})");
+        Check(body[cao] <= my, "Espectro: o Cachorro tem corpo abaixo da média (vida por ouro)");
+        Check(income[ele] <= income[cao] * 0.5, "Espectro: o Elefante rende no máximo metade da renda por ouro do Cachorro");
+        foreach (var k in new[] { "rato", "lobo", "tigre" })
+        {
+            int id = SendCatalog.IdOf(k);
+            Check(income[id] <= mx, $"Espectro: {SendCatalog.Get(id).Name} é pressão (renda por ouro abaixo da média)");
+        }
     }
 
     /// <summary>
@@ -1881,7 +1925,7 @@ class Program
 /// <summary>Assinaturas do catálogo e das regras de FÁBRICA (BUG-05). Muda de propósito => atualizar aqui e dizer no commit.</summary>
 static class SimSignatureExpected
 {
-    public const string Sends = "c69ccd7da93bfd61";
+    public const string Sends = "be3b34ce94f36c29";
     public const string Towers = "7cb8cd3f7c5ce6cd";
-    public const string Rules = "567e6995bddd6d61";
+    public const string Rules = "64a5774d21c5f64a";
 }

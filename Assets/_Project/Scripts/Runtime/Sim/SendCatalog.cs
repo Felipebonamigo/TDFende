@@ -35,23 +35,26 @@ namespace TDFende
         public static SendUnit[] All =
         {
             // Do menor ao maior — é também a ordem dos botões e das teclas 1-9.
+            // DES-05: espectro INVESTIMENTO x PRESSÃO. Renda por ouro cai conforme a pressão sobe: o Cachorro é o
+            // investimento (0,20 de renda por ouro, corpo fraco); Rato, Lobo e Tigre apertam (renda 0,03 a 0,05 por
+            // ouro, muita vida por ouro). O FlowSim confere a correlação negativa (SendSpectrumTests).
             // Enxame: ratos em bando, frágeis, derretem no atrito da fronteira.
-            new SendUnit { Key = "rato", Name = "Rato",        Cost = 22, Hp =  15f, Speed = 2.8f, IncomeBonus = 2, Bounty =  2, Count = 4, AttritionScale = 1.4f },
+            new SendUnit { Key = "rato", Name = "Rato",        Cost = 22, Hp = 18f, Speed = 2.8f, IncomeBonus = 1, Bounty = 2, Count = 4, AttritionScale = 1.4f },
             // A régua: barato, sem truque.
-            new SendUnit { Key = "cachorro", Name = "Cachorro",    Cost = 10, Hp =  40f, Speed = 2.3f, IncomeBonus = 1, Bounty =  4, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "cachorro", Name = "Cachorro",    Cost = 10, Hp = 25f, Speed = 2.3f, IncomeBonus = 2, Bounty = 4, Count = 1, AttritionScale = 1f },
             // Veloz: passa pelo alcance antes de apanhar muito. Resposta: Gelo e Ar.
-            new SendUnit { Key = "lobo", Name = "Lobo",        Cost = 35, Hp =  70f, Speed = 4.0f, IncomeBonus = 3, Bounty = 10, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "lobo", Name = "Lobo",        Cost = 35, Hp = 110f, Speed = 4f, IncomeBonus = 1, Bounty = 10, Count = 1, AttritionScale = 1f },
             // Meio-termo robusto: mais vida que o cachorro, sem a lentidão do urso.
-            new SendUnit { Key = "javali", Name = "Javali",      Cost = 30, Hp = 110f, Speed = 2.3f, IncomeBonus = 3, Bounty =  9, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "javali", Name = "Javali",      Cost = 30, Hp = 100f, Speed = 2.3f, IncomeBonus = 3, Bounty = 9, Count = 1, AttritionScale = 1f },
             // Contra-jogo da fronteira: voa por cima, imune ao atrito. Resposta: Sentinela.
-            new SendUnit { Key = "aguia", Name = "Águia",       Cost = 55, Hp = 120f, Speed = 2.8f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 0f   },
+            new SendUnit { Key = "aguia", Name = "Águia",       Cost = 55, Hp = 120f, Speed = 2.8f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 0f },
             // Gordo e lento. Resposta: Fogo (queima fração da vida).
-            new SendUnit { Key = "urso", Name = "Urso",        Cost = 40, Hp = 180f, Speed = 1.6f, IncomeBonus = 4, Bounty = 14, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "urso", Name = "Urso",        Cost = 40, Hp = 200f, Speed = 1.6f, IncomeBonus = 2, Bounty = 14, Count = 1, AttritionScale = 1f },
             // Gordo E rápido: pede Gelo junto com dano.
-            new SendUnit { Key = "tigre", Name = "Tigre",       Cost = 60, Hp = 190f, Speed = 3.3f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 1f   },
-            new SendUnit { Key = "rinoceronte", Name = "Rinoceronte", Cost = 75, Hp = 330f, Speed = 1.7f, IncomeBonus = 7, Bounty = 27, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "tigre", Name = "Tigre",       Cost = 60, Hp = 280f, Speed = 3.3f, IncomeBonus = 2, Bounty = 20, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "rinoceronte", Name = "Rinoceronte", Cost = 75, Hp = 360f, Speed = 1.7f, IncomeBonus = 4, Bounty = 27, Count = 1, AttritionScale = 1f },
             // Colosso: o maior de todos, com torre de combate no lombo.
-            new SendUnit { Key = "elefante", Name = "Elefante",    Cost = 90, Hp = 450f, Speed = 1.3f, IncomeBonus = 8, Bounty = 34, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "elefante", Name = "Elefante",    Cost = 90, Hp = 480f, Speed = 1.3f, IncomeBonus = 5, Bounty = 34, Count = 1, AttritionScale = 1f },
         };
 
         static readonly SendUnit[] Defaults = (SendUnit[])All.Clone();

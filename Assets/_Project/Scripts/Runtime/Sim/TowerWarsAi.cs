@@ -237,13 +237,16 @@ namespace TDFende
                 if (!_me.CanAfford(id)) continue;
                 var u = SendCatalog.Get(id);
 
-                // Base: renda comprada por ouro gasto.
-                float score = (u.IncomeBonus / (float)u.Cost) * _p.GreedBias;
+                // Base: renda comprada por ouro gasto. Vale menos com o relógio (DES-05): renda comprada cedo
+                // paga o resto da partida, renda comprada tarde quase não paga. Sem isso, com o espectro
+                // investimento x pressão, o Cachorro (o melhor investimento) virava metade das compras.
+                float horizon = Math.Max(IncomeHorizonFloor, 1f - _me.MatchTime / IncomeHorizonSeconds);
+                float score = (u.IncomeBonus / (float)u.Cost) * _p.GreedBias * horizon;
 
                 // Pressão: vida entregue por ouro, valendo mais quando anda rápido
                 // (menos tempo exposto a torre e a atrito).
                 float speedFactor = u.Speed / 2.2f;
-                score += 0.35f * (u.Hp * u.Count * speedFactor) / (u.Cost * 100f);
+                score += PressureWeight * (u.Hp * u.Count * speedFactor) / (u.Cost * 100f);
 
                 // Enxame explora overkill: torre de tiro forte desperdiça o excedente
                 // num corpo fraco, e o tempo de voo já perdido não volta.
@@ -284,6 +287,9 @@ namespace TDFende
             }
             return last;
         }
+
+        // DES-05: o quanto a renda comprada vale ao longo da partida e o quanto a pressão pesa na escolha do envio.
+        const float IncomeHorizonSeconds = 480f, IncomeHorizonFloor = 0.15f, PressureWeight = 0.5f;
 
         readonly System.Collections.Generic.List<Vector2Int> _path = new System.Collections.Generic.List<Vector2Int>();
 
