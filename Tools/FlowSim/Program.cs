@@ -24,6 +24,10 @@ class Program
             return 0;
         }
 
+        // `dotnet run -- matriz [ouro] [contras.txt]` mede cada par torre x bicho com o mesmo ouro (TEC-14).
+        if (args.Length > 0 && args[0] == "matriz")
+            return CounterMatrix.Run(args.Length > 1 ? int.Parse(args[1]) : 160, args.Length > 2 ? args[2] : null);
+
         // `dotnet run -- sweep [N]` varre os knobs de balanceamento e recomenda valores.
         if (args.Length > 0 && args[0] == "sweep")
         {
@@ -151,6 +155,7 @@ class Program
         SimEventTests();
         SendSpectrumTests();
         BorderAtTests();
+        CounterMatrixTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -687,6 +692,62 @@ class Program
         SimSignature.Rules(seen);
         Check(seen.Contains("TowerWarsConfig.BorderPerLevel") && seen.Contains("TowerWarsConfig.BorderCapFactor"),
             "Assinatura: BorderPerLevel e BorderCapFactor entram em rules");
+    }
+
+    /// <summary>
+    /// TEC-14: a matriz de contras. Aqui se testa a MÁQUINA (nota estável e limitada, contratos que acusam torre ou bicho
+    /// inútil); os números do catálogo de hoje saem pelo modo `matriz` e são relatório, não portão.
+    /// </summary>
+    static void CounterMatrixTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        int canhao = TowerCatalog.IdOf("canhao"), rato = SendCatalog.IdOf("rato"), tigre = SendCatalog.IdOf("tigre");
+        double a = CounterMatrix.Score(canhao, rato, 160), b = CounterMatrix.Score(canhao, rato, 160);
+        Check(a == b, "Matriz: a nota do par é determinística");
+        Check(a >= 0.0 && a <= 1.0 && CounterMatrix.Score(canhao, tigre, 160) <= a,
+            "Matriz: a nota fica entre 0 e 1 e o Tigre (rápido e gordo) passa mais que o Rato");
+        Check(CounterMatrix.Score(canhao, rato, 25) <= a, "Matriz: com menos ouro a defesa não melhora");
+
+        int T = TowerCatalog.Count, E = SendCatalog.Count;
+        // matriz sintética "saudável": a torre i é a melhor contra os envios com e % T == i, 20% acima do Canhão
+        var good = new double[T, E];
+        for (int e = 0; e < E; e++)
+            for (int t = 0; t < T; t++)
+                good[t, e] = t == e % T ? 0.6 : 0.5;
+        for (int e = 0; e < E; e++) good[0, e] = e % T == 0 ? 0.6 : 0.5;
+        // faz cada resposta valer ~20% sobre o Canhão (0,5 -> 0,6) também para os envios do Canhão
+        var contracts = CounterMatrix.Contracts(good);
+        int failing = 0;
+        foreach (var c in contracts) if (!c.Ok && !c.Name.Contains("Canhão tem uma resposta") && !c.Name.Contains("tem uma resposta 15%")) failing++;
+        Check(failing == 0, "Matriz: uma matriz com papéis bem divididos passa os contratos de cobertura e de teto de 40%");
+
+        // torre "inútil": nunca é a melhor
+        var useless = (double[,])good.Clone();
+        for (int e = 0; e < E; e++) useless[T - 1, e] = 0.1;
+        var uc = CounterMatrix.Contracts(useless);
+        bool flagged = false;
+        foreach (var c in uc) if (!c.Ok && c.Name.StartsWith(TowerCatalog.Get(T - 1).Name + " é a melhor contra pelo menos 1")) flagged = true;
+        Check(flagged, "Matriz: uma torre que nunca é a melhor contra ninguém reprova o contrato de papel");
+
+        // bicho sem resposta: nenhuma torre passa 15% do Canhão
+        var noAnswer = (double[,])good.Clone();
+        for (int t = 0; t < T; t++) noAnswer[t, 1] = 0.5;
+        bool enemyFlagged = false;
+        foreach (var c in CounterMatrix.Contracts(noAnswer))
+            if (!c.Ok && c.Name.StartsWith(SendCatalog.Get(1).Name + " tem uma resposta")) enemyFlagged = true;
+        Check(enemyFlagged, "Matriz: um bicho que nenhuma torre responde melhor que o Canhão reprova o contrato");
+
+        // uma torre que é a melhor contra tudo estoura o teto de 40%
+        var dominant = (double[,])good.Clone();
+        for (int e = 0; e < E; e++) dominant[0, e] = 0.9;
+        bool domFlagged = false;
+        foreach (var c in CounterMatrix.Contracts(dominant)) if (!c.Ok && c.Name.Contains("no máximo 40%")) domFlagged = true;
+        Check(domFlagged, "Matriz: uma torre melhor contra todos estoura o teto de 40%");
+
+        string txt = CounterMatrix.ToContrasTxt(good);
+        Check(txt.Contains("tower=canhao;goodvs=") && txt.Contains("tower=gelo;goodvs=") && !txt.Contains("Canhão"),
+            "Matriz: contras.txt usa chaves, não nomes exibidos");
     }
 
     /// <summary>
