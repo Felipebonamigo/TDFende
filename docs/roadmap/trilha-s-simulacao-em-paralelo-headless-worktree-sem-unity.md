@@ -29,7 +29,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] BUG-04 — SendCatalog completa por nome e valida id — 10/10/2026 (c9835ef)
 - [x] BUG-05 — Assinatura do replay cobre todos os campos — 10/10/2026 (fced89f)
 - [x] TEC-12 — Conteúdo por chave estável — 10/10/2026 (34fd131; vista a conferir no -captura do PC)
-- [ ] TEC-17 — Eventos só de vista
+- [x] TEC-17 — Eventos só de vista — 10/10/2026 (911b809)
 - [ ] DES-05 — Envios com papel econômico
 - [ ] DES-04 — Vazamento pesa pelo porte
 - [ ] TORRE-03 — Upgrade amplia a fronteira
