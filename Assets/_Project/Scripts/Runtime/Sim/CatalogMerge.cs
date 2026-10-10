@@ -11,7 +11,8 @@ namespace TDFende
     ///
     /// Regras (docs/designs/bug-04-catalogo-de-envios.md):
     ///  1. o resultado tem a ordem e o tamanho da fábrica (o índice é a identidade do bicho/torre);
-    ///  2. casamento por nome exato; quem o arquivo não cita entra com os valores de fábrica;
+    ///  2. casamento pela CHAVE estável (TEC-12; linha antiga, sem key=, casa pelo nome exato); quem o arquivo não
+    ///     cita entra com os valores de fábrica;
     ///  3. nome repetido no arquivo é erro; nome que a fábrica não conhece recusa o arquivo inteiro.
     /// (A regra "campo ausente = valor de fábrica" vive no parser: <see cref="CatalogJson"/>.)
     /// </summary>
@@ -20,26 +21,33 @@ namespace TDFende
         /// <param name="kind">"envios" ou "torres", só para a mensagem.</param>
         /// <param name="parsed">Linhas do arquivo, já lidas (ordem do arquivo).</param>
         /// <param name="lineNos">Número da linha de cada entrada de <paramref name="parsed"/>.</param>
-        public static bool Apply<T>(T[] factory, T[] parsed, int[] lineNos, Func<T, string> nameOf, string kind,
-                                    out T[] result, out string error)
+        /// <param name="keyOf">Chave estável da entrada (TEC-12). Vazia = linha antiga, sem key=: casa pelo nome.</param>
+        public static bool Apply<T>(T[] factory, T[] parsed, int[] lineNos, Func<T, string> keyOf, Func<T, string> nameOf,
+                                    string kind, out T[] result, out string error)
         {
             result = null;
+            var keys = new List<string>();
             var names = new List<string>();
-            foreach (var f in factory) names.Add(nameOf(f));
+            foreach (var f in factory) { keys.Add(keyOf(f)); names.Add(nameOf(f)); }
 
-            // 1) nomes repetidos e desconhecidos, na ordem do arquivo
+            // 1) repetidos e desconhecidos, na ordem do arquivo. Repetição vale pela unidade de fábrica:
+            //    o mesmo bicho escrito uma vez pela chave e outra pelo nome também é repetição.
             var firstLine = new Dictionary<string, int>();
             var slot = new int[parsed.Length];
             for (int i = 0; i < parsed.Length; i++)
             {
-                string n = nameOf(parsed[i]);
-                if (firstLine.TryGetValue(n, out int prev))
+                string k = keyOf(parsed[i]);
+                bool byKey = !string.IsNullOrEmpty(k);
+                string label = byKey ? k : nameOf(parsed[i]);
+                slot[i] = byKey ? keys.IndexOf(k) : names.IndexOf(label);
+                string identity = slot[i] >= 0 ? "#" + slot[i] : "?" + label;
+                if (firstLine.TryGetValue(identity, out int prev))
                 {
-                    error = $"linha {lineNos[i]}: \"{n}\" já apareceu na linha {prev}";
+                    string who = slot[i] >= 0 ? $"{names[slot[i]]}\" (chave {keys[slot[i]]})" : label + "\"";
+                    error = $"linha {lineNos[i]}: \"{who} já apareceu na linha {prev}";
                     return false;
                 }
-                firstLine[n] = lineNos[i];
-                slot[i] = names.IndexOf(n);
+                firstLine[identity] = lineNos[i];
             }
 
             int unknown = -1;
@@ -52,14 +60,17 @@ namespace TDFende
 
             if (unknown >= 0)
             {
-                string n = nameOf(parsed[unknown]);
-                string hint = Suggest(n, names);
+                string k = keyOf(parsed[unknown]);
+                bool byKey = !string.IsNullOrEmpty(k);
+                string label = byKey ? k : nameOf(parsed[unknown]);
+                string hint = Suggest(label, byKey ? keys : names);
                 // Nenhum nome bate e nem de longe se parece: provável arquivo de outra versão do jogo
                 // (a mensagem de sempre, agora junto da lista de nomes que o jogo conhece).
-                string old = !anyKnown && hint == null
+                string old = !anyKnown && hint == null && !byKey
                     ? $"; o arquivo parece de uma versão antiga ({kind} que o jogo não tem mais): exporte de novo para editar"
                     : "";
-                error = $"linha {lineNos[unknown]}: \"{n}\" não existe no jogo ({kind}: {string.Join(", ", names)})."
+                error = $"linha {lineNos[unknown]}: {(byKey ? "chave" : "nome")} \"{label}\" não existe no jogo " +
+                        $"({(byKey ? "chaves" : kind)}: {string.Join(", ", byKey ? keys : names)})."
                         + (hint != null ? $" Quis dizer \"{hint}\"?" : "") + old;
                 return false;
             }

@@ -53,7 +53,7 @@ namespace TDFende
             _laneRoot = laneRoot;
             _onDone = onDone;
             _towerType = p.TowerTypeId;
-            _arc = p.TowerTypeId == 1; // bomba de morteiro sobe em arco
+            _arc = ViewKeys.ArcShot(ViewKeys.TowerKey(p.TowerTypeId)); // só a bomba do Morteiro sobe em arco (por chave, TEC-12)
             _origin = new Vector3(p.Origin.x, muzzleY, p.Origin.z);
             _totalTime = Mathf.Max(p.TotalTime, 0.0001f);
             // foi disparado DURANTE o tique N: no tique N-1 o voo nem tinha começado

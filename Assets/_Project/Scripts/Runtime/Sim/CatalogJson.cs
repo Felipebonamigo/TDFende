@@ -26,12 +26,14 @@ namespace TDFende
         {
             var sb = new StringBuilder();
             sb.Append("# TDFende — envios. Uma linha por tipo; campo ausente usa o padrão.\n");
+            sb.Append("# key= identifica o bicho (não mude); name= é só o texto exibido e o jogo ignora o que estiver aqui.\n");
             sb.Append("# custo/renda/quantidade são inteiros; o resto é decimal com PONTO.\n");
             sb.Append("# attrition=0 significa VOADOR: ignora a fronteira e o atrito.\n");
             for (int i = 0; i < SendCatalog.Count; i++)
             {
                 var u = SendCatalog.Get(i);
-                sb.Append($"name={u.Name}");
+                sb.Append($"key={u.Key}");
+                sb.Append($";name={u.Name}");
                 sb.Append($";cost={u.Cost}");
                 sb.Append($";income={u.IncomeBonus}");
                 sb.Append($";hp={F(u.Hp)}");
@@ -55,7 +57,8 @@ namespace TDFende
         /// que faltam. Devolve as unidades NA ORDEM DO ARQUIVO e a linha de cada uma; quem junta com a
         /// fábrica é o <see cref="CatalogMerge"/>.
         /// </summary>
-        public static bool TryParseSends(string text, SendUnit[] factory, out SendUnit[] units, out int[] lineNos, out string error)
+        public static bool TryParseSends(string text, SendUnit[] factory, out SendUnit[] units, out int[] lineNos, out string error,
+                                         List<string> notes = null)
         {
             units = null;
             lineNos = null;
@@ -63,13 +66,17 @@ namespace TDFende
             var lns = new List<int>();
             foreach (var (fields, lineNo) in Lines(text))
             {
-                var b = new SendUnit { Name = "?", Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
-                string name = Str(fields, "name", "?");
+                var b = new SendUnit { Key = "", Name = "?", Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
+                string key = Str(fields, "key", ""), name = Str(fields, "name", "?");
                 if (factory != null)
                     foreach (var f in factory)
-                        if (f.Name == name) { b = f; break; }
+                        if (key.Length > 0 ? f.Key == key : f.Name == name) { b = f; break; }
+                // Casou com a fábrica: a chave e o nome são os dela (o nome do arquivo é só informativo).
+                bool known = b.Key != "";
+                Identify(notes, lineNo, key, name, known, b.Key, b.Name, ref key, ref name);
                 var u = new SendUnit
                 {
+                    Key = key,
                     Name = name,
                     Cost = Int(fields, "cost", b.Cost),
                     IncomeBonus = Int(fields, "income", b.IncomeBonus),
@@ -98,11 +105,13 @@ namespace TDFende
         {
             var sb = new StringBuilder();
             sb.Append("# TDFende — torres. Uma linha por tipo; campo ausente usa o padrão.\n");
+            sb.Append("# key= identifica a torre (não mude); name= é só o texto exibido e o jogo ignora o que estiver aqui.\n");
             sb.Append("# border=0 significa que a torre não projeta fronteira.\n");
             for (int i = 0; i < TowerCatalog.Count; i++)
             {
                 var t = TowerCatalog.Get(i);
-                sb.Append($"name={t.Name}");
+                sb.Append($"key={t.Key}");
+                sb.Append($";name={t.Name}");
                 sb.Append($";cost={t.Cost}");
                 sb.Append($";range={F(t.Range)}");
                 sb.Append($";cooldown={F(t.Cooldown)}");
@@ -125,7 +134,8 @@ namespace TDFende
             TryParseTowers(text, null, out towers, out _, out error);
 
         /// <summary>Como <see cref="TryParseSends(string,SendUnit[],out SendUnit[],out int[],out string)"/>, para torres.</summary>
-        public static bool TryParseTowers(string text, TowerType[] factory, out TowerType[] towers, out int[] lineNos, out string error)
+        public static bool TryParseTowers(string text, TowerType[] factory, out TowerType[] towers, out int[] lineNos, out string error,
+                                          List<string> notes = null)
         {
             towers = null;
             lineNos = null;
@@ -133,13 +143,16 @@ namespace TDFende
             var lns = new List<int>();
             foreach (var (fields, lineNo) in Lines(text))
             {
-                var b = new TowerType { Name = "?", Cost = 25, Range = 3.5f, Cooldown = 0.65f, Damage = 12f, SlowFactor = 1f, VsFlyingMultiplier = 1f };
-                string name = Str(fields, "name", "?");
+                var b = new TowerType { Key = "", Name = "?", Cost = 25, Range = 3.5f, Cooldown = 0.65f, Damage = 12f, SlowFactor = 1f, VsFlyingMultiplier = 1f };
+                string key = Str(fields, "key", ""), name = Str(fields, "name", "?");
                 if (factory != null)
                     foreach (var f in factory)
-                        if (f.Name == name) { b = f; break; }
+                        if (key.Length > 0 ? f.Key == key : f.Name == name) { b = f; break; }
+                bool known = b.Key != "";
+                Identify(notes, lineNo, key, name, known, b.Key, b.Name, ref key, ref name);
                 var t = new TowerType
                 {
+                    Key = key,
                     Name = name,
                     Cost = Int(fields, "cost", b.Cost),
                     Range = Flt(fields, "range", b.Range),
@@ -176,6 +189,23 @@ namespace TDFende
         }
 
         // ---------------- utilidades ----------------
+
+        /// <summary>
+        /// Decide chave e nome de uma linha. Casou com a fábrica: vale a chave e o nome DELA, e uma nota diz o que o
+        /// arquivo tinha de diferente (linha sem key=; name= diferente do nome do jogo). Não casou: o que o arquivo
+        /// disse, para o merge recusar com a mensagem certa.
+        /// </summary>
+        static void Identify(List<string> notes, int lineNo, string fileKey, string fileName, bool known,
+                             string factoryKey, string factoryName, ref string key, ref string name)
+        {
+            if (!known) return;
+            if (fileKey.Length == 0)
+                notes?.Add($"linha {lineNo}: sem chave (key=), casado pelo nome \"{fileName}\"; exporte o balanceamento de novo");
+            else if (fileName != "?" && fileName != factoryName)
+                notes?.Add($"linha {lineNo}: name=\"{fileName}\" ignorado; o jogo chama \"{factoryName}\" (chave {fileKey})");
+            key = factoryKey;
+            name = factoryName;
+        }
 
         static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
 

@@ -114,6 +114,14 @@ em passos de 1/256: 0,01 de deslocamento muda o hash, ruído de 1e-3 não. **Nã
 IA; o que ela decide aparece em torres, envios e ouro. Mexeu em regra da Sim: rode `dotnet run --project Tools/FlowSim
 -v quiet -- match 12` antes e depois e compare a saída (deve ser idêntica se a regra não mudou de propósito).
 
+### Bicho ou torre novo: a chave (TEC-12)
+
+Todo `SendUnit` e `TowerType` tem `Key` (ASCII minúsculo, não muda com o tema; `Name` é só o texto exibido). Para acrescentar
+um: (1) linha no fim do catálogo com `Key`; (2) a mesma chave em `ViewKeys.Enemy`/`Tower` e a entrada nas tabelas do
+`ModelLib` (modelo, tiro), no `Vfx` (clarão, impacto, rastro) e no `ModelLibTiers` (torre). O FlowSim reprova se a chave do
+catálogo não está em `ViewKeys`, e o `-captura` reprova se as tabelas do `ModelLib` não batem com `ViewKeys` ou se o log traz
+"sem modelo para". Testes falam `SendCatalog.IdOf("lobo")`, não `2`. Os ids inteiros continuam sendo o que o replay grava.
+
 ### Assinatura do replay e `SimRules.Version` (BUG-05)
 
 O replay (formato 2, `tdfende-replay 2`) grava três assinaturas de 64 bits (`SimSignature`): `sends` (todos os campos de

@@ -68,6 +68,7 @@ namespace TDFende
             foreach (var u in units)
             {
                 w.Scope("SendUnit");
+                w.Str("Key", u.Key);
                 w.Str("Name", u.Name);
                 w.Int("Cost", u.Cost);
                 w.Flt("Hp", u.Hp);
@@ -88,6 +89,7 @@ namespace TDFende
             foreach (var t in towers)
             {
                 w.Scope("TowerType");
+                w.Str("Key", t.Key);
                 w.Str("Name", t.Name);
                 w.Int("Cost", t.Cost);
                 w.Flt("Range", t.Range);

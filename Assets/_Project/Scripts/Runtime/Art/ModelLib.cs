@@ -89,40 +89,84 @@ namespace TDFende
             return d;
         }
 
-        /// <summary>Torre de cada tipo, já com os enfeites de nível 2 a 6 (escondidos até subir).</summary>
-        public static ModelDef Tower(int typeId) => typeId switch
-        {
-            1 => Cached("Torre_Morteiro", () => WithTiers(MortarTower(), 1)),
-            2 => Cached("Torre_Gelo", () => WithTiers(FrostTower(), 2)),
-            3 => Cached("Torre_Sentinela", () => WithTiers(WatchTower(), 3)),
-            4 => Cached("Torre_Fogo", () => WithTiers(FireTower(), 4)),
-            5 => Cached("Torre_Ar", () => WithTiers(WindTower(), 5)),
-            _ => Cached("Torre_Canhao", () => WithTiers(CannonTower(), 0)),
-        };
+        // TEC-12: a vista escolhe pelo CHAVE do catálogo (SendUnit.Key / TowerType.Key), nunca pelo índice. As chaves
+        // abaixo têm que ser exatamente ViewKeys.Enemy / ViewKeys.Tower (o FlowSim confere o catálogo contra essas
+        // listas, e SelfCheck confere as tabelas contra elas na captura).
+        static readonly Dictionary<string, (string Asset, System.Func<ModelDef> Build)> Towers =
+            new Dictionary<string, (string, System.Func<ModelDef>)>
+            {
+                ["canhao"] = ("Torre_Canhao", () => WithTiers(CannonTower(), "canhao")),
+                ["morteiro"] = ("Torre_Morteiro", () => WithTiers(MortarTower(), "morteiro")),
+                ["gelo"] = ("Torre_Gelo", () => WithTiers(FrostTower(), "gelo")),
+                ["sentinela"] = ("Torre_Sentinela", () => WithTiers(WatchTower(), "sentinela")),
+                ["fogo"] = ("Torre_Fogo", () => WithTiers(FireTower(), "fogo")),
+                ["ar"] = ("Torre_Ar", () => WithTiers(WindTower(), "ar")),
+            };
 
-        /// <summary>Bicho de cada envio, na ordem do SendCatalog (do rato ao elefante).</summary>
-        public static ModelDef Enemy(int typeId) => typeId switch
-        {
-            0 => Cached("Inimigo_Rato", Rat),
-            2 => Cached("Inimigo_Lobo", Wolf),
-            3 => Cached("Inimigo_Javali", Boar),
-            4 => Cached("Inimigo_Aguia", Eagle),
-            5 => Cached("Inimigo_Urso", Bear),
-            6 => Cached("Inimigo_Tigre", Tiger),
-            7 => Cached("Inimigo_Rinoceronte", Rhino),
-            8 => Cached("Inimigo_Elefante", Elephant),
-            _ => Cached("Inimigo_Cachorro", Dog),
-        };
+        static readonly Dictionary<string, (string Asset, System.Func<ModelDef> Build)> Enemies =
+            new Dictionary<string, (string, System.Func<ModelDef>)>
+            {
+                ["rato"] = ("Inimigo_Rato", Rat),
+                ["cachorro"] = ("Inimigo_Cachorro", Dog),
+                ["lobo"] = ("Inimigo_Lobo", Wolf),
+                ["javali"] = ("Inimigo_Javali", Boar),
+                ["aguia"] = ("Inimigo_Aguia", Eagle),
+                ["urso"] = ("Inimigo_Urso", Bear),
+                ["tigre"] = ("Inimigo_Tigre", Tiger),
+                ["rinoceronte"] = ("Inimigo_Rinoceronte", Rhino),
+                ["elefante"] = ("Inimigo_Elefante", Elephant),
+            };
 
-        public static ModelDef Projectile(int towerTypeId) => towerTypeId switch
+        static readonly Dictionary<string, (string Asset, System.Func<ModelDef> Build)> Shots =
+            new Dictionary<string, (string, System.Func<ModelDef>)>
+            {
+                ["canhao"] = ("Tiro_Canhao", () => Ball(0.06f)),
+                ["morteiro"] = ("Tiro_Morteiro", () => Ball(0.085f)),
+                ["gelo"] = ("Tiro_Gelo", IceShard),
+                ["sentinela"] = ("Tiro_Sentinela", Bolt),
+                ["fogo"] = ("Tiro_Fogo", Fireball),
+                ["ar"] = ("Tiro_Ar", () => new ModelDef()), // rajada: só o rastro de vento aparece
+            };
+
+        // Aviso uma vez por chave: chave sem modelo cai no genérico, mas o log (e o -captura) mostram o buraco.
+        static readonly HashSet<string> Warned = new HashSet<string>();
+
+        static ModelDef Lookup(Dictionary<string, (string Asset, System.Func<ModelDef> Build)> table, string kind,
+                               string key, string fallbackKey)
         {
-            1 => Cached("Tiro_Morteiro", () => Ball(0.085f)),
-            2 => Cached("Tiro_Gelo", IceShard),
-            3 => Cached("Tiro_Sentinela", Bolt),
-            4 => Cached("Tiro_Fogo", Fireball),
-            5 => Cached("Tiro_Ar", () => new ModelDef()), // rajada: só o rastro de vento aparece
-            _ => Cached("Tiro_Canhao", () => Ball(0.06f)),
-        };
+            if (key != null && table.TryGetValue(key, out var e)) return Cached(e.Asset, e.Build);
+            if (Warned.Add(kind + ":" + key))
+                Debug.LogWarning($"[TDFende] sem modelo para {kind} '{key}': usando '{fallbackKey}'. " +
+                                 "Acrescente a chave em ModelLib e em ViewKeys.");
+            var f = table[fallbackKey];
+            return Cached(f.Asset, f.Build);
+        }
+
+        /// <summary>Torre de cada tipo (pela chave do catálogo), já com os enfeites de nível 2 a 6 (escondidos até subir).</summary>
+        public static ModelDef Tower(string key) => Lookup(Towers, "torre", key, "canhao");
+        public static ModelDef Tower(int typeId) => Tower(ViewKeys.TowerKey(typeId));
+
+        /// <summary>Bicho de cada envio (pela chave do catálogo).</summary>
+        public static ModelDef Enemy(string key) => Lookup(Enemies, "bicho", key, "cachorro");
+        public static ModelDef Enemy(int typeId) => Enemy(ViewKeys.EnemyKey(typeId));
+
+        public static ModelDef Projectile(string towerKey) => Lookup(Shots, "tiro", towerKey, "canhao");
+        public static ModelDef Projectile(int towerTypeId) => Projectile(ViewKeys.TowerKey(towerTypeId));
+
+        /// <summary>Confere que as tabelas têm exatamente as chaves de <see cref="ViewKeys"/>; devolve o que destoa (vazio = ok).</summary>
+        public static string SelfCheck()
+        {
+            var bad = new List<string>();
+            void Cmp(string kind, Dictionary<string, (string, System.Func<ModelDef>)> table, string[] keys)
+            {
+                foreach (var k in keys) if (!table.ContainsKey(k)) bad.Add($"{kind} '{k}' está em ViewKeys e falta no ModelLib");
+                foreach (var k in table.Keys) if (System.Array.IndexOf(keys, k) < 0) bad.Add($"{kind} '{k}' está no ModelLib e falta em ViewKeys");
+            }
+            Cmp("torre", Towers, ViewKeys.Tower);
+            Cmp("tiro", Shots, ViewKeys.Tower);
+            Cmp("bicho", Enemies, ViewKeys.Enemy);
+            return string.Join("; ", bad);
+        }
 
         public static ModelDef Keep() => Cached("Fortaleza", BuildKeep);
         public static ModelDef Camp() => Cached("Acampamento", BuildCamp);

@@ -26,13 +26,13 @@ namespace TDFende
             public bool Square;      // Sentinela: plataforma quadrada
         }
 
-        static TierGeom GeomFor(int type) => type switch
+        static TierGeom GeomFor(string type) => type switch
         {
-            1 => new TierGeom { BaseSize = 0.96f, ShaftR = 0.45f, ShaftMidY = 0.23f, RimR = 0.42f, RimY = 0.464f, ApexY = 0.62f, RuneMat = ArtMat.Rune },
-            2 => new TierGeom { BaseSize = 0.8f, ShaftR = 0.28f, ShaftMidY = 0.45f, RimR = 0.33f, RimY = 1.13f, ApexY = 1.47f, RuneMat = ArtMat.Ice },
-            3 => new TierGeom { BaseSize = 0.8f, ShaftR = 0.34f, ShaftMidY = 0.24f, RimR = 0.28f, RimY = 1.1f, ApexY = 1.54f, RuneMat = ArtMat.Rune, Square = true },
-            4 => new TierGeom { BaseSize = 0.9f, ShaftR = 0.375f, ShaftMidY = 0.35f, RimR = 0.37f, RimY = 0.674f, ApexY = 0.8f, RuneMat = ArtMat.Ember },
-            5 => new TierGeom { BaseSize = 0.82f, ShaftR = 0.265f, ShaftMidY = 0.45f, RimR = 0.28f, RimY = 0.764f, ApexY = 1.12f, RuneMat = ArtMat.Rune },
+            "morteiro" => new TierGeom { BaseSize = 0.96f, ShaftR = 0.45f, ShaftMidY = 0.23f, RimR = 0.42f, RimY = 0.464f, ApexY = 0.62f, RuneMat = ArtMat.Rune },
+            "gelo" => new TierGeom { BaseSize = 0.8f, ShaftR = 0.28f, ShaftMidY = 0.45f, RimR = 0.33f, RimY = 1.13f, ApexY = 1.47f, RuneMat = ArtMat.Ice },
+            "sentinela" => new TierGeom { BaseSize = 0.8f, ShaftR = 0.34f, ShaftMidY = 0.24f, RimR = 0.28f, RimY = 1.1f, ApexY = 1.54f, RuneMat = ArtMat.Rune, Square = true },
+            "fogo" => new TierGeom { BaseSize = 0.9f, ShaftR = 0.375f, ShaftMidY = 0.35f, RimR = 0.37f, RimY = 0.674f, ApexY = 0.8f, RuneMat = ArtMat.Ember },
+            "ar" => new TierGeom { BaseSize = 0.82f, ShaftR = 0.265f, ShaftMidY = 0.45f, RimR = 0.28f, RimY = 0.764f, ApexY = 1.12f, RuneMat = ArtMat.Rune },
             _ => new TierGeom { BaseSize = 0.9f, ShaftR = 0.34f, ShaftMidY = 0.45f, RimR = 0.36f, RimY = 0.814f, ApexY = 0.95f, RuneMat = ArtMat.Rune },
         };
 
@@ -48,7 +48,7 @@ namespace TDFende
             return part.Mesh;
         }
 
-        static ModelDef WithTiers(ModelDef d, int type)
+        static ModelDef WithTiers(ModelDef d, string type)
         {
             var g = GeomFor(type);
             float topY = d.Find(Top)?.Pivot.y ?? 0.5f;
@@ -111,12 +111,12 @@ namespace TDFende
             // ---- o que é de cada tipo ----
             switch (type)
             {
-                case 0: CannonTiers(d, topY); break;
-                case 1: MortarTiers(d, topY); break;
-                case 2: FrostTiers(d, g); break;
-                case 3: WatchTiers(d, topY); break;
-                case 4: FireTiers(d, g, topY); break;
-                case 5: WindTiers(d); break;
+                case "canhao": CannonTiers(d, topY); break;
+                case "morteiro": MortarTiers(d, topY); break;
+                case "gelo": FrostTiers(d, g); break;
+                case "sentinela": WatchTiers(d, topY); break;
+                case "fogo": FireTiers(d, g, topY); break;
+                case "ar": WindTiers(d); break;
             }
             return d;
         }

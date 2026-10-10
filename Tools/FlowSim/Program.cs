@@ -147,6 +147,7 @@ class Program
         ArtLayerTests();
         FingerprintTests();
         CatalogMergeTests();
+        CatalogKeyTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -274,7 +275,7 @@ class Program
             lane.DebugGrantGold(3000);
             lane.TryBuildTower(cell, towerType);
             feeder.DebugGrantGold(3000);
-            feeder.TrySend(2, lane, new Random(5)); // Corredor: rápido, sente a lentidão
+            feeder.TrySend(SendCatalog.IdOf("lobo"), lane, new Random(5)); // Corredor: rápido, sente a lentidão
             Advance(lane, seconds);
             return DeepestX(lane);
         }
@@ -385,7 +386,7 @@ class Program
         SendCatalog.ResetToDefaults();
         TowerCatalog.ResetToDefaults();
         var factory9 = (SendUnit[])SendCatalog.All.Clone();
-        var hiena = new SendUnit { Name = "Hiena", Cost = 33, Hp = 90f, Speed = 3f, IncomeBonus = 3, Bounty = 11, Count = 1, AttritionScale = 1f };
+        var hiena = new SendUnit { Key = "hiena", Name = "Hiena", Cost = 33, Hp = 90f, Speed = 3f, IncomeBonus = 3, Bounty = 11, Count = 1, AttritionScale = 1f };
         var factory10 = new SendUnit[factory9.Length + 1];
         factory9.CopyTo(factory10, 0);
         factory10[factory9.Length] = hiena;
@@ -452,7 +453,7 @@ class Program
         Check(SendCatalog.IsValidId(0) && SendCatalog.IsValidId(SendCatalog.Count - 1)
               && !SendCatalog.IsValidId(-1) && !SendCatalog.IsValidId(SendCatalog.Count),
             "IsValidId: 0 a Count-1");
-        Check(SendCatalog.TryGet(1, out var ok1) && ok1.Name == SendCatalog.Get(1).Name && !SendCatalog.TryGet(99, out _),
+        Check(SendCatalog.TryGet(1, out var ok1) && ok1.Name == SendCatalog.Get(SendCatalog.IdOf("cachorro")).Name && !SendCatalog.TryGet(99, out _),
             "TryGet: devolve o envio válido e false para o inválido");
 
         // 9) a borda do sistema RECUSA id inválido em vez de estourar
@@ -485,6 +486,107 @@ class Program
             "Merge de torres: nome desconhecido recusa o arquivo e lista as torres (" + etUnk + ")");
         Check(!TowerCatalog.Merge(towers6, canhao + "\n" + canhao, out _, out string etDup) && etDup.Contains("linha 2"),
             "Merge de torres: nome repetido é recusado");
+    }
+
+    /// <summary>
+    /// TEC-12: bicho e torre têm uma CHAVE estável (ASCII, não muda com o tema). O arquivo de balanceamento casa por
+    /// chave, o nome exibido é só texto, e a vista escolhe modelo/efeito pela chave. Cobertura: toda chave de fábrica
+    /// precisa ter entrada na vista (ViewKeys), senão o 10º bicho nasceria com o modelo de outro.
+    /// </summary>
+    static void CatalogKeyTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        var sends = (SendUnit[])SendCatalog.All.Clone();
+        var towers = (TowerType[])TowerCatalog.All.Clone();
+
+        // 1) chaves da fábrica: preenchidas, únicas, ASCII minúsculo
+        bool Shape(string k)
+        {
+            if (string.IsNullOrEmpty(k)) return false;
+            foreach (char c in k) if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) return false;
+            return true;
+        }
+        var seenKeys = new HashSet<string>();
+        bool sendKeysOk = true, towerKeysOk = true;
+        foreach (var u in sends) sendKeysOk &= Shape(u.Key) && seenKeys.Add("s:" + u.Key);
+        foreach (var t in towers) towerKeysOk &= Shape(t.Key) && seenKeys.Add("t:" + t.Key);
+        Check(sendKeysOk, "Chaves dos envios: preenchidas, únicas, ASCII minúsculo");
+        Check(towerKeysOk, "Chaves das torres: preenchidas, únicas, ASCII minúsculo");
+
+        // 2) IdOf / TryIdOf
+        Check(SendCatalog.IdOf("lobo") == 2 && SendCatalog.IdOf("nao_existe") == -1
+              && SendCatalog.TryIdOf("elefante", out int idEl) && idEl == 8 && !SendCatalog.TryIdOf("Lobo", out _),
+            "SendCatalog.IdOf/TryIdOf: acha pela chave (exata), -1/false se não existe");
+        Check(TowerCatalog.IdOf("gelo") == 2 && TowerCatalog.IdOf("canhao") == 0 && TowerCatalog.IdOf("x") == -1
+              && TowerCatalog.TryIdOf("ar", out int idAr) && idAr == 5,
+            "TowerCatalog.IdOf/TryIdOf: acha pela chave");
+
+        // 3) a vista conhece TODA chave de fábrica (o ganho central do TEC-12)
+        var noModel = new List<string>();
+        foreach (var u in sends) if (System.Array.IndexOf(ViewKeys.Enemy, u.Key) < 0) noModel.Add("bicho " + u.Key);
+        foreach (var t in towers) if (System.Array.IndexOf(ViewKeys.Tower, t.Key) < 0) noModel.Add("torre " + t.Key);
+        Check(noModel.Count == 0, "Vista: toda chave do catálogo de fábrica tem modelo e efeito (faltam: " + string.Join(", ", noModel) + ")");
+        Check(ViewKeys.ArcShot("morteiro") && !ViewKeys.ArcShot("canhao") && !ViewKeys.ArcShot("gelo"),
+            "Vista: só o Morteiro lança o tiro em arco");
+
+        // 4) serialização escreve a chave primeiro e a ida e volta preserva a chave
+        string text = CatalogJson.SerializeSends();
+        Check(text.Contains("key=lobo;name=Lobo;"), "Serialize: a linha começa pela chave (key=lobo;name=Lobo;...)");
+        Check(CatalogJson.SerializeTowers().Contains("key=gelo;name=Gelo;"), "Serialize das torres: key= primeiro");
+        Check(SendCatalog.Merge(sends, text, out var back, out _) && back[4].Key == "aguia" && back[4].Name == "Águia",
+            "Merge: ida e volta mantém chave e nome");
+
+        // 5) o tema renomeia: chave casa, o nome do arquivo NÃO renomeia o jogo (D2), e o aviso diz isso
+        Check(SendCatalog.Merge(sends, "key=lobo;name=Lupus;cost=40", out var ren, out string eRen, out string warn)
+              && ren[2].Name == "Lobo" && ren[2].Cost == 40 && ren[2].Hp == sends[2].Hp
+              && warn != null && warn.Contains("Lupus") && warn.Contains("lobo"),
+            "Merge: key=lobo;name=Lupus casa pela chave, não renomeia e avisa (" + eRen + " | " + warn + ")");
+
+        // 6) e o jogo renomeado (tema) lê o arquivo antigo: casa pela chave, mesmo com outro nome de fábrica
+        var themed = (SendUnit[])sends.Clone();
+        themed[2].Name = "Lupus";
+        Check(SendCatalog.Merge(themed, text, out var th, out string eth) && th.Length == themed.Length
+              && th[2].Name == "Lupus" && th[2].Key == "lobo" && th[2].Cost == sends[2].Cost,
+            "Merge: tema renomeou o Lobo; o arquivo exportado antes continua casando pela chave (" + eth + ")");
+
+        // 7) arquivo antigo (só name=) segue funcionando, casando pelo nome
+        Check(SendCatalog.Merge(sends, "name=Lobo;cost=41", out var leg, out _, out string legWarn)
+              && leg[2].Key == "lobo" && leg[2].Cost == 41 && legWarn != null && legWarn.Contains("sem chave"),
+            "Merge: linha sem key= casa pelo nome e avisa para exportar de novo (" + legWarn + ")");
+
+        // 8) chave desconhecida: recusa com a lista de chaves
+        Check(!SendCatalog.Merge(sends, "key=hiena;cost=40", out _, out string eKey) && eKey.Contains("hiena") && eKey.Contains("lobo")
+              && eKey.Contains("linha 1") && eKey.Contains("chave"),
+            "Merge: chave desconhecida recusa o arquivo e lista as chaves (" + eKey + ")");
+        Check(!SendCatalog.Merge(sends, "key=lobo;cost=40\nkey=lobo;cost=50", out _, out string eDupK)
+              && eDupK.Contains("lobo") && eDupK.Contains("linha 2") && eDupK.Contains("linha 1"),
+            "Merge: chave repetida é recusada, com as duas linhas");
+        // mesmo bicho escrito uma vez pela chave e outra pelo nome: repetição
+        Check(!SendCatalog.Merge(sends, "key=lobo;cost=40\nname=Lobo;cost=50", out _, out string eMix) && eMix.Contains("linha 2"),
+            "Merge: o mesmo bicho pela chave e pelo nome é repetição");
+
+        // 9) torres: mesma regra
+        Check(TowerCatalog.Merge(towers, "key=gelo;name=Frost;cost=41", out var mt, out _, out string tw)
+              && mt[2].Name == "Gelo" && mt[2].Cost == 41 && tw != null && tw.Contains("Frost"),
+            "Torres: casa pela chave, nome do arquivo não renomeia");
+        Check(!TowerCatalog.Merge(towers, "key=canhoes;cost=9", out _, out string etk) && etk.Contains("canhoes") && etk.Contains("canhao"),
+            "Torres: chave desconhecida lista as chaves");
+
+        // 10) a chave entra na assinatura do replay
+        var k1 = (SendUnit[])sends.Clone();
+        k1[1].Key = "cachorro2";
+        Check(SimSignature.Sends(k1) != SimSignature.Sends(sends), "Assinatura: mudar só a Key de um envio muda o bloco sends");
+        var k2 = (TowerType[])towers.Clone();
+        k2[1].Key = "morteiro2";
+        Check(SimSignature.Towers(k2) != SimSignature.Towers(towers), "Assinatura: mudar só a Key de uma torre muda o bloco towers");
+
+        // 11) LoadFrom guarda o aviso para o log do boot; e o catálogo em uso continua o de fábrica na ordem
+        SendCatalog.ResetToDefaults();
+        Check(SendCatalog.LoadFrom("name=Lobo;cost=33", out _) && SendCatalog.LastWarning != null && SendCatalog.Get(SendCatalog.IdOf("lobo")).Cost == 33
+              && SendCatalog.Get(SendCatalog.IdOf("lobo")).Key == "lobo" && SendCatalog.Count == 9, "LoadFrom: carrega, completa por chave e deixa o aviso em LastWarning");
+        SendCatalog.ResetToDefaults();
+        Check(SendCatalog.LastWarning == null, "ResetToDefaults limpa o aviso");
     }
 
     /// <summary>
@@ -661,7 +763,7 @@ class Program
         {
             var feeder = new LaneSim(24, 16); feeder.DebugGrantGold(5000);
             var lane = new LaneSim(24, 16);
-            feeder.TrySend(0, lane, new Random(11));
+            feeder.TrySend(SendCatalog.IdOf("rato"), lane, new Random(11));
             for (int i = 0; i < ticks; i++) lane.Tick(TowerWarsConfig.FixedStep);
             return lane;
         }
@@ -675,7 +777,7 @@ class Program
         // --- torre entra no hash (tipo e nível)
         var t1 = new LaneSim(24, 16); var t2 = new LaneSim(24, 16);
         t1.DebugGrantGold(5000); t2.DebugGrantGold(5000);
-        t1.TryBuildTower(new Vector2Int(8, 8), 0); t2.TryBuildTower(new Vector2Int(8, 8), 1);
+        t1.TryBuildTower(new Vector2Int(8, 8), TowerCatalog.IdOf("canhao")); t2.TryBuildTower(new Vector2Int(8, 8), TowerCatalog.IdOf("morteiro"));
         Check(t1.TowerCount == t2.TowerCount, "Fingerprint (base): as duas lanes têm 1 torre");
         Check(SimFingerprint.OfLane(t1) != SimFingerprint.OfLane(t2), "Fingerprint: torre de tipo diferente muda o hash");
 
@@ -755,8 +857,8 @@ class Program
 
         // ---------- envio: paga aqui, nasce lá, renda sobe aqui ----------
         int goldBefore = a.Gold, incomeBefore = a.Income;
-        var recruta = SendCatalog.Get(0);
-        bool sent = a.TrySend(0, b, rng);
+        var recruta = SendCatalog.Get(SendCatalog.IdOf("rato"));
+        bool sent = a.TrySend(SendCatalog.IdOf("rato"), b, rng);
         Check(sent, "Envio: compra aceita com ouro suficiente");
         Check(a.Gold == goldBefore - recruta.Cost, "Envio: cobra o ouro de QUEM ENVIA");
         Check(a.Income == incomeBefore + recruta.IncomeBonus, "Envio: sobe a renda de QUEM ENVIA");
@@ -766,14 +868,14 @@ class Program
         // ---------- enxame gera vários bonecos ----------
         var c = new LaneSim(24, 16);
         var d = new LaneSim(24, 16);
-        c.TrySend(0, d, rng);
-        Check(d.EnemiesAlive == SendCatalog.Get(0).Count, "Envio: enxame gera Count bonecos");
+        c.TrySend(SendCatalog.IdOf("rato"), d, rng);
+        Check(d.EnemiesAlive == SendCatalog.Get(SendCatalog.IdOf("rato")).Count, "Envio: enxame gera Count bonecos");
 
         // ---------- sem ouro, sem envio ----------
         var poor = new LaneSim(24, 16);
         var poorFoe = new LaneSim(24, 16);
-        while (poor.CanAfford(5)) poor.TrySend(5, poorFoe, rng);
-        Check(!poor.TrySend(5, poorFoe, rng), "Envio: recusado sem ouro");
+        while (poor.CanAfford(SendCatalog.IdOf("urso"))) poor.TrySend(SendCatalog.IdOf("urso"), poorFoe, rng);
+        Check(!poor.TrySend(SendCatalog.IdOf("urso"), poorFoe, rng), "Envio: recusado sem ouro");
 
         // ---------- renda pinga no relógio ----------
         var inc = new LaneSim(24, 16);
@@ -791,7 +893,7 @@ class Program
         // ---------- vazamento sem defesa ----------
         var atk = new LaneSim(24, 16);
         var undefended = new LaneSim(24, 16);
-        atk.TrySend(1, undefended, rng);
+        atk.TrySend(SendCatalog.IdOf("cachorro"), undefended, rng);
         int livesBefore = undefended.Lives;
         Advance(undefended, 30f);
         Check(undefended.Lives == livesBefore - 1, "Vazamento: inimigo sem defesa tira exatamente 1 vida");
@@ -807,7 +909,7 @@ class Program
         Check(built > 0, "Construção: torres colocadas no meio do caminho");
         int goldPre = def.Gold;
         sender.DebugGrantGold(500);
-        sender.TrySend(1, def, rng);
+        sender.TrySend(SendCatalog.IdOf("cachorro"), def, rng);
         Advance(def, 30f);
         Check(def.KilledByTower > 0, "Torre: mata o Cachorro antes da base");
         Check(def.Gold > goldPre, "Torre: abate paga bounty para o DEFENSOR");
@@ -817,7 +919,7 @@ class Program
         var attrFoe = new LaneSim(24, 16);
         for (int x = 6; x <= 16; x += 2) attr.TryBuildTower(new Vector2Int(x, 8));
         attrFoe.DebugGrantGold(2000);
-        for (int i = 0; i < 6; i++) attrFoe.TrySend(0, attr, rng); // Ratos: frágeis
+        for (int i = 0; i < 6; i++) attrFoe.TrySend(SendCatalog.IdOf("rato"), attr, rng); // Ratos: frágeis
         Advance(attr, 60f);
         Check(attr.KilledByAttrition > 0, "Atrito: fronteira mata sem tiro nenhum");
 
@@ -826,7 +928,7 @@ class Program
         var flyFoe = new LaneSim(24, 16);
         for (int x = 6; x <= 16; x += 2) fly.TryBuildTower(new Vector2Int(x, 8));
         flyFoe.DebugGrantGold(2000);
-        for (int i = 0; i < 6; i++) flyFoe.TrySend(4, fly, rng); // Águia
+        for (int i = 0; i < 6; i++) flyFoe.TrySend(SendCatalog.IdOf("aguia"), fly, rng); // Águia
         Advance(fly, 60f);
         Check(fly.KilledByAttrition == 0, "Contra-jogo: Águia atravessa o território sem sofrer atrito");
 
@@ -848,7 +950,7 @@ class Program
         evLane.TowerChanged += (pos, level) => { if (level > 1) evUpgrade++; };
 
         evFeeder.DebugGrantGold(4000);
-        evFeeder.TrySend(1, evLane, rng);            // sem defesa ainda: tem que vazar
+        evFeeder.TrySend(SendCatalog.IdOf("cachorro"), evLane, rng);            // sem defesa ainda: tem que vazar
         Advance(evLane, 20f);
         Check(evLeak == 1 && evTower == 0 && evAttrition == 0,
             $"Eventos: vazamento dispara uma vez ({evLeak})");
@@ -859,7 +961,7 @@ class Program
         Check(evLane.TryUpgradeCheapestTower() && evUpgrade == 1,
             "Eventos: upgrade dispara TowerChanged com nível > 1");
 
-        for (int i = 0; i < 8; i++) evFeeder.TrySend(0, evLane, rng);
+        for (int i = 0; i < 8; i++) evFeeder.TrySend(SendCatalog.IdOf("rato"), evLane, rng);
         Advance(evLane, 40f);
         Check(evTower > 0, $"Eventos: morte por tiro dispara ({evTower})");
         Check(evAttrition > 0, $"Eventos: morte por atrito dispara ({evAttrition})");
@@ -886,17 +988,17 @@ class Program
             Check(CatalogJson.TryParseSends(sendsText, out var roundSends, out string se),
                 $"Catálogo: envios sobrevivem à ida e volta ({se})");
             Check(roundSends.Length == SendCatalog.Count, "Catálogo: nenhum envio se perde no arquivo");
-            Check(roundSends[1].Count == SendCatalog.Get(1).Count
-                  && Math.Abs(roundSends[1].AttritionScale - SendCatalog.Get(1).AttritionScale) < 0.001f
-                  && roundSends[4].IgnoresTerritory == SendCatalog.Get(4).IgnoresTerritory,
+            Check(roundSends[1].Count == SendCatalog.Get(SendCatalog.IdOf("cachorro")).Count
+                  && Math.Abs(roundSends[1].AttritionScale - SendCatalog.Get(SendCatalog.IdOf("cachorro")).AttritionScale) < 0.001f
+                  && roundSends[4].IgnoresTerritory == SendCatalog.Get(SendCatalog.IdOf("aguia")).IgnoresTerritory,
                 "Catálogo: envios preservam quantidade, atrito e a flag de voador");
 
             Check(CatalogJson.TryParseTowers(towersText, out var roundTowers, out string te),
                 $"Catálogo: torres sobrevivem à ida e volta ({te})");
             Check(roundTowers.Length == TowerCatalog.Count, "Catálogo: nenhuma torre se perde no arquivo");
-            Check(Math.Abs(roundTowers[2].SlowFactor - TowerCatalog.Get(2).SlowFactor) < 0.001f
-                  && Math.Abs(roundTowers[1].SplashRadius - TowerCatalog.Get(1).SplashRadius) < 0.001f
-                  && Math.Abs(roundTowers[3].VsFlyingMultiplier - TowerCatalog.Get(3).VsFlyingMultiplier) < 0.001f,
+            Check(Math.Abs(roundTowers[2].SlowFactor - TowerCatalog.Get(TowerCatalog.IdOf("gelo")).SlowFactor) < 0.001f
+                  && Math.Abs(roundTowers[1].SplashRadius - TowerCatalog.Get(TowerCatalog.IdOf("morteiro")).SplashRadius) < 0.001f
+                  && Math.Abs(roundTowers[3].VsFlyingMultiplier - TowerCatalog.Get(TowerCatalog.IdOf("sentinela")).VsFlyingMultiplier) < 0.001f,
                 "Catálogo: torres preservam lentidão, área e bônus anti-aéreo");
 
             // arquivo exportado ANTES do Fogo e do Ar existirem (4 torres): carregar não
@@ -907,7 +1009,7 @@ class Program
                     "name=Canhão;cost=30;range=3.5;cooldown=0.65;damage=12\nname=Gelo;cost=40;range=3.2;cooldown=0.9;damage=4;slow=0.55;slowsecs=1.6",
                     out string oldErr)
                   && TowerCatalog.Count == factory
-                  && TowerCatalog.Get(0).Cost == 30,
+                  && TowerCatalog.Get(TowerCatalog.IdOf("canhao")).Cost == 30,
                 $"Catálogo: arquivo antigo não apaga torre nova ({TowerCatalog.Count} de {factory}; {oldErr})");
             TowerCatalog.ResetToDefaults();
 
@@ -1050,20 +1152,20 @@ class Program
         var narrowLane = new LaneSim(24, 16);
         wideLane.DebugGrantGold(3000);
         narrowLane.DebugGrantGold(3000);
-        wideLane.TryBuildTower(new Vector2Int(12, 8), 2);   // Gelo, raio 3.25
-        narrowLane.TryBuildTower(new Vector2Int(12, 8), 3); // Sentinela, raio 1.5
+        wideLane.TryBuildTower(new Vector2Int(12, 8), TowerCatalog.IdOf("gelo"));   // Gelo, raio 3.25
+        narrowLane.TryBuildTower(new Vector2Int(12, 8), TowerCatalog.IdOf("sentinela")); // Sentinela, raio 1.5
         Check(TerritoryCells(wideLane) > TerritoryCells(narrowLane),
             $"Torres: fronteira do Gelo é maior que a da Sentinela " +
             $"({TerritoryCells(wideLane)} vs {TerritoryCells(narrowLane)} células)");
 
         // custo é POR TIPO: com pouco ouro, a cara é recusada e a barata ainda cabe
         var poorType = new LaneSim(24, 16);
-        poorType.TryBuildTower(new Vector2Int(8, 8), 0);
-        poorType.TryBuildTower(new Vector2Int(9, 8), 0);
-        poorType.TryBuildTower(new Vector2Int(10, 8), 0); // 120 - 3x25 = 45 de ouro
-        Check(!poorType.CanBuild(new Vector2Int(11, 8), 3),
+        poorType.TryBuildTower(new Vector2Int(8, 8), TowerCatalog.IdOf("canhao"));
+        poorType.TryBuildTower(new Vector2Int(9, 8), TowerCatalog.IdOf("canhao"));
+        poorType.TryBuildTower(new Vector2Int(10, 8), TowerCatalog.IdOf("canhao")); // 120 - 3x25 = 45 de ouro
+        Check(!poorType.CanBuild(new Vector2Int(11, 8), TowerCatalog.IdOf("sentinela")),
             $"Torres: Sentinela (50) recusada com {poorType.Gold} de ouro");
-        Check(poorType.CanBuild(new Vector2Int(11, 8), 0),
+        Check(poorType.CanBuild(new Vector2Int(11, 8), TowerCatalog.IdOf("canhao")),
             "Torres: Canhão (25) ainda cabe com o mesmo ouro");
 
         // ---------- replay: a partida reproduz byte a byte ----------
@@ -1143,12 +1245,12 @@ class Program
         pick2.TryBuildTower(cellB);
 
         Check(pick2.UpgradeCostAt(new Vector2Int(3, 3)) == -1, "Upgrade do jogador: célula vazia devolve -1");
-        Check(pick2.UpgradeCostAt(cellA) == TowerCatalog.UpgradeCost(0, 1),
+        Check(pick2.UpgradeCostAt(cellA) == TowerCatalog.UpgradeCost(TowerCatalog.IdOf("canhao"), 1),
             "Upgrade do jogador: custo da célula é o do nível atual");
 
         int goldPre2 = pick2.Gold;
         Check(pick2.TryUpgradeTowerAt(cellA), "Upgrade do jogador: aceito na torre escolhida");
-        Check(pick2.Gold == goldPre2 - TowerCatalog.UpgradeCost(0, 1), "Upgrade do jogador: cobra o custo certo");
+        Check(pick2.Gold == goldPre2 - TowerCatalog.UpgradeCost(TowerCatalog.IdOf("canhao"), 1), "Upgrade do jogador: cobra o custo certo");
         Check(pick2.TowerLevel(pick2.TowerIndexAt(cellA)) == 2
               && pick2.TowerLevel(pick2.TowerIndexAt(cellB)) == 1,
             "Upgrade do jogador: sobe SÓ a torre escolhida");
@@ -1180,9 +1282,9 @@ class Program
                 var feeder = new LaneSim(24, 16);
                 lane.DebugGrantGold(20000);
                 feeder.DebugGrantGold(500);
-                lane.TryBuildTower(new Vector2Int(8, 6), 2);
+                lane.TryBuildTower(new Vector2Int(8, 6), TowerCatalog.IdOf("gelo"));
                 for (int l = 1; l < level; l++) lane.TryUpgradeTowerAt(new Vector2Int(8, 6));
-                feeder.TrySend(8, lane, new Random(3)); // Elefante: não morre do gelo
+                feeder.TrySend(SendCatalog.IdOf("elefante"), lane, new Random(3)); // Elefante: não morre do gelo
                 int shots = 0;
                 lane.TowerFired += _ => shots++;
                 for (int t = 0; t < 30 * 20; t++)
@@ -1200,8 +1302,8 @@ class Program
             var fzFeeder = new LaneSim(24, 16);
             fz.DebugGrantGold(20000);
             fzFeeder.DebugGrantGold(500);
-            fz.TryBuildTower(new Vector2Int(8, 6), 2);
-            fzFeeder.TrySend(8, fz, new Random(4));
+            fz.TryBuildTower(new Vector2Int(8, 6), TowerCatalog.IdOf("gelo"));
+            fzFeeder.TrySend(SendCatalog.IdOf("elefante"), fz, new Random(4));
             bool sawFrozenStill = false, sawGuard = false;
             Vector3 lastPos = default;
             bool wasFrozen = false;
@@ -1226,9 +1328,9 @@ class Program
                 var feeder = new LaneSim(24, 16);
                 lane.DebugGrantGold(20000);
                 feeder.DebugGrantGold(500);
-                lane.TryBuildTower(new Vector2Int(8, 6), 4);
+                lane.TryBuildTower(new Vector2Int(8, 6), TowerCatalog.IdOf("fogo"));
                 for (int l = 1; l < level; l++) lane.TryUpgradeTowerAt(new Vector2Int(8, 6));
-                feeder.TrySend(8, lane, new Random(5));
+                feeder.TrySend(SendCatalog.IdOf("elefante"), lane, new Random(5));
                 float maxBurn = 0f;
                 for (int t = 0; t < 30 * 12; t++)
                 {
@@ -1262,7 +1364,7 @@ class Program
             l0.DebugGrantGold(500);
             l1.DebugGrantGold(500);
             l1.TryBuildTower(new Vector2Int(10, 6)); // fere de passagem, sem matar
-            l0.TrySend(8, l1, leakRng);              // Elefante: aguenta a torre
+            l0.TrySend(SendCatalog.IdOf("elefante"), l1, leakRng);              // Elefante: aguenta a torre
             var runLanes = new[] { l0, l1 };
             float hpAtGoal = -1f;
             int livesStart = l1.Lives;
@@ -1287,7 +1389,7 @@ class Program
             var loose = new LaneSim(24, 16);
             var looseFeeder = new LaneSim(24, 16);
             looseFeeder.DebugGrantGold(100);
-            looseFeeder.TrySend(1, loose, leakRng);
+            looseFeeder.TrySend(SendCatalog.IdOf("cachorro"), loose, leakRng);
             for (int t = 0; t < 30 * 60; t++) loose.Tick(TowerWarsConfig.FixedStep);
             var drained = new System.Collections.Generic.List<LaneSim.SimEnemy>();
             loose.DrainLeaks(drained);
@@ -1321,12 +1423,12 @@ class Program
         var sA = new Vector2Int(8, 8);
         var sB = new Vector2Int(12, 5);
         var sC = new Vector2Int(15, 10);
-        sell.TryBuildTower(sA, 0);
-        sell.TryBuildTower(sB, 2);
-        sell.TryBuildTower(sC, 3);
+        sell.TryBuildTower(sA, TowerCatalog.IdOf("canhao"));
+        sell.TryBuildTower(sB, TowerCatalog.IdOf("gelo"));
+        sell.TryBuildTower(sC, TowerCatalog.IdOf("sentinela"));
         sell.TryUpgradeTowerAt(sB);
         sell.TryUpgradeTowerAt(sB);
-        int investedB = TowerCatalog.Get(2).Cost + TowerCatalog.UpgradeCost(2, 1) + TowerCatalog.UpgradeCost(2, 2);
+        int investedB = TowerCatalog.Get(TowerCatalog.IdOf("gelo")).Cost + TowerCatalog.UpgradeCost(TowerCatalog.IdOf("gelo"), 1) + TowerCatalog.UpgradeCost(TowerCatalog.IdOf("gelo"), 2);
         int expectB = (int)(investedB * TowerWarsConfig.SellRefund);
         Check(sell.SellValueAt(sB) == expectB, "Venda: vale a fração certa de construção + upgrades");
         Check(sell.SellValueAt(new Vector2Int(3, 3)) == -1, "Venda: célula vazia devolve -1");
@@ -1342,7 +1444,7 @@ class Program
         Check(sell.TowerTypeAt(sC) == 3 && sell.TowerIndexAt(sC) == 1, "Venda: as de depois descem uma casa");
         Check(!sell.Map.IsBlocked(sB) && sell.TowerVersion != versionPre, "Venda: célula liberada e território refeito");
         Check(!sell.TrySellTowerAt(sB), "Venda: recusada em célula sem torre");
-        Check(sell.TryBuildTower(sB, 0), "Venda: dá para construir de novo no lugar");
+        Check(sell.TryBuildTower(sB, TowerCatalog.IdOf("canhao")), "Venda: dá para construir de novo no lugar");
 
         // vender abre caminho: com a muralha só com uma brecha, fechar a brecha é proibido;
         // vendida uma torre do meio, surge outra passagem e a brecha pode ser fechada
@@ -1375,7 +1477,7 @@ class Program
         int firedEvents = 0;
         shootLane.TowerFired += _ => firedEvents++;
         shootFeeder.DebugGrantGold(500);
-        shootFeeder.TrySend(8, shootLane, rng); // Elefante: aguenta vários tiros
+        shootFeeder.TrySend(SendCatalog.IdOf("elefante"), shootLane, rng); // Elefante: aguenta vários tiros
 
         bool sawAim = false, sawProjectile = false, projInBounds = true;
         for (int i = 0; i < 400; i++)
@@ -1399,7 +1501,7 @@ class Program
         aimLane.DebugGrantGold(500);
         aimLane.TryBuildTower(new Vector2Int(12, 8));
         aimFeeder.DebugGrantGold(500);
-        aimFeeder.TrySend(8, aimLane, rng);
+        aimFeeder.TrySend(SendCatalog.IdOf("elefante"), aimLane, rng);
 
         Vector3 prevAim = default;
         bool hadPrev = false, aimMovedBetweenShots = false;
@@ -1467,10 +1569,10 @@ class Program
         float dpsB4 = up.TowerDps;
         Check(up.TryUpgradeCheapestTower(), "Upgrade: aceito com ouro");
         Check(up.TotalTowerLevels == 2, "Upgrade: sobe o nível");
-        Check(up.Gold == goldB4 - TowerCatalog.UpgradeCost(0, 1), "Upgrade: cobra o custo do nível atual");
+        Check(up.Gold == goldB4 - TowerCatalog.UpgradeCost(TowerCatalog.IdOf("canhao"), 1), "Upgrade: cobra o custo do nível atual");
         Check(up.TowerDps > dpsB4, "Upgrade: aumenta o DPS da defesa");
 
-        Check(TowerCatalog.UpgradeCost(0, 3) > TowerCatalog.UpgradeCost(0, 1),
+        Check(TowerCatalog.UpgradeCost(TowerCatalog.IdOf("canhao"), 3) > TowerCatalog.UpgradeCost(TowerCatalog.IdOf("canhao"), 1),
             "Upgrade: custo cresce com o nível (torre nova segue competindo)");
 
         while (up.TryUpgradeCheapestTower()) { }
@@ -1482,7 +1584,7 @@ class Program
         // do nível 1 seria laço infinito — quem decide é a própria chamada.
         while (broke.TryUpgradeCheapestTower()) { }
         int lvlBefore = broke.TotalTowerLevels;
-        Check(broke.Gold < TowerCatalog.UpgradeCost(0, broke.TotalTowerLevels),
+        Check(broke.Gold < TowerCatalog.UpgradeCost(TowerCatalog.IdOf("canhao"), broke.TotalTowerLevels),
             "Upgrade: sobrou ouro, mas menos que o próximo nível custa");
         Check(!broke.TryUpgradeCheapestTower() && broke.TotalTowerLevels == lvlBefore,
             "Upgrade: recusado sem ouro");
@@ -1496,8 +1598,8 @@ class Program
         lvl6.TryBuildTower(new Vector2Int(12, 8));
         while (lvl6.TryUpgradeCheapestTower()) { }
         feeder.DebugGrantGold(5000);
-        feeder.TrySend(8, lvl1, rng);   // Elefante nos dois, mesmo instante
-        feeder.TrySend(8, lvl6, rng);
+        feeder.TrySend(SendCatalog.IdOf("elefante"), lvl1, rng);   // Elefante nos dois, mesmo instante
+        feeder.TrySend(SendCatalog.IdOf("elefante"), lvl6, rng);
         Advance(lvl1, 25f);
         Advance(lvl6, 25f);
         Check(lvl6.KilledByTower >= lvl1.KilledByTower && lvl6.TotalLeaked <= lvl1.TotalLeaked,
@@ -1650,7 +1752,7 @@ class Program
 /// <summary>Assinaturas do catálogo e das regras de FÁBRICA (BUG-05). Muda de propósito => atualizar aqui e dizer no commit.</summary>
 static class SimSignatureExpected
 {
-    public const string Sends = "facf2847c7ad3c66";
-    public const string Towers = "a2d502e5d5a1df35";
+    public const string Sends = "c69ccd7da93bfd61";
+    public const string Towers = "7cb8cd3f7c5ce6cd";
     public const string Rules = "567e6995bddd6d61";
 }

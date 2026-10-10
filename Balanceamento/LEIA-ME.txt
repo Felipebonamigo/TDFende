@@ -13,8 +13,10 @@ REGRAS DO FORMATO
   - Uma linha por unidade/torre.
   - Campo ausente usa o valor de FÁBRICA daquele bicho/torre, então dá para escrever só o que muda
     (ex.: "name=Lobo;cost=40" muda só o custo do Lobo).
-  - O nome é a chave, escrito igual ao do jogo (com acento e maiúscula): "Águia", não "Aguia".
-    Nome que o jogo não conhece ou repetido recusa o arquivo inteiro, com a linha no aviso.
+  - A CHAVE é key= (minúscula, sem acento: lobo, aguia, canhao). É ela que liga a linha ao bicho/torre;
+    name= é só o texto exibido e o jogo ignora o que estiver ali (o log avisa se diferir).
+    Arquivo antigo, só com name=, ainda funciona (casa pelo nome, com um aviso para exportar de novo).
+    Chave que o jogo não conhece ou repetida recusa o arquivo inteiro, com a linha no aviso.
   - Bicho ou torre que o arquivo não cita continua no jogo com os valores de fábrica, e a ordem
     das linhas não importa: o jogo mantém a sua.
   - Linha começando com # é comentário.

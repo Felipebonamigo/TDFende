@@ -84,28 +84,30 @@ namespace TDFende
         }
 
         /// <summary>Tiro de uma torre específica: cada tipo tem clarão próprio.</summary>
-        public void Muzzle(Vector3 pos, int towerType)
+        public void Muzzle(Vector3 pos, int towerType) => Muzzle(pos, ViewKeys.TowerKey(towerType));
+
+        public void Muzzle(Vector3 pos, string towerKey)
         {
-            switch (towerType)
+            switch (towerKey)
             {
-                case 1: // morteiro: tranco grande, muita fumaça
+                case "morteiro": // morteiro: tranco grande, muita fumaça
                     Emit(_bigFlash, pos, 2);
                     Emit(_smoke, pos, 8);
                     Emit(_sparks, pos, 5);
                     break;
-                case 2: // gelo: sopro de névoa
+                case "gelo": // gelo: sopro de névoa
                     Emit(_mist, pos, 3);
                     Emit(_frost, pos, 5);
                     break;
-                case 3: // balista: estalo seco de madeira, sem pólvora
+                case "sentinela": // balista: estalo seco de madeira, sem pólvora
                     Emit(_dust, pos, 2);
                     break;
-                case 4: // fogo grego: jato de chama
+                case "fogo": // fogo grego: jato de chama
                     Emit(_flame, pos, 10);
                     Emit(_ember, pos, 6);
                     Emit(_darkSmoke, pos, 2);
                     break;
-                case 5: // ar: lufada
+                case "ar": // ar: lufada
                     Emit(_wind, pos, 6);
                     break;
                 default:
@@ -117,25 +119,27 @@ namespace TDFende
         }
 
         /// <summary>Chegada do tiro: onde o jogador VÊ que acertou.</summary>
-        public void Impact(Vector3 pos, int towerType)
+        public void Impact(Vector3 pos, int towerType) => Impact(pos, ViewKeys.TowerKey(towerType));
+
+        public void Impact(Vector3 pos, string towerKey)
         {
-            switch (towerType)
+            switch (towerKey)
             {
-                case 1: // bomba de morteiro: explosão
+                case "morteiro": // bomba de morteiro: explosão
                     Emit(_bigFlash, pos, 3);
                     Emit(_darkSmoke, pos, 8);
                     Emit(_debris, pos, 14);
                     Emit(_dust, pos, 10);
                     break;
-                case 2:
+                case "gelo":
                     Emit(_frost, pos, 10);
                     Emit(_mist, pos, 3);
                     break;
-                case 4:
+                case "fogo":
                     Emit(_flame, pos, 14);
                     Emit(_ember, pos, 8);
                     break;
-                case 5:
+                case "ar":
                     Emit(_wind, pos, 8);
                     Emit(_dust, pos, 6);
                     break;
@@ -179,18 +183,20 @@ namespace TDFende
         /// Rastro do tiro no ar. É o que faz o tiro APARECER de longe: a bala em si tem
         /// poucos pixels no zoom do jogo, o rastro tem dezenas.
         /// </summary>
-        public static TrailRenderer AddTrail(GameObject go, int towerType)
+        public static TrailRenderer AddTrail(GameObject go, int towerType) => AddTrail(go, ViewKeys.TowerKey(towerType));
+
+        public static TrailRenderer AddTrail(GameObject go, string towerKey)
         {
             Color c;
             float width, time;
             bool additive;
-            switch (towerType)
+            switch (towerKey)
             {
-                case 1: c = Palette.Smoke; width = 0.13f; time = 0.5f; additive = false; break;
-                case 2: c = Palette.Frost; width = 0.07f; time = 0.25f; additive = true; break;
-                case 3: c = Color.white; width = 0.03f; time = 0.16f; additive = true; break;
-                case 4: c = Palette.Flame; width = 0.16f; time = 0.3f; additive = true; break;
-                case 5: c = Palette.Wind; width = 0.3f; time = 0.35f; additive = false; break;
+                case "morteiro": c = Palette.Smoke; width = 0.13f; time = 0.5f; additive = false; break;
+                case "gelo": c = Palette.Frost; width = 0.07f; time = 0.25f; additive = true; break;
+                case "sentinela": c = Color.white; width = 0.03f; time = 0.16f; additive = true; break;
+                case "fogo": c = Palette.Flame; width = 0.16f; time = 0.3f; additive = true; break;
+                case "ar": c = Palette.Wind; width = 0.3f; time = 0.35f; additive = false; break;
                 default: c = Palette.Smoke; width = 0.08f; time = 0.3f; additive = false; break;
             }
             var tr = go.AddComponent<TrailRenderer>();

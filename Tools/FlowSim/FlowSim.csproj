@@ -23,6 +23,7 @@
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LaneSim.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LeakRouter.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Art\TowerStages.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Art\ViewKeys.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Art\ArtLayerPaths.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Editor\ArtRoots.cs" />
     <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerWarsAi.cs" />

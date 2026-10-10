@@ -10,6 +10,9 @@ namespace TDFende
     /// </summary>
     public struct TowerType
     {
+        /// <summary>Identidade estável (ASCII minúsculo): casa o arquivo de balanceamento e escolhe modelo e efeito na vista. Não muda com o tema.</summary>
+        public string Key;
+        /// <summary>Texto exibido (HUD, log). O tema pode renomear à vontade.</summary>
         public string Name;
         public int Cost;
         public float Range;
@@ -50,14 +53,14 @@ namespace TDFende
             new TowerType
             {
                 // Régua. Boa em nada, ruim em nada, e a única que projeta muita fronteira.
-                Name = "Canhão", Cost = 25, Range = 3.5f, Cooldown = 0.65f, Damage = 12f,
+                Key = "canhao", Name = "Canhão", Cost = 25, Range = 3.5f, Cooldown = 0.65f, Damage = 12f,
                 SplashRadius = 0f, SlowFactor = 1f, SlowSeconds = 0f,
                 VsFlyingMultiplier = 1f, BorderRadius = 2.75f
             },
             new TowerType
             {
                 // Resposta ao ENXAME: dano pequeno, mas em área. Contra alvo único é ruim.
-                Name = "Morteiro", Cost = 45, Range = 4.2f, Cooldown = 1.15f, Damage = 14f,
+                Key = "morteiro", Name = "Morteiro", Cost = 45, Range = 4.2f, Cooldown = 1.15f, Damage = 14f,
                 SplashRadius = 1.6f, SlowFactor = 1f, SlowSeconds = 0f,
                 VsFlyingMultiplier = 1f, BorderRadius = 2.0f
             },
@@ -65,7 +68,7 @@ namespace TDFende
             {
                 // Resposta ao que é GORDO E RÁPIDO: quase não machuca, mas segura dentro
                 // do território — é a torre que faz o atrito trabalhar por você.
-                Name = "Gelo", Cost = 40, Range = 3.2f, Cooldown = 0.9f, Damage = 4f,
+                Key = "gelo", Name = "Gelo", Cost = 40, Range = 3.2f, Cooldown = 0.9f, Damage = 4f,
                 SplashRadius = 0f, SlowFactor = 0.55f, SlowSeconds = 1.6f,
                 VsFlyingMultiplier = 1f, BorderRadius = 3.25f
             },
@@ -73,7 +76,7 @@ namespace TDFende
             {
                 // Resposta ao PLANADOR, que ignora a fronteira. Sem ela, investir em
                 // território tem um furo que não fecha.
-                Name = "Sentinela", Cost = 50, Range = 4.5f, Cooldown = 0.75f, Damage = 9f,
+                Key = "sentinela", Name = "Sentinela", Cost = 50, Range = 4.5f, Cooldown = 0.75f, Damage = 9f,
                 SplashRadius = 0f, SlowFactor = 1f, SlowSeconds = 0f,
                 VsFlyingMultiplier = 2.6f, BorderRadius = 1.5f
             },
@@ -83,7 +86,7 @@ namespace TDFende
                 // MÁXIMA por segundo (acumula até 3 camadas) — quanto mais vida o alvo tem,
                 // mais o fogo rende.
                 // Alcance curto: tem que ficar perto do caminho para valer.
-                Name = "Fogo", Cost = 45, Range = 3.0f, Cooldown = 0.9f, Damage = 5f,
+                Key = "fogo", Name = "Fogo", Cost = 45, Range = 3.0f, Cooldown = 0.9f, Damage = 5f,
                 SplashRadius = 0.8f, SlowFactor = 1f, SlowSeconds = 0f,
                 VsFlyingMultiplier = 1f, BorderRadius = 2.0f,
                 BurnPctPerSecond = 0.05f, BurnSeconds = 3f
@@ -93,7 +96,7 @@ namespace TDFende
                 // Resposta ao que PASSA RÁPIDO pela fronteira: a rajada empurra o grupo
                 // de volta pelo caminho, e cada segundo a mais dentro do território é
                 // atrito de graça. Também derruba planador (vento contra asa).
-                Name = "Ar", Cost = 40, Range = 3.8f, Cooldown = 1.3f, Damage = 6f,
+                Key = "ar", Name = "Ar", Cost = 40, Range = 3.8f, Cooldown = 1.3f, Damage = 6f,
                 SplashRadius = 0.9f, SlowFactor = 1f, SlowSeconds = 0f,
                 VsFlyingMultiplier = 1.8f, BorderRadius = 2.25f,
                 Knockback = 0.7f
@@ -116,8 +119,9 @@ namespace TDFende
                 error = "catálogo já em uso: carregue no boot, antes da primeira partida";
                 return false;
             }
-            if (!Merge(Defaults, text, out var merged, out error)) return false;
+            if (!Merge(Defaults, text, out var merged, out error, out string warning)) return false;
             All = merged;
+            LastWarning = warning;
             return true;
         }
 
@@ -126,17 +130,39 @@ namespace TDFende
         /// omitido vale o da torre de fábrica. Antes a ordem do arquivo mandava, e duas linhas trocadas
         /// de lugar trocavam o Gelo pelo Fogo em silêncio.
         /// </summary>
-        public static bool Merge(TowerType[] factory, string text, out TowerType[] result, out string error)
+        public static bool Merge(TowerType[] factory, string text, out TowerType[] result, out string error) =>
+            Merge(factory, text, out result, out error, out _);
+
+        /// <param name="warning">Avisos que não impedem o carregamento (linha sem key=, name= diferente); null se não há.</param>
+        public static bool Merge(TowerType[] factory, string text, out TowerType[] result, out string error, out string warning)
         {
             result = null;
-            if (!CatalogJson.TryParseTowers(text, factory, out var parsed, out var lines, out error)) return false;
-            return CatalogMerge.Apply(factory, parsed, lines, t => t.Name, "torres", out result, out error);
+            warning = null;
+            var notes = new System.Collections.Generic.List<string>();
+            if (!CatalogJson.TryParseTowers(text, factory, out var parsed, out var lines, out error, notes)) return false;
+            if (!CatalogMerge.Apply(factory, parsed, lines, t => t.Key, t => t.Name, "torres", out result, out error)) return false;
+            if (notes.Count > 0) warning = string.Join("; ", notes);
+            return true;
         }
+
+        /// <summary>Aviso do último <see cref="LoadFrom"/> bem-sucedido; null se não houve.</summary>
+        public static string LastWarning { get; private set; }
+
+        /// <summary>Índice da torre de chave <paramref name="key"/> (exata), -1 se não existe.</summary>
+        public static int IdOf(string key)
+        {
+            for (int i = 0; i < All.Length; i++)
+                if (All[i].Key == key) return i;
+            return -1;
+        }
+
+        public static bool TryIdOf(string key, out int id) => (id = IdOf(key)) >= 0;
 
         public static void ResetToDefaults()
         {
             All = (TowerType[])Defaults.Clone();
             Locked = false;
+            LastWarning = null;
         }
 
         /// <summary>

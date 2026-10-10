@@ -22,20 +22,24 @@ namespace TDFende
 
         public static void LoadIfPresent()
         {
-            TryLoad("envios.txt", (string t, out string e) => SendCatalog.LoadFrom(t, out e));
-            TryLoad("torres.txt", (string t, out string e) => TowerCatalog.LoadFrom(t, out e));
+            TryLoad("envios.txt", (string t, out string e) => SendCatalog.LoadFrom(t, out e), () => SendCatalog.LastWarning);
+            TryLoad("torres.txt", (string t, out string e) => TowerCatalog.LoadFrom(t, out e), () => TowerCatalog.LastWarning);
         }
 
         delegate bool Loader(string text, out string error);
 
-        static void TryLoad(string fileName, Loader load)
+        static void TryLoad(string fileName, Loader load, System.Func<string> warning)
         {
             string path = System.IO.Path.Combine(Folder, fileName);
             try
             {
                 if (!System.IO.File.Exists(path)) return; // caso normal: usa o compilado
                 if (load(System.IO.File.ReadAllText(path), out string error))
+                {
                     Debug.Log($"[TDFende] balanceamento carregado de {path}");
+                    string w = warning();
+                    if (w != null) Debug.LogWarning($"[TDFende] {fileName}: {w}");
+                }
                 else
                     Debug.LogWarning($"[TDFende] {fileName} ignorado ({error}); " +
                                      "seguindo com os valores padrão.");

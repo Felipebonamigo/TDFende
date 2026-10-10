@@ -7,6 +7,9 @@ namespace TDFende
     /// </summary>
     public struct SendUnit
     {
+        /// <summary>Identidade estável (ASCII minúsculo): casa o arquivo de balanceamento e escolhe modelo e efeito na vista. Não muda com o tema.</summary>
+        public string Key;
+        /// <summary>Texto exibido (HUD, log). O tema pode renomear à vontade.</summary>
         public string Name;
         public int Cost;
         public float Hp;
@@ -33,22 +36,22 @@ namespace TDFende
         {
             // Do menor ao maior — é também a ordem dos botões e das teclas 1-9.
             // Enxame: ratos em bando, frágeis, derretem no atrito da fronteira.
-            new SendUnit { Name = "Rato",        Cost = 22, Hp =  15f, Speed = 2.8f, IncomeBonus = 2, Bounty =  2, Count = 4, AttritionScale = 1.4f },
+            new SendUnit { Key = "rato", Name = "Rato",        Cost = 22, Hp =  15f, Speed = 2.8f, IncomeBonus = 2, Bounty =  2, Count = 4, AttritionScale = 1.4f },
             // A régua: barato, sem truque.
-            new SendUnit { Name = "Cachorro",    Cost = 10, Hp =  40f, Speed = 2.3f, IncomeBonus = 1, Bounty =  4, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "cachorro", Name = "Cachorro",    Cost = 10, Hp =  40f, Speed = 2.3f, IncomeBonus = 1, Bounty =  4, Count = 1, AttritionScale = 1f   },
             // Veloz: passa pelo alcance antes de apanhar muito. Resposta: Gelo e Ar.
-            new SendUnit { Name = "Lobo",        Cost = 35, Hp =  70f, Speed = 4.0f, IncomeBonus = 3, Bounty = 10, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "lobo", Name = "Lobo",        Cost = 35, Hp =  70f, Speed = 4.0f, IncomeBonus = 3, Bounty = 10, Count = 1, AttritionScale = 1f   },
             // Meio-termo robusto: mais vida que o cachorro, sem a lentidão do urso.
-            new SendUnit { Name = "Javali",      Cost = 30, Hp = 110f, Speed = 2.3f, IncomeBonus = 3, Bounty =  9, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "javali", Name = "Javali",      Cost = 30, Hp = 110f, Speed = 2.3f, IncomeBonus = 3, Bounty =  9, Count = 1, AttritionScale = 1f   },
             // Contra-jogo da fronteira: voa por cima, imune ao atrito. Resposta: Sentinela.
-            new SendUnit { Name = "Águia",       Cost = 55, Hp = 120f, Speed = 2.8f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 0f   },
+            new SendUnit { Key = "aguia", Name = "Águia",       Cost = 55, Hp = 120f, Speed = 2.8f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 0f   },
             // Gordo e lento. Resposta: Fogo (queima fração da vida).
-            new SendUnit { Name = "Urso",        Cost = 40, Hp = 180f, Speed = 1.6f, IncomeBonus = 4, Bounty = 14, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "urso", Name = "Urso",        Cost = 40, Hp = 180f, Speed = 1.6f, IncomeBonus = 4, Bounty = 14, Count = 1, AttritionScale = 1f   },
             // Gordo E rápido: pede Gelo junto com dano.
-            new SendUnit { Name = "Tigre",       Cost = 60, Hp = 190f, Speed = 3.3f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 1f   },
-            new SendUnit { Name = "Rinoceronte", Cost = 75, Hp = 330f, Speed = 1.7f, IncomeBonus = 7, Bounty = 27, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "tigre", Name = "Tigre",       Cost = 60, Hp = 190f, Speed = 3.3f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "rinoceronte", Name = "Rinoceronte", Cost = 75, Hp = 330f, Speed = 1.7f, IncomeBonus = 7, Bounty = 27, Count = 1, AttritionScale = 1f   },
             // Colosso: o maior de todos, com torre de combate no lombo.
-            new SendUnit { Name = "Elefante",    Cost = 90, Hp = 450f, Speed = 1.3f, IncomeBonus = 8, Bounty = 34, Count = 1, AttritionScale = 1f   },
+            new SendUnit { Key = "elefante", Name = "Elefante",    Cost = 90, Hp = 450f, Speed = 1.3f, IncomeBonus = 8, Bounty = 34, Count = 1, AttritionScale = 1f   },
         };
 
         static readonly SendUnit[] Defaults = (SendUnit[])All.Clone();
@@ -100,8 +103,9 @@ namespace TDFende
                 error = "catálogo já em uso: carregue no boot, antes da primeira partida";
                 return false;
             }
-            if (!Merge(Defaults, text, out var merged, out error)) return false;
+            if (!Merge(Defaults, text, out var merged, out error, out string warning)) return false;
             All = merged;
+            LastWarning = warning;
             return true;
         }
 
@@ -110,18 +114,40 @@ namespace TDFende
         /// ordem e o tamanho da fábrica, campo omitido vale o da fábrica, nome repetido ou desconhecido
         /// recusa o arquivo. Ver <see cref="CatalogMerge"/>.
         /// </summary>
-        public static bool Merge(SendUnit[] factory, string text, out SendUnit[] result, out string error)
+        public static bool Merge(SendUnit[] factory, string text, out SendUnit[] result, out string error) =>
+            Merge(factory, text, out result, out error, out _);
+
+        /// <param name="warning">Avisos que não impedem o carregamento (linha sem key=, name= diferente); null se não há.</param>
+        public static bool Merge(SendUnit[] factory, string text, out SendUnit[] result, out string error, out string warning)
         {
             result = null;
-            if (!CatalogJson.TryParseSends(text, factory, out var parsed, out var lines, out error)) return false;
-            return CatalogMerge.Apply(factory, parsed, lines, u => u.Name, "envios", out result, out error);
+            warning = null;
+            var notes = new System.Collections.Generic.List<string>();
+            if (!CatalogJson.TryParseSends(text, factory, out var parsed, out var lines, out error, notes)) return false;
+            if (!CatalogMerge.Apply(factory, parsed, lines, u => u.Key, u => u.Name, "envios", out result, out error)) return false;
+            if (notes.Count > 0) warning = string.Join("; ", notes);
+            return true;
         }
+
+        /// <summary>Aviso do último <see cref="LoadFrom"/> bem-sucedido (o CatalogLoader o põe no log); null se não houve.</summary>
+        public static string LastWarning { get; private set; }
+
+        /// <summary>Índice do envio de chave <paramref name="key"/> (exata), -1 se não existe. Teste e vista falam a chave; a Sim e o replay, o índice.</summary>
+        public static int IdOf(string key)
+        {
+            for (int i = 0; i < All.Length; i++)
+                if (All[i].Key == key) return i;
+            return -1;
+        }
+
+        public static bool TryIdOf(string key, out int id) => (id = IdOf(key)) >= 0;
 
         /// <summary>Volta ao catálogo compilado. Existe para o teste não vazar estado.</summary>
         public static void ResetToDefaults()
         {
             All = (SendUnit[])Defaults.Clone();
             Locked = false;
+            LastWarning = null;
         }
     }
 }

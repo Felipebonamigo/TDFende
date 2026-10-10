@@ -243,7 +243,7 @@ namespace TDFende
 
         // avisos que já foram defeito de verdade: um deles no log reprova (BUG-02). ": variant "
         // é variante de shader faltando, que só vira erro no build de diagnóstico (TEC-11)
-        static readonly string[] LogLint = { "Default clip could not be found", ": variant " };
+        static readonly string[] LogLint = { "Default clip could not be found", ": variant ", "[TDFende] sem modelo para " };
         readonly HashSet<string> _linted = new HashSet<string>();
 
         void Lint(string message)
@@ -479,6 +479,16 @@ namespace TDFende
             Census();
             CheckVariants();
             LintLogFile();
+            // TEC-12: as tabelas de modelo da vista têm que ter exatamente as chaves de ViewKeys
+            string viewMismatch = ModelLib.SelfCheck();
+            if (viewMismatch.Length > 0) Fail("tabelas da vista fora de sincronia com ViewKeys: " + viewMismatch);
+            // e todo bicho/torre do catálogo em uso precisa ter modelo (catálogo editado por arquivo com chave nova)
+            for (int i = 0; i < SendCatalog.Count; i++)
+                if (System.Array.IndexOf(ViewKeys.Enemy, SendCatalog.Get(i).Key) < 0)
+                    Fail($"bicho '{SendCatalog.Get(i).Key}' (envio {i}) sem modelo na vista");
+            for (int i = 0; i < TowerCatalog.Count; i++)
+                if (System.Array.IndexOf(ViewKeys.Tower, TowerCatalog.Get(i).Key) < 0)
+                    Fail($"torre '{TowerCatalog.Get(i).Key}' (tipo {i}) sem modelo na vista");
             // executável sem selo = gerado fora do BuildJogo (ou o selo quebrou): não dá para
             // saber de que commit veio (TEC-03)
             if (!Application.isEditor && Application.version == BuildStamp.Unstamped)
