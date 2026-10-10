@@ -116,7 +116,7 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 - [x] **TEC-17** — Eventos só de vista — 10/10/2026 (911b809)
 - [x] **DES-05** — Envios com papel econômico — 10/10/2026 (c7a78c5)
 - [ ] **DES-04** — Vazamento pesa pelo porte
-- [ ] **TORRE-03** — Upgrade amplia a fronteira (reservado: sessão na nuvem, 10/10/2026)
+- [x] **TORRE-03** — Upgrade amplia a fronteira — 10/10/2026 (1c66680; o fantasma de colocação mostra só o alcance, sem mudança)
 - [ ] **TORRE-01** — Mira inteligente (fase 1)
 - [ ] **BICHO-05** — Armadura no Rinoceronte (Sim)
 - [ ] **BICHO-06** — Urso regenera fora da fronteira (Sim)
