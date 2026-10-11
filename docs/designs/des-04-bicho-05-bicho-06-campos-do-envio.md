@@ -2,8 +2,8 @@
 
 [← cronograma](../../ROADMAP.md) · cartões: [DES-04, BICHO-05, BICHO-06 na Trilha S](../roadmap/trilha-s-simulacao-em-paralelo-headless-worktree-sem-unity.md)
 
-**Estado:** escrito, **aguardando aprovação do Felipe** (tarefas "architectural": cada uma acrescenta campo em `SendUnit`,
-muda o formato do catálogo e a assinatura do replay). Nenhum código escrito. Os três juntos porque usam o **mesmo mecanismo**
+**Estado:** escrito e **aprovado pelo Felipe em 11/10/2026, com D1 a D6 como recomendado** (tarefas "architectural": cada uma acrescenta campo em `SendUnit`,
+muda o formato do catálogo e a assinatura do replay). Os três juntos porque usam o **mesmo mecanismo**
 (campo no `SendUnit` → cópia no `SimEnemy` → coluna no `envios.txt` → linha na `SimSignature`) e se medem no mesmo BalanceLab.
 Ordem proposta: **DES-04, depois BICHO-05, depois BICHO-06**, um commit cada, BalanceLab antes e depois de cada um.
 Esforço: uma sessão para os três (cada um é pequeno; o trabalho é medir).
