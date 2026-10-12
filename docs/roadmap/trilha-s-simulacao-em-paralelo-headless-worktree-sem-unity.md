@@ -35,7 +35,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TORRE-03 — Upgrade amplia a fronteira — 10/10/2026 (1c66680)
 - [ ] TORRE-01 — Mira inteligente (fase 1)
 - [x] BICHO-05 — Armadura no Rinoceronte (Sim) — 12/10/2026 (49b9a3f)
-- [ ] BICHO-06 — Urso regenera fora da fronteira (Sim)
+- [x] BICHO-06 — Urso regenera fora da fronteira (Sim) — 12/10/2026 (0c3c039)
 - [x] TEC-14 — Matriz de contras medida (relatório) — 10/10/2026 (210247c; relatório, sem portão ainda)
 - [x] DES-03s — Chaves do laboratório da tese — 10/10/2026 (587e638)
 - [ ] TEC-27 — Spike de determinismo: float × ponto fixo, e lockstep virtual
