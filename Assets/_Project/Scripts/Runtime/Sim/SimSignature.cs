@@ -11,7 +11,7 @@ namespace TDFende
     /// </summary>
     public static class SimRules
     {
-        public const int Version = 4; // 2 (DES-05): a IA pondera a renda dos envios pelo relógio; 3 (TORRE-03): o nível amplia a fronteira; 4 (DES-04): vazamento pesa pelo porte
+        public const int Version = 5; // 2 (DES-05): a IA pondera a renda dos envios pelo relógio; 3 (TORRE-03): o nível amplia a fronteira; 4 (DES-04): vazamento pesa pelo porte; 5 (BICHO-05): armadura
     }
 
     /// <summary>
@@ -72,6 +72,7 @@ namespace TDFende
                 w.Str("Name", u.Name);
                 w.Int("Cost", u.Cost);
                 w.Int("LivesCost", u.LivesCost);
+                w.Flt("Armor", u.Armor);
                 w.Flt("Hp", u.Hp);
                 w.Flt("Speed", u.Speed);
                 w.Int("IncomeBonus", u.IncomeBonus);
@@ -135,6 +136,7 @@ namespace TDFende
             w.Flt("BorderRadius", TowerWarsConfig.BorderRadius);
             w.Flt("BorderPerLevel", TowerWarsConfig.BorderPerLevel);
             w.Flt("BorderCapFactor", TowerWarsConfig.BorderCapFactor);
+            w.Flt("ArmorFloor", TowerWarsConfig.ArmorFloor);
             w.Flt("BorderScale", TowerWarsConfig.BorderScale);
             w.Flt("IncomeMultiplier", TowerWarsConfig.IncomeMultiplier);
             w.Int("InfiniteGold", TowerWarsConfig.InfiniteGold ? 1 : 0);

@@ -40,6 +40,7 @@ namespace TDFende
             public float FrozenLeft;      // segundos congelado (parado no lugar)
             public float FreezeGuard;     // imune a congelar de novo enquanto > 0
             public int SenderId;          // lane de quem comprou o envio (-1 = ninguém)
+            public float Armor;           // perde isto por acerto de torre, piso de 20% do dano (BICHO-05)
             public int LivesCost;         // vidas que tira ao vazar (DES-04); na volta repassada vale 1
             public int Laps;              // quantas bases já atravessou vivo
             public bool Burning => BurnLeft > 0f;
@@ -609,6 +610,7 @@ namespace TDFende
             _enemies[slot].SenderId = senderId;
             _enemies[slot].Laps = 0;
             _enemies[slot].LivesCost = u.LivesCost;
+            _enemies[slot].Armor = u.Armor;
             _enemyCount++;
             EnemySpawned?.Invoke(new EnemySpawnedEvent(Id, slot, sendId, senderId, pos, false));
         }
@@ -827,6 +829,10 @@ namespace TDFende
 
             // Sentinela é a resposta ao voador: contra o resto ela é fraca de propósito.
             if (_enemies[slot].IgnoresTerritory) damage *= type.VsFlyingMultiplier;
+
+            // Armadura (BICHO-05): cada acerto perde Armor de dano, com piso de 20%. Só vale para tiro de torre:
+            // a queima e o atrito não passam por aqui.
+            if (_enemies[slot].Armor > 0f) damage = Math.Max(damage - _enemies[slot].Armor, damage * TowerWarsConfig.ArmorFloor);
 
             if (type.SlowSeconds > 0f)
             {

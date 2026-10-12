@@ -158,6 +158,7 @@ class Program
         CounterMatrixTests();
         LabSwitchTests();
         LivesCostTests();
+        ArmorTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -904,6 +905,90 @@ class Program
         Check(SendCatalog.Merge(SendCatalog.All, "key=elefante;cost=80", out var m2, out _) && m2[8].LivesCost == 3, "LivesCost: campo ausente vale o de fábrica");
         Check(!SendCatalog.Merge(SendCatalog.All, "key=lobo;lives=0", out _, out string err) && err.Contains("lives"), "LivesCost: lives < 1 é recusado");
         Check(CatalogJson.SerializeSends().Contains(";lives=3;"), "LivesCost: a exportação traz lives=");
+    }
+
+    /// <summary>
+    /// BICHO-05: armadura. Cada acerto de torre perde Armor de dano, com piso de 20%; atrito e queima ignoram.
+    /// </summary>
+    static void ArmorTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        int rino = SendCatalog.IdOf("rinoceronte"), sent = TowerCatalog.IdOf("sentinela"), canhao = TowerCatalog.IdOf("canhao"),
+            gelo = TowerCatalog.IdOf("gelo"), fogo = TowerCatalog.IdOf("fogo"), elefante = SendCatalog.IdOf("elefante");
+        Check(SendCatalog.Get(rino).Armor == 6f && SendCatalog.Get(elefante).Armor == 0f, "Armadura: só o Rinoceronte tem armadura de fábrica (6)");
+
+        // primeiro acerto de cada torre num alvo: devolve o dano do evento
+        float FirstHit(int towerId, int enemyId)
+        {
+            var lane = new LaneSim(24, 16);
+            lane.DebugGrantGold(5000);
+            lane.TryBuildTower(new Vector2Int(10, 7), towerId);
+            float dmg = -1f;
+            lane.EnemyHit += e => { if (dmg < 0f) dmg = e.Damage; };
+            var feeder = new LaneSim(24, 16);
+            feeder.DebugGrantGold(5000);
+            feeder.TrySend(enemyId, lane, new Random(2));
+            Advance(lane, 30f);
+            return dmg;
+        }
+        float dSent = FirstHit(sent, rino), dCan = FirstHit(canhao, rino), dGelo = FirstHit(gelo, rino), dEle = FirstHit(canhao, elefante);
+        Check(Math.Abs(dSent - 3f) < 1e-3f, $"Armadura: a Sentinela (9) causa max(9 - 6; 1,8) = 3 no Rinoceronte ({dSent})");
+        Check(Math.Abs(dCan - 6f) < 1e-3f, $"Armadura: o Canhão (12) causa 6 ({dCan})");
+        Check(Math.Abs(dGelo - 0.8f) < 1e-3f, $"Armadura: o Gelo (4) cai no piso de 20% = 0,8 ({dGelo})");
+        Check(Math.Abs(dEle - 12f) < 1e-3f, $"Armadura: quem não tem armadura leva o dano cheio ({dEle})");
+
+        // Queima e atrito ignoram a armadura: com o dano direto da torre praticamente zerado, a vida perdida do alvo
+        // (só queima, ou só atrito) é a mesma com e sem armadura.
+        float HpLost(float armor, int towerId, float seconds)
+        {
+            var sends = (SendUnit[])SendCatalog.All.Clone();
+            sends[rino].Armor = armor;
+            var towers = (TowerType[])TowerCatalog.All.Clone();
+            towers[towerId].Damage = 0.001f;
+            var savedS = SendCatalog.All; var savedT = TowerCatalog.All;
+            SendCatalog.All = sends; TowerCatalog.All = towers;
+            try
+            {
+                var lane = new LaneSim(24, 16);
+                lane.DebugGrantGold(5000);
+                lane.TryBuildTower(new Vector2Int(10, 7), towerId);
+                var feeder = new LaneSim(24, 16);
+                feeder.DebugGrantGold(5000);
+                feeder.TrySend(rino, lane, new Random(2));
+                Advance(lane, seconds);
+                float lost = 0f;
+                for (int sl = 0; sl < lane.EnemySlotCount; sl++)
+                    if (lane.TryGetEnemy(sl, out var e)) lost += e.MaxHp - e.Hp;
+                return lost;
+            }
+            finally { SendCatalog.All = savedS; TowerCatalog.All = savedT; }
+        }
+        float f0 = HpLost(0f, fogo, 8f), f6 = HpLost(6f, fogo, 8f);
+        Check(f0 > 1f && Math.Abs(f0 - f6) / f0 < 0.02f, $"Armadura: a queima ignora a armadura (vida perdida {f0:0.0} sem, {f6:0.0} com)");
+        int canTower = canhao;
+        float a0 = HpLost(0f, canTower, 8f), a6 = HpLost(6f, canTower, 8f);
+        Check(a0 > 1f && Math.Abs(a0 - a6) / a0 < 0.02f, $"Armadura: o atrito ignora a armadura (vida perdida {a0:0.0} sem, {a6:0.0} com)");
+
+        // "Fogo vence por ouro" contra o blindado: dano efetivo por segundo e por ouro no Rinoceronte (acerto com armadura + queima de 1 camada)
+        float arm = SendCatalog.Get(rino).Armor, baseHp = SendCatalog.Get(rino).Hp;
+        int bestId = -1; float bestVal = -1f;
+        for (int t = 0; t < TowerCatalog.Count; t++)
+        {
+            var tt = TowerCatalog.Get(t);
+            float hit = Math.Max(tt.Damage - arm, tt.Damage * TowerWarsConfig.ArmorFloor);
+            float val = (hit / tt.Cooldown + tt.BurnPctPerSecond * baseHp) / tt.Cost;
+            if (val > bestVal) { bestVal = val; bestId = t; }
+        }
+        Check(bestId == fogo, $"Armadura: contra o Rinoceronte o Fogo rende mais dano por ouro ({TowerCatalog.Get(bestId).Name} {bestVal:0.000})");
+
+        // arquivo: armor= lê, ausente vale a fábrica, negativo recusa
+        Check(SendCatalog.Merge(SendCatalog.All, "key=elefante;armor=2.5", out var m, out _) && m[elefante].Armor == 2.5f && m[rino].Armor == 6f,
+            "Armadura: armor= no arquivo muda o envio citado");
+        Check(!SendCatalog.Merge(SendCatalog.All, "key=lobo;armor=-1", out _, out string err) && err.Contains("armor"), "Armadura: armadura negativa é recusada");
+        var seen = new HashSet<string>();
+        SimSignature.Rules(seen);
+        Check(seen.Contains("TowerWarsConfig.ArmorFloor"), "Armadura: o piso de 20% está na assinatura das regras");
     }
 
     /// <summary>
@@ -2197,7 +2282,7 @@ class Program
 /// <summary>Assinaturas do catálogo e das regras de FÁBRICA (BUG-05). Muda de propósito => atualizar aqui e dizer no commit.</summary>
 static class SimSignatureExpected
 {
-    public const string Sends = "a14d9b520b1f4512";
+    public const string Sends = "b9137d50d1902fc4";
     public const string Towers = "7cb8cd3f7c5ce6cd";
-    public const string Rules = "1fafdb2739373b0c";
+    public const string Rules = "b764735e76793ffd";
 }

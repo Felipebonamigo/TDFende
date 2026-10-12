@@ -2,12 +2,12 @@
 # key= identifica o bicho (não mude); name= é só o texto exibido e o jogo ignora o que estiver aqui.
 # custo/renda/quantidade são inteiros; o resto é decimal com PONTO.
 # attrition=0 significa VOADOR: ignora a fronteira e o atrito.
-key=rato;name=Rato;cost=22;lives=1;income=1;hp=18;speed=2.8;count=4;bounty=2;attrition=1.4
-key=cachorro;name=Cachorro;cost=10;lives=1;income=2;hp=25;speed=2.3;count=1;bounty=4;attrition=1
-key=lobo;name=Lobo;cost=35;lives=1;income=1;hp=110;speed=4;count=1;bounty=10;attrition=1
-key=javali;name=Javali;cost=30;lives=2;income=3;hp=100;speed=2.3;count=1;bounty=9;attrition=1
-key=aguia;name=Águia;cost=55;lives=2;income=5;hp=120;speed=2.8;count=1;bounty=20;attrition=0
-key=urso;name=Urso;cost=40;lives=2;income=2;hp=200;speed=1.6;count=1;bounty=14;attrition=1
-key=tigre;name=Tigre;cost=60;lives=2;income=2;hp=280;speed=3.3;count=1;bounty=20;attrition=1
-key=rinoceronte;name=Rinoceronte;cost=75;lives=3;income=4;hp=360;speed=1.7;count=1;bounty=27;attrition=1
-key=elefante;name=Elefante;cost=90;lives=3;income=5;hp=480;speed=1.3;count=1;bounty=34;attrition=1
+key=rato;name=Rato;cost=22;lives=1;armor=0;income=1;hp=18;speed=2.8;count=4;bounty=2;attrition=1.4
+key=cachorro;name=Cachorro;cost=10;lives=1;armor=0;income=2;hp=25;speed=2.3;count=1;bounty=4;attrition=1
+key=lobo;name=Lobo;cost=35;lives=1;armor=0;income=1;hp=110;speed=4;count=1;bounty=10;attrition=1
+key=javali;name=Javali;cost=30;lives=2;armor=0;income=3;hp=100;speed=2.3;count=1;bounty=9;attrition=1
+key=aguia;name=Águia;cost=55;lives=2;armor=0;income=5;hp=120;speed=2.8;count=1;bounty=20;attrition=0
+key=urso;name=Urso;cost=40;lives=2;armor=0;income=2;hp=200;speed=1.6;count=1;bounty=14;attrition=1
+key=tigre;name=Tigre;cost=60;lives=2;armor=0;income=2;hp=280;speed=3.3;count=1;bounty=20;attrition=1
+key=rinoceronte;name=Rinoceronte;cost=75;lives=3;armor=6;income=4;hp=360;speed=1.7;count=1;bounty=27;attrition=1
+key=elefante;name=Elefante;cost=90;lives=3;armor=0;income=5;hp=480;speed=1.3;count=1;bounty=34;attrition=1

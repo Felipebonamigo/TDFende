@@ -15,6 +15,7 @@ namespace TDFende
         public float Hp;
         public float Speed;
         public int LivesCost;        // vidas que tira ao cruzar a base (DES-04); a volta repassada custa sempre 1
+        public float Armor;          // cada acerto de torre perde isto de dano, com piso de 20% (BICHO-05); atrito e queima ignoram
         public int IncomeBonus;      // soma permanente à renda de quem enviou
         public int Bounty;           // ouro para quem MATAR, na lane de destino
         public int Count;            // quantos bonecos saem por compra (enxame)
@@ -40,22 +41,22 @@ namespace TDFende
             // investimento (0,20 de renda por ouro, corpo fraco); Rato, Lobo e Tigre apertam (renda 0,03 a 0,05 por
             // ouro, muita vida por ouro). O FlowSim confere a correlação negativa (SendSpectrumTests).
             // Enxame: ratos em bando, frágeis, derretem no atrito da fronteira.
-            new SendUnit { Key = "rato", Name = "Rato",        LivesCost = 1, Cost = 22, Hp = 18f, Speed = 2.8f, IncomeBonus = 1, Bounty = 2, Count = 4, AttritionScale = 1.4f },
+            new SendUnit { Key = "rato", Name = "Rato",        LivesCost = 1, Armor = 0f, Cost = 22, Hp = 18f, Speed = 2.8f, IncomeBonus = 1, Bounty = 2, Count = 4, AttritionScale = 1.4f },
             // A régua: barato, sem truque.
-            new SendUnit { Key = "cachorro", Name = "Cachorro",    LivesCost = 1, Cost = 10, Hp = 25f, Speed = 2.3f, IncomeBonus = 2, Bounty = 4, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "cachorro", Name = "Cachorro",    LivesCost = 1, Armor = 0f, Cost = 10, Hp = 25f, Speed = 2.3f, IncomeBonus = 2, Bounty = 4, Count = 1, AttritionScale = 1f },
             // Veloz: passa pelo alcance antes de apanhar muito. Resposta: Gelo e Ar.
-            new SendUnit { Key = "lobo", Name = "Lobo",        LivesCost = 1, Cost = 35, Hp = 110f, Speed = 4f, IncomeBonus = 1, Bounty = 10, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "lobo", Name = "Lobo",        LivesCost = 1, Armor = 0f, Cost = 35, Hp = 110f, Speed = 4f, IncomeBonus = 1, Bounty = 10, Count = 1, AttritionScale = 1f },
             // Meio-termo robusto: mais vida que o cachorro, sem a lentidão do urso.
-            new SendUnit { Key = "javali", Name = "Javali",      LivesCost = 2, Cost = 30, Hp = 100f, Speed = 2.3f, IncomeBonus = 3, Bounty = 9, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "javali", Name = "Javali",      LivesCost = 2, Armor = 0f, Cost = 30, Hp = 100f, Speed = 2.3f, IncomeBonus = 3, Bounty = 9, Count = 1, AttritionScale = 1f },
             // Contra-jogo da fronteira: voa por cima, imune ao atrito. Resposta: Sentinela.
-            new SendUnit { Key = "aguia", Name = "Águia",       LivesCost = 2, Cost = 55, Hp = 120f, Speed = 2.8f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 0f },
+            new SendUnit { Key = "aguia", Name = "Águia",       LivesCost = 2, Armor = 0f, Cost = 55, Hp = 120f, Speed = 2.8f, IncomeBonus = 5, Bounty = 20, Count = 1, AttritionScale = 0f },
             // Gordo e lento. Resposta: Fogo (queima fração da vida).
-            new SendUnit { Key = "urso", Name = "Urso",        LivesCost = 2, Cost = 40, Hp = 200f, Speed = 1.6f, IncomeBonus = 2, Bounty = 14, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "urso", Name = "Urso",        LivesCost = 2, Armor = 0f, Cost = 40, Hp = 200f, Speed = 1.6f, IncomeBonus = 2, Bounty = 14, Count = 1, AttritionScale = 1f },
             // Gordo E rápido: pede Gelo junto com dano.
-            new SendUnit { Key = "tigre", Name = "Tigre",       LivesCost = 2, Cost = 60, Hp = 280f, Speed = 3.3f, IncomeBonus = 2, Bounty = 20, Count = 1, AttritionScale = 1f },
-            new SendUnit { Key = "rinoceronte", Name = "Rinoceronte", LivesCost = 3, Cost = 75, Hp = 360f, Speed = 1.7f, IncomeBonus = 4, Bounty = 27, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "tigre", Name = "Tigre",       LivesCost = 2, Armor = 0f, Cost = 60, Hp = 280f, Speed = 3.3f, IncomeBonus = 2, Bounty = 20, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "rinoceronte", Name = "Rinoceronte", LivesCost = 3, Armor = 6f, Cost = 75, Hp = 360f, Speed = 1.7f, IncomeBonus = 4, Bounty = 27, Count = 1, AttritionScale = 1f },
             // Colosso: o maior de todos, com torre de combate no lombo.
-            new SendUnit { Key = "elefante", Name = "Elefante",    LivesCost = 3, Cost = 90, Hp = 480f, Speed = 1.3f, IncomeBonus = 5, Bounty = 34, Count = 1, AttritionScale = 1f },
+            new SendUnit { Key = "elefante", Name = "Elefante",    LivesCost = 3, Armor = 0f, Cost = 90, Hp = 480f, Speed = 1.3f, IncomeBonus = 5, Bounty = 34, Count = 1, AttritionScale = 1f },
         };
 
         static readonly SendUnit[] Defaults = (SendUnit[])All.Clone();
