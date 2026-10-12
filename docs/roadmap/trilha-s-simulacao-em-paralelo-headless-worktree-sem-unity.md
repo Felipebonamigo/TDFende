@@ -34,7 +34,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] DES-04 — Vazamento pesa pelo porte — 12/10/2026 (b110a4b)
 - [x] TORRE-03 — Upgrade amplia a fronteira — 10/10/2026 (1c66680)
 - [ ] TORRE-01 — Mira inteligente (fase 1)
-- [ ] BICHO-05 — Armadura no Rinoceronte (Sim)
+- [x] BICHO-05 — Armadura no Rinoceronte (Sim) — 12/10/2026 (49b9a3f)
 - [ ] BICHO-06 — Urso regenera fora da fronteira (Sim)
 - [x] TEC-14 — Matriz de contras medida (relatório) — 10/10/2026 (210247c; relatório, sem portão ainda)
 - [x] DES-03s — Chaves do laboratório da tese — 10/10/2026 (587e638)

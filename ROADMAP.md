@@ -118,7 +118,7 @@ _Adiantar tudo que é regra pura, para que o Portão 1 rode com o núcleo afiado
 - [x] **DES-04** — Vazamento pesa pelo porte — 12/10/2026 (b110a4b; StartLives 22; a IA ainda não pesa o envio pelo porte)
 - [x] **TORRE-03** — Upgrade amplia a fronteira — 10/10/2026 (1c66680; o fantasma de colocação mostra só o alcance, sem mudança)
 - [ ] **TORRE-01** — Mira inteligente (fase 1)
-- [ ] **BICHO-05** — Armadura no Rinoceronte (Sim) (design aprovado pelo Felipe em 11/10/2026: docs/designs/des-04-bicho-05-bicho-06-campos-do-envio.md; reservado: sessão na nuvem, 11/10/2026)
+- [x] **BICHO-05** — Armadura no Rinoceronte (Sim) — 12/10/2026 (49b9a3f)
 - [ ] **BICHO-06** — Urso regenera fora da fronteira (Sim) (design aprovado pelo Felipe em 11/10/2026: docs/designs/des-04-bicho-05-bicho-06-campos-do-envio.md; reservado: sessão na nuvem, 11/10/2026)
 - [x] **TEC-14** — Matriz de contras medida (relatório) — 10/10/2026 (210247c; entregue como relatório; o portão de commit espera o catálogo estabilizar, e a primeira medição deixa 15 de 24 contratos fora do alvo com 160 de ouro: ver docs/balanceamento-matriz.md)
 - [x] **DES-03s** — Chaves do laboratório da tese — 10/10/2026 (587e638)
