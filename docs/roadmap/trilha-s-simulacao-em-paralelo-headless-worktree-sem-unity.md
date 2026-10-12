@@ -31,7 +31,7 @@ Pergunte antes de executar o item que depende da decisão; registre a resposta a
 - [x] TEC-12 — Conteúdo por chave estável — 10/10/2026 (34fd131; vista a conferir no -captura do PC)
 - [x] TEC-17 — Eventos só de vista — 10/10/2026 (911b809)
 - [x] DES-05 — Envios com papel econômico — 10/10/2026 (c7a78c5)
-- [ ] DES-04 — Vazamento pesa pelo porte
+- [x] DES-04 — Vazamento pesa pelo porte — 12/10/2026 (b110a4b)
 - [x] TORRE-03 — Upgrade amplia a fronteira — 10/10/2026 (1c66680)
 - [ ] TORRE-01 — Mira inteligente (fase 1)
 - [ ] BICHO-05 — Armadura no Rinoceronte (Sim)
