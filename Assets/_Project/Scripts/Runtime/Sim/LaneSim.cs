@@ -40,6 +40,7 @@ namespace TDFende
             public float FrozenLeft;      // segundos congelado (parado no lugar)
             public float FreezeGuard;     // imune a congelar de novo enquanto > 0
             public int SenderId;          // lane de quem comprou o envio (-1 = ninguém)
+            public int LivesCost;         // vidas que tira ao vazar (DES-04); na volta repassada vale 1
             public int Laps;              // quantas bases já atravessou vivo
             public bool Burning => BurnLeft > 0f;
 
@@ -607,6 +608,7 @@ namespace TDFende
             _enemies[slot].TypeId = sendId;
             _enemies[slot].SenderId = senderId;
             _enemies[slot].Laps = 0;
+            _enemies[slot].LivesCost = u.LivesCost;
             _enemyCount++;
             EnemySpawned?.Invoke(new EnemySpawnedEvent(Id, slot, sendId, senderId, pos, false));
         }
@@ -731,9 +733,10 @@ namespace TDFende
                 flat.y = 0f;
                 if ((flat - _goalWorld).sqrMagnitude < 0.4f * 0.4f)
                 {
-                    Lives--;
+                    int livesCost = _enemies[i].Laps > 0 ? 1 : Math.Max(1, _enemies[i].LivesCost);
+                    Lives -= livesCost;
                     TotalLeaked++;
-                    LifeLost?.Invoke(new LifeLostEvent(Id, Lives, _enemies[i].TypeId, _enemies[i].Laps));
+                    LifeLost?.Invoke(new LifeLostEvent(Id, Lives, _enemies[i].TypeId, _enemies[i].Laps, livesCost));
                     EnemyDespawned?.Invoke(_enemies[i].Pos, DespawnReason.Leaked);
                     // não morreu: segue para a próxima base com a vida que tem
                     if (CarryLeaks) _outgoing.Add(_enemies[i]);

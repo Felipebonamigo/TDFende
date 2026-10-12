@@ -11,7 +11,7 @@ namespace TDFende
     /// </summary>
     public static class SimRules
     {
-        public const int Version = 3; // 2 (DES-05): a IA pondera a renda dos envios pelo relógio; 3 (TORRE-03): o nível amplia a fronteira (DES-03s não muda lógica: só chaves de configuração)
+        public const int Version = 4; // 2 (DES-05): a IA pondera a renda dos envios pelo relógio; 3 (TORRE-03): o nível amplia a fronteira; 4 (DES-04): vazamento pesa pelo porte
     }
 
     /// <summary>
@@ -71,6 +71,7 @@ namespace TDFende
                 w.Str("Key", u.Key);
                 w.Str("Name", u.Name);
                 w.Int("Cost", u.Cost);
+                w.Int("LivesCost", u.LivesCost);
                 w.Flt("Hp", u.Hp);
                 w.Flt("Speed", u.Speed);
                 w.Int("IncomeBonus", u.IncomeBonus);

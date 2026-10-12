@@ -35,6 +35,7 @@ namespace TDFende
                 sb.Append($"key={u.Key}");
                 sb.Append($";name={u.Name}");
                 sb.Append($";cost={u.Cost}");
+                sb.Append($";lives={u.LivesCost}");
                 sb.Append($";income={u.IncomeBonus}");
                 sb.Append($";hp={F(u.Hp)}");
                 sb.Append($";speed={F(u.Speed)}");
@@ -66,7 +67,7 @@ namespace TDFende
             var lns = new List<int>();
             foreach (var (fields, lineNo) in Lines(text))
             {
-                var b = new SendUnit { Key = "", Name = "?", Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
+                var b = new SendUnit { Key = "", Name = "?", LivesCost = 1, Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
                 string key = Str(fields, "key", ""), name = Str(fields, "name", "?");
                 if (factory != null)
                     foreach (var f in factory)
@@ -79,6 +80,7 @@ namespace TDFende
                     Key = key,
                     Name = name,
                     Cost = Int(fields, "cost", b.Cost),
+                    LivesCost = Int(fields, "lives", b.LivesCost),
                     IncomeBonus = Int(fields, "income", b.IncomeBonus),
                     Hp = Flt(fields, "hp", b.Hp),
                     Speed = Flt(fields, "speed", b.Speed),
@@ -88,6 +90,7 @@ namespace TDFende
                 };
                 if (u.Cost <= 0) { error = $"linha {lineNo}: custo tem que ser > 0"; return false; }
                 if (u.Hp <= 0f) { error = $"linha {lineNo}: vida tem que ser > 0"; return false; }
+                if (u.LivesCost < 1) { error = $"linha {lineNo}: vidas (lives) tem que ser >= 1"; return false; }
                 if (u.Count <= 0) { error = $"linha {lineNo}: quantidade tem que ser > 0"; return false; }
                 list.Add(u);
                 lns.Add(lineNo);

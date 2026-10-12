@@ -88,11 +88,11 @@ namespace TDFende
         { Lane = lane; TargetLane = targetLane; SendId = sendId; Cost = cost; Count = count; IncomeBonus = incomeBonus; }
     }
 
-    /// <summary>Um inimigo cruzou a base: a lane perdeu uma vida. <see cref="Laps"/> = quantas voltas ele já tinha dado.</summary>
+    /// <summary>Um inimigo cruzou a base: a lane perdeu <see cref="Cost"/> vidas (1 na volta repassada). <see cref="Laps"/> = quantas voltas ele já tinha dado.</summary>
     public readonly struct LifeLostEvent
     {
-        public readonly int Lane, LivesLeft, TypeId, Laps;
-        public LifeLostEvent(int lane, int livesLeft, int typeId, int laps)
-        { Lane = lane; LivesLeft = livesLeft; TypeId = typeId; Laps = laps; }
+        public readonly int Lane, LivesLeft, TypeId, Laps, Cost;
+        public LifeLostEvent(int lane, int livesLeft, int typeId, int laps, int cost = 1)
+        { Lane = lane; LivesLeft = livesLeft; TypeId = typeId; Laps = laps; Cost = cost; }
     }
 }

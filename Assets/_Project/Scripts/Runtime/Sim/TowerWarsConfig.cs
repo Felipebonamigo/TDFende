@@ -11,7 +11,7 @@ namespace TDFende
     {
         // Economia
         public const int StartGold = 120;
-        public const int StartLives = 20;
+        public const int StartLives = 22;
         public const int BaseIncome = 10;          // ouro por tique, antes de qualquer envio
         public const float IncomeTickSeconds = 10f;
 

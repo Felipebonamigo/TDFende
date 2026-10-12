@@ -157,6 +157,7 @@ class Program
         BorderAtTests();
         CounterMatrixTests();
         LabSwitchTests();
+        LivesCostTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -863,6 +864,49 @@ class Program
     }
 
     /// <summary>
+    /// DES-04: o vazamento pesa pelo porte. Antes, 4 ratos tiravam 4 vidas e o Elefante de 90 de ouro tirava 1.
+    /// </summary>
+    static void LivesCostTests()
+    {
+        SendCatalog.ResetToDefaults();
+        var expect = new Dictionary<string, int> { ["rato"] = 1, ["cachorro"] = 1, ["lobo"] = 1, ["javali"] = 2, ["aguia"] = 2,
+            ["urso"] = 2, ["tigre"] = 2, ["rinoceronte"] = 3, ["elefante"] = 3 };
+        bool table = true;
+        foreach (var kv in expect) table &= SendCatalog.Get(SendCatalog.IdOf(kv.Key)).LivesCost == kv.Value;
+        Check(table, "LivesCost: rato 1 ... elefante 3 na tabela de fábrica");
+
+        // Elefante sem defesa: a 1ª passagem custa 3; a volta repassada custa 1
+        var lane = new LaneSim(24, 16) { Id = 0, CarryLeaks = true };
+        var lanes = new[] { lane };
+        var feeder = new LaneSim(24, 16);
+        feeder.DebugGrantGold(5000);
+        var rng = new Random(3);
+        var costs = new List<int>();
+        var laps = new List<int>();
+        lane.LifeLost += e => { costs.Add(e.Cost); laps.Add(e.Laps); };
+        feeder.TrySend(SendCatalog.IdOf("elefante"), lane, rng);
+        for (int i = 0; i < 4000 && costs.Count < 2; i++) { lane.Tick(TowerWarsConfig.FixedStep); LeakRouter.Route(lanes, rng); }
+        Check(costs.Count >= 2 && costs[0] == 3 && laps[0] == 0 && costs[1] == 1 && laps[1] == 1,
+            $"LivesCost: o Elefante tira 3 na 1ª passagem e 1 na volta repassada ({string.Join(",", costs)})");
+        Check(lane.Lives == TowerWarsConfig.StartLives - 4 && lane.TotalLeaked == 2, "LivesCost: vidas e inimigos vazados contam separado");
+
+        // um enxame de Ratos (4 corpos) continua tirando 1 por corpo
+        var l2 = new LaneSim(24, 16);
+        var f2 = new LaneSim(24, 16);
+        f2.DebugGrantGold(5000);
+        f2.TrySend(SendCatalog.IdOf("rato"), l2, new Random(4));
+        Advance(l2, 60f);
+        Check(l2.TotalLeaked == 4 && l2.Lives == TowerWarsConfig.StartLives - 4, "LivesCost: 4 ratos tiram 4 vidas");
+
+        // arquivo: lives= lê, ausente vale a fábrica, < 1 recusa
+        Check(SendCatalog.Merge(SendCatalog.All, "key=lobo;lives=3", out var m, out _) && m[2].LivesCost == 3
+              && m[0].LivesCost == 1, "LivesCost: lives= no arquivo muda o envio citado");
+        Check(SendCatalog.Merge(SendCatalog.All, "key=elefante;cost=80", out var m2, out _) && m2[8].LivesCost == 3, "LivesCost: campo ausente vale o de fábrica");
+        Check(!SendCatalog.Merge(SendCatalog.All, "key=lobo;lives=0", out _, out string err) && err.Contains("lives"), "LivesCost: lives < 1 é recusado");
+        Check(CatalogJson.SerializeSends().Contains(";lives=3;"), "LivesCost: a exportação traz lives=");
+    }
+
+    /// <summary>
     /// TEC-17: eventos só de vista. Dispara-se no ponto em que o fato acontece e nada é lido de volta: com ou sem
     /// assinante, a partida é a mesma (fingerprint). E os eventos têm que FECHAR a conta: o ouro final sai da soma
     /// dos eventos, as vidas perdidas, as compras e os abates também.
@@ -929,12 +973,12 @@ class Program
             foreach (var e in income) if (e.Lane == id) inc += e.Amount;
             foreach (var e in bounty) if (e.Lane == id) { bty += e.Amount; bountyN++; }
             foreach (var e in bought) if (e.Lane == id) { cost += e.Cost; units += e.Count; }
-            foreach (var e in lost) if (e.Lane == id) lives++;
+            foreach (var e in lost) if (e.Lane == id) lives += e.Cost;
             foreach (var e in spawned) if (e.Lane == id) { if (e.Carried) carried++; else incoming++; }
             int sentToMe = 0;
             foreach (var e in bought) if (e.TargetLane == id) sentToMe += e.Count;
             goldOk &= lane.Gold == TowerWarsConfig.StartGold + inc + bty + refunds[id] - lane.GoldSpentOnTowers - lane.GoldSpentOnSends;
-            livesOk &= lives == TowerWarsConfig.StartLives - lane.Lives && lives == lane.TotalLeaked;
+            livesOk &= lives == TowerWarsConfig.StartLives - lane.Lives;
             buyOk &= units == lane.TotalSent && cost == lane.GoldSpentOnSends;
             spawnOk &= incoming == sentToMe && carried == lane.TotalReentries;
             killOk &= bountyN == lane.KilledByTower + lane.KilledByAttrition;
@@ -1782,7 +1826,7 @@ class Program
                 for (int s = 0; s < l1.EnemySlotCount; s++)
                     if (l1.TryGetEnemy(s, out var e) && e.Laps == 1) { reentered = true; hpBack = e.Hp; lapsBack = e.Laps; }
             }
-            Check(reentered && l1.Lives == livesStart - 1, "Repasse: passou da base, custou 1 vida e voltou a correr");
+            Check(reentered && l1.Lives == livesStart - SendCatalog.Get(SendCatalog.IdOf("elefante")).LivesCost, "Repasse: passou da base, custou as vidas do porte (Elefante: 3) e voltou a correr");
             Check(hpAtGoal > 0f && hpAtGoal < 449f && Math.Abs(hpBack - hpAtGoal) < 0.01f,
                 $"Repasse: volta com a vida que tinha ({hpBack:0.0} de {hpAtGoal:0.0})");
             Check(l0.EnemiesAlive == 0 && l1.EnemiesAlive == 1, "Repasse 1x1: não volta para quem enviou");
@@ -2153,7 +2197,7 @@ class Program
 /// <summary>Assinaturas do catálogo e das regras de FÁBRICA (BUG-05). Muda de propósito => atualizar aqui e dizer no commit.</summary>
 static class SimSignatureExpected
 {
-    public const string Sends = "be3b34ce94f36c29";
+    public const string Sends = "a14d9b520b1f4512";
     public const string Towers = "7cb8cd3f7c5ce6cd";
-    public const string Rules = "61cfd13721b00399";
+    public const string Rules = "1fafdb2739373b0c";
 }
