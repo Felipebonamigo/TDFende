@@ -40,6 +40,7 @@ namespace TDFende
             public float FrozenLeft;      // segundos congelado (parado no lugar)
             public float FreezeGuard;     // imune a congelar de novo enquanto > 0
             public int SenderId;          // lane de quem comprou o envio (-1 = ninguém)
+            public float RegenPct;        // regeneração fora do território, fração da vida-base por segundo (BICHO-06)
             public float Armor;           // perde isto por acerto de torre, piso de 20% do dano (BICHO-05)
             public int LivesCost;         // vidas que tira ao vazar (DES-04); na volta repassada vale 1
             public int Laps;              // quantas bases já atravessou vivo
@@ -611,6 +612,7 @@ namespace TDFende
             _enemies[slot].Laps = 0;
             _enemies[slot].LivesCost = u.LivesCost;
             _enemies[slot].Armor = u.Armor;
+            _enemies[slot].RegenPct = u.RegenPctPerSecond;
             _enemyCount++;
             EnemySpawned?.Invoke(new EnemySpawnedEvent(Id, slot, sendId, senderId, pos, false));
         }
@@ -711,6 +713,11 @@ namespace TDFende
                         continue;
                     }
                 }
+
+                // regeneração (BICHO-06): só fora do território, nunca queimando, desligada na morte súbita, até a vida máxima
+                if (_enemies[i].RegenPct > 0f && _enemies[i].Hp < _enemies[i].MaxHp && _enemies[i].BurnLeft <= 0f
+                    && !InSuddenDeath && !Territory.Contains(_enemies[i].Pos))
+                    _enemies[i].Hp = Math.Min(_enemies[i].MaxHp, _enemies[i].Hp + _enemies[i].BaseHp * _enemies[i].RegenPct * dt);
 
                 var dir = Flow.SampleDirection(_enemies[i].Pos);
                 _enemies[i].Pos += dir * (_enemies[i].CurrentSpeed * dt);

@@ -37,6 +37,7 @@ namespace TDFende
                 sb.Append($";cost={u.Cost}");
                 sb.Append($";lives={u.LivesCost}");
                 sb.Append($";armor={F(u.Armor)}");
+                sb.Append($";regen={F(u.RegenPctPerSecond)}");
                 sb.Append($";income={u.IncomeBonus}");
                 sb.Append($";hp={F(u.Hp)}");
                 sb.Append($";speed={F(u.Speed)}");
@@ -68,7 +69,7 @@ namespace TDFende
             var lns = new List<int>();
             foreach (var (fields, lineNo) in Lines(text))
             {
-                var b = new SendUnit { Key = "", Name = "?", LivesCost = 1, Armor = 0f, Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
+                var b = new SendUnit { Key = "", Name = "?", LivesCost = 1, Armor = 0f, RegenPctPerSecond = 0f, Cost = 10, IncomeBonus = 1, Hp = 40f, Speed = 2.2f, Count = 1, Bounty = 4, AttritionScale = 1f };
                 string key = Str(fields, "key", ""), name = Str(fields, "name", "?");
                 if (factory != null)
                     foreach (var f in factory)
@@ -83,6 +84,7 @@ namespace TDFende
                     Cost = Int(fields, "cost", b.Cost),
                     LivesCost = Int(fields, "lives", b.LivesCost),
                     Armor = Flt(fields, "armor", b.Armor),
+                    RegenPctPerSecond = Flt(fields, "regen", b.RegenPctPerSecond),
                     IncomeBonus = Int(fields, "income", b.IncomeBonus),
                     Hp = Flt(fields, "hp", b.Hp),
                     Speed = Flt(fields, "speed", b.Speed),
@@ -94,6 +96,7 @@ namespace TDFende
                 if (u.Hp <= 0f) { error = $"linha {lineNo}: vida tem que ser > 0"; return false; }
                 if (u.LivesCost < 1) { error = $"linha {lineNo}: vidas (lives) tem que ser >= 1"; return false; }
                 if (u.Armor < 0f) { error = $"linha {lineNo}: armadura (armor) não pode ser negativa"; return false; }
+                if (u.RegenPctPerSecond < 0f || u.RegenPctPerSecond > 0.2f) { error = $"linha {lineNo}: regeneração (regen) tem que estar entre 0 e 0.2"; return false; }
                 if (u.Count <= 0) { error = $"linha {lineNo}: quantidade tem que ser > 0"; return false; }
                 list.Add(u);
                 lns.Add(lineNo);

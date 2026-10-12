@@ -159,6 +159,7 @@ class Program
         LabSwitchTests();
         LivesCostTests();
         ArmorTests();
+        RegenTests();
         SimSignatureTests();
 
         // ================= ESTÁGIOS DA TORRE (modelo 3D por par de níveis) =================
@@ -989,6 +990,97 @@ class Program
         var seen = new HashSet<string>();
         SimSignature.Rules(seen);
         Check(seen.Contains("TowerWarsConfig.ArmorFloor"), "Armadura: o piso de 20% está na assinatura das regras");
+    }
+
+    /// <summary>
+    /// BICHO-06: regeneração fora da fronteira. Dentro do território o atrito o come; fora, o Urso se cura. Não cura queimando,
+    /// desliga na morte súbita e tem teto na vida máxima. Ensina que buraco na fronteira custa caro.
+    /// </summary>
+    static void RegenTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        int urso = SendCatalog.IdOf("urso"), fogo = TowerCatalog.IdOf("fogo");
+        Check(SendCatalog.Get(urso).RegenPctPerSecond == 0.015f && SendCatalog.Get(SendCatalog.IdOf("lobo")).RegenPctPerSecond == 0f,
+            "Regeneração: só o Urso regenera de fábrica (1,5%/s)");
+
+        // um Urso ferido (metade da vida) entra numa lane sem torres, logo sem território
+        LaneSim.SimEnemy Wounded(float hp, float max, float baseHp) => new LaneSim.SimEnemy
+        {
+            Active = true, Hp = hp, MaxHp = max, BaseHp = baseHp, Speed = 1.6f, AttritionScale = 1f, Bounty = 1, TypeId = urso,
+            SlowFactor = 1f, RegenPct = SendCatalog.Get(urso).RegenPctPerSecond, LivesCost = 2, SenderId = -1
+        };
+        float HpAfter(LaneSim lane, float seconds)
+        {
+            lane.SpawnCarried(Wounded(100f, 200f, 200f), new Random(1));
+            Advance(lane, seconds);
+            for (int sl = 0; sl < lane.EnemySlotCount; sl++) if (lane.TryGetEnemy(sl, out var e)) return e.Hp;
+            return -1f;
+        }
+        var open = new LaneSim(24, 16);
+        float hp = HpAfter(open, 4f);
+        Check(Math.Abs(hp - (100f + 200f * 0.015f * 4f)) < 0.5f, $"Regeneração: fora do território o Urso ganha 1,5% da vida-base por segundo ({hp:0.0} depois de 4 s, esperava ~112)");
+
+        // teto: nunca passa da vida máxima
+        var lane2 = new LaneSim(24, 16);
+        lane2.SpawnCarried(Wounded(199f, 200f, 200f), new Random(1));
+        Advance(lane2, 5f);
+        float top = 0f;
+        for (int sl = 0; sl < lane2.EnemySlotCount; sl++) if (lane2.TryGetEnemy(sl, out var e2)) top = e2.Hp;
+        Check(top <= 200f + 1e-3f && top > 199f, $"Regeneração: tem teto na vida máxima ({top})");
+
+        // dentro do território ele não regenera (atrito come): uma fronteira larga cobrindo o caminho
+        var covered = new LaneSim(24, 16);
+        covered.DebugGrantGold(5000);
+        for (int x = 4; x <= 18; x += 2) { covered.TryBuildTower(new Vector2Int(x, 7), 0); }
+        float before = 100f;
+        covered.SpawnCarried(Wounded(before, 200f, 200f), new Random(1));
+        Advance(covered, 1f);
+        float inside = -1f;
+        for (int sl = 0; sl < covered.EnemySlotCount; sl++) if (covered.TryGetEnemy(sl, out var e3)) inside = e3.Hp;
+        Check(inside < before, $"Regeneração: dentro do território o atrito vence (vida {before} -> {inside:0.0})");
+
+        // queimando não regenera: fogo com dano e queima quase nulos, e o Urso fora da fronteira mas ao alcance da torre
+        var towers = (TowerType[])TowerCatalog.All.Clone();
+        towers[fogo].Damage = 0.001f; towers[fogo].BurnPctPerSecond = 0.0001f;
+        var savedT = TowerCatalog.All;
+        TowerCatalog.All = towers;
+        int burningOutside = 0, rose = 0;
+        try
+        {
+            var lane3 = new LaneSim(24, 16);
+            lane3.DebugGrantGold(5000);
+            lane3.TryBuildTower(new Vector2Int(10, 7), fogo);
+            lane3.SpawnCarried(Wounded(100f, 200f, 200f), new Random(1));
+            float prev = 100f;
+            for (int i = 0; i < 30 * 12; i++)
+            {
+                bool burnNow = false, outsideNow = false;
+                for (int sl = 0; sl < lane3.EnemySlotCount; sl++)
+                    if (lane3.TryGetEnemy(sl, out var e4)) { burnNow = e4.Burning; outsideNow = !lane3.Territory.Contains(e4.Pos); prev = e4.Hp; }
+                lane3.Tick(TowerWarsConfig.FixedStep);
+                float now = prev;
+                bool burnAfter = false;
+                for (int sl = 0; sl < lane3.EnemySlotCount; sl++) if (lane3.TryGetEnemy(sl, out var e5)) { now = e5.Hp; burnAfter = e5.Burning; }
+                if (burnNow && burnAfter && outsideNow) { burningOutside++; if (now > prev + 1e-4f) rose++; }
+            }
+        }
+        finally { TowerCatalog.All = savedT; }
+        Check(burningOutside >= 3 && rose == 0, $"Regeneração: queimando não regenera ({burningOutside} tiques queimando fora da fronteira, {rose} subiram)");
+
+        // morte súbita desliga: lane que já passou do limiar
+        var late = new LaneSim(24, 16);
+        Advance(late, TowerWarsConfig.SuddenDeathMinutes * 60f + 5f);
+        late.SpawnCarried(Wounded(100f, 200f, 200f), new Random(1));
+        Advance(late, 3f);
+        float lateHp = -1f;
+        for (int sl = 0; sl < late.EnemySlotCount; sl++) if (late.TryGetEnemy(sl, out var e6)) lateHp = e6.Hp;
+        Check(late.InSuddenDeath && Math.Abs(lateHp - 100f) < 1e-3f, $"Regeneração: desliga na morte súbita (vida {lateHp})");
+
+        // arquivo
+        Check(SendCatalog.Merge(SendCatalog.All, "key=lobo;regen=0.02", out var m, out _) && m[2].RegenPctPerSecond == 0.02f && m[urso].RegenPctPerSecond == 0.015f,
+            "Regeneração: regen= no arquivo muda o envio citado");
+        Check(!SendCatalog.Merge(SendCatalog.All, "key=lobo;regen=-0.1", out _, out string err) && err.Contains("regen"), "Regeneração: valor negativo é recusado");
     }
 
     /// <summary>
@@ -2282,7 +2374,7 @@ class Program
 /// <summary>Assinaturas do catálogo e das regras de FÁBRICA (BUG-05). Muda de propósito => atualizar aqui e dizer no commit.</summary>
 static class SimSignatureExpected
 {
-    public const string Sends = "b9137d50d1902fc4";
+    public const string Sends = "d610b62201892c46";
     public const string Towers = "7cb8cd3f7c5ce6cd";
-    public const string Rules = "b764735e76793ffd";
+    public const string Rules = "0d8715b99f2d0452";
 }
