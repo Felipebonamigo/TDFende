@@ -1,131 +1,93 @@
 # Roteiro de teste
 
-O jogo já abriu e rodou no editor (25/09). Desde então o visual inteiro foi trocado para
-**realista** (26/09): modelos, texturas, luz, efeitos e HUD, tudo gerado em código. Essa
-parte **nunca rodou no Unity** — compila contra a API do Unity e os modelos foram conferidos
-num preview fora do editor (`Tools/ArtPreview`), mas luz, sombra, pós-processamento e
-desempenho só se veem apertando Play. Por isso o passo 0 vem antes de tudo.
+Atualizado em 13/10/2026 (DOC-01). Vale para o **executável** (`Builds\Windows\TDFende.exe`, gerado por
+`Tools\GerarExecutavel.ps1`) e para o Play no editor. O que importa é a **sensação**: uma frase por item basta.
+Está em ordem de valor: se der errado no passo 1, pare e me mande o print e o `Player.log`.
 
-Está em ordem de valor: se der errado no passo 0 ou 1, pare e me mande o erro.
+Números de hoje: **9 bichos**, **6 torres**, nível máximo **6**.
 
 ---
 
-## 0. Visual realista (5 min)
+## 1. Abrir (5 min)
 
-1. `git pull` (ou troque para o branch do visual) e abra o projeto. O Unity vai importar os
-   arquivos novos (`Art/`, `SoftParticle.shader`) e recompilar.
-2. **Play** → **Tower Wars** → **Normal**. No Console deve aparecer
-   `[TDFende] 12 texturas fotográficas + 10 procedurais em N ms`. **Me diga o N** — é o
-   tempo de carga no boot. Se aparecer "0 texturas fotográficas", as fotos não foram achadas
-   (me avise: o jogo roda, mas com a textura procedural no lugar).
-3. O que olhar, uma frase por item:
-   - Algum material **rosa/magenta**? (shader não achado — me diga em quê)
-   - Algum modelo **de dentro para fora** ou escuro demais? (normal ou face invertida)
-   - A pedra, a madeira e o bronze **parecem material** ou parecem tinta?
-   - Gelo: o bicho fica azul, solta geada e, depois de alguns tiros, **congela** (casca de gelo, parado). Fogo: chama saindo de vários pontos do corpo
-   - Suba uma torre até o nível 6: a cada nível aparece peça nova (bronze, contrafortes, pontas, runas acesas, remate)
-   - Os bichos **andam** (quatro patas galopando) e **viram** para onde vão? A águia bate as asas?
-   - Bichos de verdade (rato, pastor-alemão, lobo, gavião, urso, rinoceronte, elefante; javali e tigre
-     seguem feitos em código): o Console mostra `[TDFende] bichos de verdade: ...` com os 7? Algum andando **de lado/de costas**,
-     **flutuando** ou enterrado? O pelo do rato, do cão e do lobo aparece como **franja recortada** ou
-     como placas sólidas? Algum bicho **transparente/fantasma**?
-   - O céu aparece? Tem **sombra**? O bronze do canhão **brilha** um pouco?
-   - A barra de vida aparece em quem levou dano? O brilho gelado aparece em quem está
-     dentro da sua fronteira?
-   - **FPS** com as duas lanes cheias (o cenário em volta tem ~100 mil vértices)
-   - No geral: **parece realista**, ou parece maquete? Se for maquete, o que mais incomoda?
+1. Gere o executável (Unity fechado, ~2 min) ou abra o projeto com **6000.3.11f1** e aperte **Play**.
+2. Confira no menu o selo de versão. No Console/`Player.log` procure `[TDFende]`: avisos como `sem modelo para ...`,
+   `camada privada ...` ou `... ignorado (...)` do balanceamento são o que eu preciso ver.
+3. Algum material **rosa**, modelo **de dentro para fora**, bicho **invisível**, **de lado** ou **flutuando**? Print ajuda.
 
-Se algo parecer quebrado, um print ajuda mais que a descrição.
+## 2. Controles
 
+| Ação | Controle |
+|---|---|
+| Construir a torre escolhida | Clique esquerdo numa célula livre da **sua** lane (a de baixo) |
+| Trocar a torre escolhida | **Q** / **E** |
+| Subir de nível | Clique esquerdo na torre, ou **U** (custo cresce a cada nível, máximo 6) |
+| Vender | Clique direito, **X** ou **Delete** na torre (devolve 70% do investido) |
+| Enviar bicho à lane da IA | Teclas **1-9** ou botões do rodapé |
+| Câmera | WASD / setas / botão do meio; **scroll** dá zoom |
+| Reiniciar | **R** |
+| Gravar a partida (replay) | **F9** (grava em `replays\`; me mande o arquivo) |
 
-## 1. Abrir e compilar (5 min, quase tudo é espera)
+Os 9 bichos, do menor ao maior (tecla 1 a 9): **Rato** (enxame de 4), **Cachorro** (barato, é o investimento),
+**Lobo** (rápido), **Javali**, **Águia** (voa, ignora a fronteira), **Urso** (gordo, regenera fora da fronteira),
+**Tigre** (gordo e rápido), **Rinoceronte** (armadura: tiro fraco quase não fura), **Elefante** (colosso).
+As 6 torres: **Canhão** (régua), **Morteiro** (área, contra enxame), **Gelo** (lenta e congela), **Sentinela** (antiaérea),
+**Fogo** (queima a vida máxima), **Ar** (empurra para trás).
 
-1. **Unity Hub** → **Add** → **Add project from disk** → `C:\Users\Felip\source\repos\TDFende`
-2. Abrir com **6000.3.11f1**. A primeira vez demora: importa, instala o URP sozinho, recompila.
-   Acompanhe as mensagens `[TDFende]` no Console.
-3. Aperte **Play**.
+## 3. Tower Wars, o que importa (10 a 15 min)
 
-**Se der erro:** copie o texto do Console e me mande. Erro de compilação aqui seria surpresa
-(o `Tools/CompileCheck` compila os mesmos arquivos contra as DLLs do editor), mas erro de
-*importação de pacote* ou de *shader* é plausível — nenhum dos dois passa por aquela verificação.
+Menu → **Tower Wars** → **Normal**. Sua lane é a de baixo, a da IA a de cima.
 
-**Risco conhecido e nunca testado:** a assembly opcional `TDFende.Urp` usa `defineConstraints`
-+ `versionDefines`. Se aparecer erro de referência não resolvida, é ali — e o jogo deve rodar
-mesmo assim, porque tudo tem fallback para o pipeline Built-in.
+Cada envio tira vidas do adversário **se passar**: Rato/Cachorro/Lobo tiram 1, Javali/Águia/Urso/Tigre 2,
+Rinoceronte/Elefante 3 (a volta repassada custa 1). Cada envio também sobe a **sua renda para sempre**. A torre
+sobe a fronteira junto com o nível (o território cresce).
 
-Já foi verificado à mão, contra a fonte do URP embutido nesta versão do editor, que **todos os
-nomes de API usados pelo `PostFx.cs` existem**. Então, se aquele arquivo der erro, o problema é
-o padrão de asmdef — não um nome de API errado. Isso encurta a investigação.
+### As perguntas que só você responde (nota de 1 a 10 + uma frase)
 
-## 2. TD clássico (3 min)
-
-No menu, escolha **TD clássico**. É a fase 0, a parte mais antiga e a única que já passou por
-uma revisão completa.
-
-- Roda? A câmera enquadra o tabuleiro?
-- Construa uma parede de torres e veja a onda desviar. Parece **esperta** ou parece burra?
-- Olhe o FPS (canto superior esquerdo) lá pela onda 8-10.
-
-## 3. Tower Wars (10 min) — é aqui que está o valor
-
-Menu → **Tower Wars** → **Normal**. Sua lane é a **de baixo**, a da IA é a de cima.
-
-- Clique na sua lane: torre nova (25 ouro). O anel claro no chão é o alcance dela.
-- Clique numa torre sua: sobe o nível dela (custo cresce a cada nível).
-- **1-6** ou os botões do rodapé: compra inimigo e manda na lane da IA.
-
-Cada envio sobe a sua renda **para sempre**. O jogo inteiro é decidir entre torre, envio e renda.
-
-### As perguntas que eu não consigo responder sozinho
-
-1. **Cercar o inimigo com fronteira e vê-lo derreter tem graça?** É a tese do projeto inteiro.
-   Se a resposta for "meh", a gente corta e vira TD clássico — e você economizou meses.
-2. **A tensão de "gasto em defesa ou em ataque?" existe?** Era isso que fazia o Line Tower
-   Wars viciar.
-3. **Dá para acompanhar as duas lanes ao mesmo tempo**, ou você perde o que a IA está fazendo?
-4. **O ritmo está bom?** As partidas IA×IA duram ~7 min no Normal. Contra humano é outra coisa.
-5. **A IA parece jogar ou parece trapacear?** Normal ganha do Fácil em 95% das simulações.
+1. **Cercar o bicho com fronteira e vê-lo derreter tem graça?** É a tese do projeto. Nota de 1 a 10.
+2. **Existe a tensão de "defesa ou ataque?"** Em algum momento você hesitou entre torre e envio?
+3. **Dá para acompanhar as duas lanes**, ou você perde o que a IA faz?
+4. **O ritmo está bom?** Partida IA×IA no Normal dura ~8-9 min.
+5. **A IA parece jogar ou parece trapacear?** E o **Fácil** é ganhável, o **Difícil** dói?
+6. **Cada bicho se lê de longe** (silhueta, velocidade) e você sabe **qual torre responde a qual**?
+7. **O Rinoceronte parece blindado** na prática (tiro fraco faz cócegas)? **O Urso** curando fora da fronteira ensina a fechar buracos?
+8. **Subir o nível da torre muda o mapa** (a fronteira cresce) de um jeito que você nota?
 
 ### O que reportar
 
-Não precisa de relatório. Uma frase por item já resolve. O que mais ajuda:
+Não precisa de relatório. Uma frase por item. O que mais ajuda:
 
-- Qualquer coisa que **pareça quebrada** (objeto no lugar errado, cor estranha, algo invisível)
-- **FPS** quando as duas lanes estiverem cheias
-- A resposta da pergunta 1, mesmo que seja "não sei dizer"
+- Qualquer coisa que **pareça quebrada** (objeto no lugar errado, cor estranha, algo invisível), com print
+- **FPS** com as duas lanes cheias (o `-captura` já mede, mas a sensação conta)
+- As notas das perguntas 1 e 2, mesmo que seja "não sei dizer"
 
-## 4. Se sobrar vontade
+## 4. TD clássico (3 min)
 
-- **R** reinicia a partida — confira que reinicia limpo.
-- Tente as três dificuldades. Fácil deve ser ganhável; Difícil deve doer.
-- Redimensione a janela do Game: o HUD deve continuar utilizável.
+Menu → **TD clássico**: uma lane, ondas infinitas. Roda? A câmera enquadra? Uma parede de torres faz a onda desviar de
+forma **esperta**? Espaço chama a próxima onda.
+
+## 5. Se sobrar vontade
+
+- **R** reinicia limpo? As três dificuldades?
+- Redimensione a janela: o HUD continua utilizável?
+- Venda e reconstrua no mesmo lugar; tente murar o caminho (o jogo bloqueia a torre que fecharia a última passagem).
 
 ---
 
 ## Ajustar você mesmo, sem recompilar
 
-No menu inicial há **Exportar balanceamento**. Ele escreve dois arquivos de texto na sua
-pasta de dados do jogo:
-
-- `envios.txt` — os seis tipos de inimigo que se compra
-- `torres.txt` — os quatro tipos de torre
-
-Edite, salve, dê Play de novo. O jogo carrega no boot. Uma linha por unidade, campo ausente
-usa o padrão, `#` é comentário. **Decimal com ponto** (`2.75`, nunca `2,75`).
-
-Arquivo torto nunca derruba o jogo: vira aviso no Console com a linha do erro e o jogo segue
-com os valores de fábrica. Apagar os arquivos volta tudo ao padrão.
+No menu inicial há **Exportar balanceamento**: escreve `envios.txt` e `torres.txt` na pasta de dados do jogo
+(`%USERPROFILE%\AppData\LocalLow\DefaultCompany\TDFende\Balanceamento`). Cada linha começa com `key=` (a identidade do bicho ou
+da torre; **não mude**) e `name=` (só texto). Campo omitido vale o de fábrica; `#` é comentário; **decimal com ponto**.
+Edite, salve, dê Play. Arquivo torto vira aviso no Console e o jogo segue com os valores de fábrica; apagar volta tudo ao padrão.
+Detalhes: `Balanceamento\LEIA-ME.txt`.
 
 Para medir o efeito sem abrir o editor:
 
 ```bash
-cd Tools/FlowSim
-dotnet run -- match 60
+dotnet run --project Tools/FlowSim -v quiet -- match 24      # laboratório de balanceamento
+dotnet run --project Tools/FlowSim -v quiet -- matriz 160    # torre × bicho com o mesmo ouro
+dotnet run --project Tools/FlowSim -v quiet -- replay arquivo.txt
 ```
 
-E se algo parecer errado durante o jogo, aperte **F9**: ele grava a partida inteira num
-arquivo. Me mande esse arquivo e eu reproduzo aqui, tique a tique, em vez de depender da
-descrição.
-
-Ainda em código (mexer exige recompilar): `Sim/TowerWarsConfig.cs` tem economia, atrito,
-escalada e morte súbita.
+Ainda em código (mexer exige recompilar): `Sim/TowerWarsConfig.cs` tem economia, atrito, escalada e morte súbita.

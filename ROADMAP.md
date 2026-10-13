@@ -159,7 +159,7 @@ _Uma lane que já parece jogo, com arte real no tema favorito, medida contra os 
 
 _A fronteira com atrito fica impossível de não ver, com render no mundo e sem UI Toolkit. A pergunta 'cercar com fronteira tem graça?' é respondida com A/B cego e com gente além do Felipe, sobre o núcleo já afiado pela Trilha S._
 
-- [ ] **DOC-01** — Reescrever o TESTE.md
+- [x] **DOC-01** — Reescrever o TESTE.md — 13/10/2026 (revisão do Felipe pendente)
 - [ ] **TEC-18** — Entrada só por intenções
 - [ ] **UX-03** — Pausa e velocidade
 - [ ] **UX-05** — Fantasma de construção tático (enxuto)
