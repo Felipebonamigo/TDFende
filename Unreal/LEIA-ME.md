@@ -140,8 +140,11 @@ constrói/sobe, direito vende; Q/E troca a torre; 1-9 envia; **WASD/setas movem 
   escolher o bioma; com ele, a paleta, a vegetação e o céu seguem.
 - **Downloads novos (CC0, Poly Haven, sem login):** texturas 4K de chão com aspereza/AO/relevo e mais rochas/plantas. A regra é pedir
   antes de baixar: dizer quais arquivos e o tamanho.
-- **Árvores realistas:** não há CC0 bom no acervo. Opções: Fab/Megascans (precisa de login e aceite seu), Meshy (créditos, ~30 por
-  modelo, só com seu ok) ou o Procedural Vegetation Editor da Unreal (gratuito, experimental; dá para tentar no editor).
+- ~~Árvores realistas~~ **resolvido no mesmo dia:** o acervo comum (`Felipebonamigo/acervo-3d`, regra nova do CLAUDE.md) tem carvalho,
+  oliveira, dois ciprestes, arbusto e rochas da galeria do Meshy (CC0), já neste PC na pasta do Age of Earth. Importados em
+  `/Game/TDFende/Ambiente/Natureza` (material M_TdfGltf, Nanite) e espalhados em volta das lanes (81 peças), sem árvore alta entre a
+  câmera e a sua lane. Licença: 8 entradas `unreal-natureza-*` no `docs/licencas/manifesto.json` (raiz nova só para essa pasta) e os
+  créditos regenerados. Ainda faltam árvores de outros biomas quando o tema for escolhido.
 - **Aprovar o visual da U1** pelos prints; **testar o controle** (mouse e teclado reais; aqui só foi testado pelas mesmas chamadas);
   sons (o Claude não ouve); hardware mínimo alvo; conferir os royalties da Epic (5% acima de US$ 1 mi brutos).
 

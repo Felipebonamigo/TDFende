@@ -13,6 +13,15 @@ import unreal
 REPO = os.environ.get("TDF_REPO") or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 ART = os.path.join(REPO, "Assets", "Resources", "Art")
 CEN = os.path.join(REPO, "Assets", "Resources", "TDFende", "Cenario")
+# árvores, arbusto e rochas da galeria do Meshy (CC0) guardados no acervo comum dos jogos (Felipebonamigo/acervo-3d,
+# natureza/meshy-galeria); a mesma cópia está no Age of Earth deste PC. Registro de licença: docs/licencas/manifesto.json
+NATUREZA = [
+    os.environ.get("TDF_ACERVO_NATUREZA", ""),
+    os.path.join(REPO, "..", "acervo-3d", "natureza", "meshy-galeria"),
+    os.path.join(REPO, "..", "AgeOfEarth", "art", "meshy", "natureza"),
+]
+NATUREZA_MODELOS = ["oak__oak-tree", "olive__ancient-olive-majesty", "cypress__cypress-tree-chad", "cypress__cypress-tree-swaney",
+                    "berry__crimson-berry-bush", "crag__cracked-gray-rock-stack", "crag__kaya3", "rock__cracked-granite-boulder"]
 GAME = "/Game/TDFende/Ambiente"
 TMP = tempfile.mkdtemp(prefix="tdf_amb_")
 tools = unreal.AssetToolsHelpers.get_asset_tools()
@@ -252,8 +261,65 @@ def find_tex(folder, *keys):
     return None
 
 
+def master_gltf():
+    """Material dos GLB do Meshy (padrão glTF): cor, normal e o mapa ORM (aspereza no canal G, metal no B)."""
+    mat = new_material("M_TdfGltf")
+    white = unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture")
+    flat = unreal.load_asset("/Engine/EngineMaterials/FlatNormal")
+    cor = tex_param(mat, "Cor", -600, -200, white)
+    nor = tex_param(mat, "Normal", -600, 100, flat, normal=True)
+    orm = tex_param(mat, "ORM", -600, 400, white)
+    mel.connect_material_property(cor, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.connect_material_property(nor, "RGB", unreal.MaterialProperty.MP_NORMAL)
+    mel.connect_material_property(orm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(orm, "B", unreal.MaterialProperty.MP_METALLIC)
+    return finish(mat)
+
+
+def natureza(gltf_master):
+    src_dir = next((d for d in NATUREZA if d and os.path.isdir(d)), None)
+    if not src_dir:
+        say("natureza: acervo não encontrado (clone Felipebonamigo/acervo-3d ao lado do TDFende)")
+        return
+    for model in NATUREZA_MODELOS:
+        glb = os.path.join(src_dir, model + ".glb")
+        if not os.path.isfile(glb):
+            say("natureza: falta " + model)
+            continue
+        dest = GAME + "/Natureza/" + model.replace("-", "_")
+        if eal.does_directory_exist(dest):
+            eal.delete_directory(dest)
+        paths = run_task(glb, dest, "SM_" + model.replace("-", "_"))
+        meshes, cor, nor, orm = [], None, None, None
+        for p in paths:
+            a = unreal.load_asset(p)
+            if isinstance(a, unreal.StaticMesh):
+                meshes.append(a)
+        # as texturas do glTF vêm junto; o papel de cada uma sai das propriedades que o importador deu
+        for p in eal.list_assets(dest, recursive=True, include_folder=False):
+            a = unreal.load_asset(p)
+            if not isinstance(a, unreal.Texture2D):
+                continue
+            if a.get_editor_property("compression_settings") == unreal.TextureCompressionSettings.TC_NORMALMAP:
+                nor = nor or a
+            elif a.get_editor_property("srgb"):
+                cor = cor or a
+            else:
+                orm = orm or a
+        mi = instance(gltf_master, "MI_" + model.replace("-", "_"), {"Cor": cor, "Normal": nor, "ORM": orm})
+        for mesh in meshes:
+            for i in range(len(mesh.static_materials)):
+                mesh.set_material(i, mi)
+            nanite(mesh)
+            eal.save_loaded_asset(mesh)
+            b = mesh.get_bounds()
+            say("natureza %s: %s, %.0f x %.0f x %.0f cm (cor %s, normal %s, orm %s)" % (
+                model, mesh.get_name(), b.box_extent.x * 2, b.box_extent.y * 2, b.box_extent.z * 2, bool(cor), bool(nor), bool(orm)))
+
+
 def main():
     pbr = master_pbr()
+    natureza(master_gltf())
     fol = master_folhagem()
     master_territorio()
 

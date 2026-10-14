@@ -48,6 +48,7 @@ private:
 	void BuildGround();
 	void ScatterScenery();
 	void ScatterGrass();
+	void ScatterNature();
 	void LineBorders();
 	bool InsidePlay(const FVector2D& P, float Margin) const;
 	UHierarchicalInstancedStaticMeshComponent* MakeHism(UStaticMesh* Mesh, float CullCm, bool bShadows);

@@ -184,6 +184,34 @@ CC0 não exige crédito; fica registrado para saber de onde veio cada coisa. O q
 
 </details>
 
+## Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)
+
+| Obra | Autor | Licença | IA | Plano Meshy | Estado |
+|---|---|---|---|---|---|
+| [Oak Tree](https://www.meshy.ai/3d-models/Oak-Tree-01a0594b-9e23-7538-a0da-0c1238a262d7) | demonsurgery | CC0 | terceiro | comunidade | ok |
+| [Ancient Olive Majesty](https://www.meshy.ai/3d-models/Ancient-Olive-Majesty-019b03e4-538e-792a-9996-dd07c42bf6bc) | joespadaford | CC0 | terceiro | comunidade | ok |
+| [Cypress tree](https://www.meshy.ai/3d-models/Cypress-tree-0194e0de-d038-777e-92f8-8fe2e20b9a9a) | 3DMinisByChad | CC0 | terceiro | comunidade | ok |
+| [cypress tree](https://www.meshy.ai/3d-models/cypress-tree-019a6f08-2ceb-7fa2-bce7-829a6ceb4d87) | rosss.swaney92 | CC0 | terceiro | comunidade | ok |
+| [Low-Poly Crimson Berry Bush](https://www.meshy.ai/3d-models/LowPoly-Crimson-Berry-Bush-019ecc4a-2651-7c1c-a985-78fecb2258e2) | aleksandra.mocza | CC0 | terceiro | comunidade | ok |
+| [Cracked Gray Rock Stack](https://www.meshy.ai/3d-models/Cracked-Gray-Rock-Stack-019d4afa-2557-704d-8026-0736d0c800c7) | axx.s | CC0 | terceiro | comunidade | ok |
+| [Kaya3](https://www.meshy.ai/3d-models/Kaya3-019ac606-751a-71b3-9204-7380f7dc4d9b) | designer | CC0 | terceiro | comunidade | ok |
+| [Cracked Granite Boulder](https://www.meshy.ai/3d-models/Cracked-Granite-Boulder-019d4ae3-1d5f-7a30-8f2c-1e097c83f4ab) | axx.s | CC0 | terceiro | comunidade | ok |
+
+- **8 obras da tabela acima**. Origem: Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026. Alterações nossas: importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo. Publicar na galeria do Meshy implica CC0 ("Models: CC0 — free for anyone to use, no credit needed"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.
+
+<details><summary>Arquivos deste grupo</summary>
+
+- `unreal-natureza-oak-oak-tree`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/oak__oak_tree/**`
+- `unreal-natureza-olive-ancient-olive-majesty`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/olive__ancient_olive_majesty/**`
+- `unreal-natureza-cypress-cypress-tree-chad`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/cypress__cypress_tree_chad/**`
+- `unreal-natureza-cypress-cypress-tree-swaney`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/cypress__cypress_tree_swaney/**`
+- `unreal-natureza-berry-crimson-berry-bush`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/berry__crimson_berry_bush/**`
+- `unreal-natureza-crag-cracked-gray-rock-stack`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/crag__cracked_gray_rock_stack/**`
+- `unreal-natureza-crag-kaya3`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/crag__kaya3/**`
+- `unreal-natureza-rock-cracked-granite-boulder`: `Unreal/TDFende/Content/TDFende/Ambiente/Natureza/rock__cracked_granite_boulder/**`
+
+</details>
+
 **Ao publicar o jogo** (Steam), o aviso MIT abaixo precisa ir junto — nos créditos ou num arquivo de licenças que acompanha o executável.
 
 ## Open 3D Engine — licença MIT

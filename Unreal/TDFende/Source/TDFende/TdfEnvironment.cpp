@@ -94,6 +94,7 @@ void ATdfEnvironment::BeginPlay()
 	Sun->SetWorldRotation(FRotator(-SunElevation, SunAzimuth, 0.f));
 	BuildGround();
 	ScatterScenery();
+	ScatterNature();
 	LineBorders();
 	// -TdfSemGrama: mede quanto a grama custa (A/B de desempenho)
 	if (!FParse::Param(FCommandLine::Get(), TEXT("TdfSemGrama"))) ScatterGrass();
@@ -173,6 +174,63 @@ void ATdfEnvironment::ScatterScenery()
 		}
 	}
 	UE_LOG(LogTdfAmb, Display, TEXT("Cenário: %d peças"), Placed);
+}
+
+void ATdfEnvironment::ScatterNature()
+{
+	// árvores, arbusto e rochas do acervo (galeria do Meshy, CC0): importados por importa_ambiente.py em Ambiente/Natureza/<modelo>/
+	FAssetRegistryModule& Reg = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	const FString Dir = FString::Printf(TEXT("%s/Natureza"), AmbPath);
+	Reg.Get().ScanPathsSynchronous({ Dir }, false);
+	TArray<FAssetData> Assets;
+	Reg.Get().GetAssetsByPath(FName(*Dir), Assets, true);
+	auto Find = [&Assets](const TCHAR* Key) -> UStaticMesh*
+	{
+		for (const FAssetData& A : Assets)
+			if (A.AssetName.ToString().Contains(Key))
+				if (UStaticMesh* M = Cast<UStaticMesh>(A.GetAsset())) return M;
+		return nullptr;
+	};
+
+	// altura no jogo (cm); os modelos do Meshy vêm todos com ~2 m e são normalizados pela caixa
+	struct FKind { const TCHAR* Key; int32 Count; float MinDist, MaxDist, HeightCm; bool bTall; };
+	const FKind Kinds[] = {
+		{TEXT("oak_tree"), 11, 500.f, 5200.f, 900.f, true},
+		{TEXT("olive"), 8, 450.f, 4200.f, 620.f, true},
+		{TEXT("cypress_tree_chad"), 8, 600.f, 5600.f, 1150.f, true},
+		{TEXT("cypress_tree_swaney"), 8, 600.f, 5600.f, 1050.f, true},
+		{TEXT("berry"), 24, 150.f, 2600.f, 120.f, false},
+		{TEXT("cracked_gray_rock_stack"), 7, 400.f, 3600.f, 260.f, false},
+		{TEXT("kaya3"), 6, 400.f, 3600.f, 230.f, false},
+		{TEXT("granite_boulder"), 9, 250.f, 3000.f, 150.f, false},
+	};
+	FRandomStream R(Seed + 37);
+	const FVector2D C = PlayArea.GetCenter();
+	const float HalfX = PlayArea.GetExtent().X, HalfY = PlayArea.GetExtent().Y;
+	int32 Placed = 0;
+	for (const FKind& K : Kinds)
+	{
+		UStaticMesh* M = Find(K.Key);
+		if (!M) { UE_LOG(LogTdfAmb, Warning, TEXT("Sem a natureza %s (rode ImportarArte.ps1 -Script importa_ambiente.py)"), K.Key); continue; }
+		const float Base = K.HeightCm / FMath::Max(M->GetBounds().BoxExtent.Z * 2.f, 1.f);
+		UHierarchicalInstancedStaticMeshComponent* H = MakeHism(M, 0.f, true);
+		for (int32 i = 0, Tries = 0; i < K.Count && Tries < K.Count * 60; ++Tries)
+		{
+			// anel em volta da área de jogo (retângulo expandido), não um círculo: as lanes são compridas em X
+			const float Dist = R.FRandRange(K.MinDist, K.MaxDist);
+			const int32 Side = R.RandRange(0, 3);
+			FVector2D P;
+			if (Side < 2) P = FVector2D(R.FRandRange(PlayArea.Min.X - Dist, PlayArea.Max.X + Dist), Side == 0 ? PlayArea.Min.Y - Dist : PlayArea.Max.Y + Dist);
+			else P = FVector2D(Side == 2 ? PlayArea.Min.X - Dist : PlayArea.Max.X + Dist, R.FRandRange(PlayArea.Min.Y - Dist, PlayArea.Max.Y + Dist));
+			if (InsidePlay(P, K.bTall ? 350.f : 120.f)) continue;
+			// árvore alta não fica entre a câmera (atrás da base, em X menor) e a lane do jogador
+			if (K.bTall && P.X < PlayArea.Min.X && FMath::Abs(P.Y - C.Y) < HalfY + 600.f) continue;
+			const float S = Base * R.FRandRange(0.8f, 1.25f);
+			H->AddInstance(FTransform(FRotator(0.f, R.FRandRange(0.f, 360.f), 0.f), FVector(P.X, P.Y, -3.f), FVector(S)), true);
+			++i; ++Placed;
+		}
+	}
+	UE_LOG(LogTdfAmb, Display, TEXT("Natureza: %d peças (árvores, arbustos, rochas)"), Placed);
 }
 
 void ATdfEnvironment::LineBorders()

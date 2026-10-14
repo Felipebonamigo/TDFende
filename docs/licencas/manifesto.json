@@ -4,7 +4,8 @@
  "raizes": [
   "Assets/Resources",
   "Assets/_Privado",
-  "Assets/StreamingAssets"
+  "Assets/StreamingAssets",
+  "Unreal/TDFende/Content/TDFende/Ambiente/Natureza"
  ],
  "ignorar": [
   "**/Thumbs.db",
@@ -793,6 +794,158 @@
    "ia": "nao",
    "repoPublico": false,
    "nota": "A licença da Adobe libera o uso em jogo, mas não a redistribuição do arquivo cru: ficam só no PC, nunca no git público."
+  },
+  {
+   "id": "unreal-natureza-oak-oak-tree",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Oak Tree",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/oak__oak_tree/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "demonsurgery",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/Oak-Tree-01a0594b-9e23-7538-a0da-0c1238a262d7",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Oak Tree: demonsurgery (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-olive-ancient-olive-majesty",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Ancient Olive Majesty",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/olive__ancient_olive_majesty/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "joespadaford",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/Ancient-Olive-Majesty-019b03e4-538e-792a-9996-dd07c42bf6bc",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Ancient Olive Majesty: joespadaford (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-cypress-cypress-tree-chad",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Cypress tree",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/cypress__cypress_tree_chad/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "3DMinisByChad",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/Cypress-tree-0194e0de-d038-777e-92f8-8fe2e20b9a9a",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Cypress tree: 3DMinisByChad (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-cypress-cypress-tree-swaney",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "cypress tree",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/cypress__cypress_tree_swaney/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "rosss.swaney92",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/cypress-tree-019a6f08-2ceb-7fa2-bce7-829a6ceb4d87",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "cypress tree: rosss.swaney92 (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-berry-crimson-berry-bush",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Low-Poly Crimson Berry Bush",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/berry__crimson_berry_bush/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "aleksandra.mocza",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/LowPoly-Crimson-Berry-Bush-019ecc4a-2651-7c1c-a985-78fecb2258e2",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Low-Poly Crimson Berry Bush: aleksandra.mocza (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-crag-cracked-gray-rock-stack",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Cracked Gray Rock Stack",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/crag__cracked_gray_rock_stack/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "axx.s",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/Cracked-Gray-Rock-Stack-019d4afa-2557-704d-8026-0736d0c800c7",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Cracked Gray Rock Stack: axx.s (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-crag-kaya3",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Kaya3",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/crag__kaya3/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "designer",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/Kaya3-019ac606-751a-71b3-9204-7380f7dc4d9b",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Kaya3: designer (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-natureza-rock-cracked-granite-boulder",
+   "grupo": "Natureza do Unreal (galeria da comunidade do Meshy, CC0, via acervo-3d)",
+   "titulo": "Cracked Granite Boulder",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Natureza/rock__cracked_granite_boulder/**"
+   ],
+   "origem": "Galeria pública da comunidade do Meshy; cópia no acervo comum dos jogos (Felipebonamigo/acervo-3d, natureza/meshy-galeria), importada no Unreal em 14/10/2026",
+   "autor": "axx.s",
+   "licenca": "CC0",
+   "link": "https://www.meshy.ai/3d-models/Cracked-Granite-Boulder-019d4ae3-1d5f-7a30-8f2c-1e097c83f4ab",
+   "derivacao": "importado no Unreal (glTF), material próprio (M_TdfGltf), Nanite e escala no jogo",
+   "ia": "terceiro",
+   "planoMeshy": "comunidade",
+   "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
+   "credito": "cortesia",
+   "creditoTexto": "Cracked Granite Boulder: axx.s (comunidade do Meshy), CC0",
+   "excecoes": []
   }
  ]
 }
