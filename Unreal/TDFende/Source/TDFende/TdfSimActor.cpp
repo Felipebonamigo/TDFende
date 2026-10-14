@@ -3,6 +3,12 @@
 #include "Engine/StaticMesh.h"
 #include "Misc/FileHelper.h"
 #include "UObject/ConstructorHelpers.h"
+#include "HAL/PlatformTime.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "Misc/Paths.h"
+#include "UnrealClient.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTdf, Log, All);
 
@@ -48,6 +54,10 @@ void ATdfSimActor::BeginPlay()
 	Sim.signature(Sig, sizeof(Sig));
 	UE_LOG(LogTdf, Log, TEXT("Ponte ok. Assinatura: %s"), UTF8_TO_TCHAR(Sig));
 
+	FParse::Value(FCommandLine::Get(), TEXT("TdfReplay="), ReplayPath);
+	FParse::Value(FCommandLine::Get(), TEXT("TdfShot="), ShotPath);
+	FParse::Value(FCommandLine::Get(), TEXT("TdfShotTick="), ShotTick);
+	bQuitAtEnd = FParse::Param(FCommandLine::Get(), TEXT("TdfQuit"));
 	if (!ReplayPath.IsEmpty() && !LoadReplay(ReplayPath))
 	{
 		UE_LOG(LogTdf, Error, TEXT("Não consegui ler o replay %s"), *ReplayPath);
@@ -101,6 +111,13 @@ void ATdfSimActor::StepOnce()
 	if (ReplayTicks > 0 && Sim.tick() == ReplayTicks)
 	{
 		UE_LOG(LogTdf, Display, TEXT("FINGERPRINT (compare com o FlowSim): %s"), *Sim.Fingerprint());
+		ReportCost();
+		if (bQuitAtEnd) UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);
+	}
+	if (!ShotPath.IsEmpty() && ShotTick > 0 && Sim.tick() == ShotTick)
+	{
+		FScreenshotRequest::RequestScreenshot(ShotPath, false, false);
+		UE_LOG(LogTdf, Display, TEXT("Print pedido no tique %d: %s"), ShotTick, *ShotPath);
 	}
 }
 
@@ -109,6 +126,8 @@ void ATdfSimActor::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	if (!bRunning) return;
 
+	// custo da ponte por quadro: tudo o que este Tick faz com a Sim (passos, snapshot, cópia, instâncias, eventos)
+	const double T0 = FPlatformTime::Seconds();
 	Accumulator += FMath::Min(DeltaSeconds, 0.25f);
 	while (Accumulator >= FixedStep && !Sim.over())
 	{
@@ -116,8 +135,35 @@ void ATdfSimActor::Tick(float DeltaSeconds)
 		StepOnce();
 		if (ReplayTicks > 0 && Sim.tick() >= ReplayTicks) { Accumulator = 0.f; break; } // replay acabou: congela
 	}
+	const double T1 = FPlatformTime::Seconds();
 	Redraw();
 	Sim.events(EventBuf.GetData(), EventBuf.Num()); // por ora só drena (a vista de verdade usa os eventos para som e partículas)
+	const double T2 = FPlatformTime::Seconds();
+	if (ReplayTicks == 0 || Sim.tick() < ReplayTicks)
+	{
+		CostStepMs.Add(float((T1 - T0) * 1000.0));
+		CostRedrawMs.Add(float((T2 - T1) * 1000.0));
+		CostTotalMs.Add(float((T2 - T0) * 1000.0));
+		MaxEnemies = FMath::Max(MaxEnemies, LastEnemies);
+	}
+}
+
+static void LogCostStats(const TCHAR* Name, TArray<float> V)
+{
+	if (V.Num() == 0) return;
+	V.Sort();
+	double Sum = 0; for (float X : V) Sum += X;
+	auto Pct = [&V](float P) { return V[FMath::Clamp(int32(P * V.Num()), 0, V.Num() - 1)]; };
+	UE_LOG(LogTdf, Display, TEXT("CUSTO %s (ms/quadro, %d quadros): média %.3f  p50 %.3f  p95 %.3f  p99 %.3f  máx %.3f"),
+		Name, V.Num(), Sum / V.Num(), Pct(0.5f), Pct(0.95f), Pct(0.99f), V.Last());
+}
+
+void ATdfSimActor::ReportCost() const
+{
+	LogCostStats(TEXT("step"), CostStepMs);
+	LogCostStats(TEXT("Redraw+events"), CostRedrawMs);
+	LogCostStats(TEXT("TOTAL"), CostTotalMs);
+	UE_LOG(LogTdf, Display, TEXT("Máximo de inimigos vivos no snapshot: %d"), MaxEnemies);
 }
 
 FVector ATdfSimActor::ToUnreal(int32 Lane, float X, float Y, float Z) const
@@ -129,7 +175,8 @@ FVector ATdfSimActor::ToUnreal(int32 Lane, float X, float Y, float Z) const
 void ATdfSimActor::Redraw()
 {
 	Sim.snapshot();
-	const int32 NE = FMath::Min<int32>(Sim.enemies(EnemyBuf.GetData(), EnemyBuf.Num()), EnemyBuf.Num());
+	LastEnemies = Sim.enemies(EnemyBuf.GetData(), EnemyBuf.Num());
+	const int32 NE = FMath::Min<int32>(LastEnemies, EnemyBuf.Num());
 	const int32 NT = FMath::Min<int32>(Sim.towers(TowerBuf.GetData(), TowerBuf.Num()), TowerBuf.Num());
 	const int32 NS = FMath::Min<int32>(Sim.projectiles(ShotBuf.GetData(), ShotBuf.Num()), ShotBuf.Num());
 

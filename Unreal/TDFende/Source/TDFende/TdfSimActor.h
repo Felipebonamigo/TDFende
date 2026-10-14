@@ -13,7 +13,7 @@ class UInstancedStaticMeshComponent;
  * Com ReplayPath preenchido, reproduz um replay de texto (formato do FlowSim) e escreve o fingerprint no log: tem que ser IGUAL
  * ao de `dotnet run --project Tools/FlowSim -v quiet -- replay <arquivo> --forcar`. Esse é o critério go/no-go da U0.
  *
- * Coordenadas: Sim (x direita, y cima, z frente; unidades de célula) -> Unreal (X = z, Y = x, Z = y; cm). A lane 1 fica deslocada em X.
+ * Coordenadas: Sim (x direita, y cima, z frente; unidades de célula; a grade é centrada na origem) -> Unreal (X = z, Y = x, Z = y; cm). A lane 1 fica deslocada em X.
  */
 UCLASS()
 class ATdfSimActor : public AActor
@@ -32,6 +32,12 @@ public:
 	/** Caminho absoluto de um replay de texto (opcional). Vazio = a IA joga sozinha e o jogador não faz nada. */
 	UPROPERTY(EditAnywhere, Category = "TDFende") FString ReplayPath;
 
+	/**
+	 * Opções de linha de comando (teste automático, sem abrir o editor): -TdfReplay=<arquivo> preenche ReplayPath;
+	 * -TdfShot=<arquivo.png> e -TdfShotTick=<n> tiram um print do viewport no tique n; -TdfQuit fecha o jogo ao fim do replay.
+	 * No fim do replay o log traz o FINGERPRINT e o custo por quadro (step + Redraw + events).
+	 */
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -43,6 +49,7 @@ private:
 	bool LoadReplay(const FString& Path);
 	void StepOnce();
 	void Redraw();
+	void ReportCost() const;
 	FVector ToUnreal(int32 Lane, float X, float Y, float Z) const;
 
 	FTdfSim Sim;
@@ -60,4 +67,10 @@ private:
 	TArray<TdfTower> TowerBuf;
 	TArray<TdfProjectile> ShotBuf;
 	TArray<TdfEvent> EventBuf;
+
+	FString ShotPath;
+	int32 ShotTick = 0;
+	bool bQuitAtEnd = false;
+	int32 LastEnemies = 0, MaxEnemies = 0;
+	TArray<float> CostStepMs, CostRedrawMs, CostTotalMs;
 };

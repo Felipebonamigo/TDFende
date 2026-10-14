@@ -31,3 +31,40 @@ O lado do Unreal (`Source/TDFende`) foi **escrito mas ainda não compilado**: a 
 ## Coordenadas
 Sim (x direita, y cima, z frente; unidades de célula) → Unreal `X = z`, `Y = x`, `Z = y` em cm (`CellSizeCm`, padrão 100). A lane 1 é
 deslocada em X. A vista de verdade (U1+) troca estes cubos por malhas por **chave** (`SendUnit.Key` / `TowerType.Key`, TEC-12).
+
+## Resultado da U0 (14/10/2026) — **GO**
+
+Rodado no PC (UE 5.8.3, Visual Studio 2026 com C++, .NET SDK 10.0.302, RTX 4070 Ti), em jogo (`-game`) com o replay `demo_replay.txt`
+(6000 tiques = 200 s de jogo em tempo real, 1600×900).
+
+- **Fingerprint obtido:** `t6000 pl20/775/100/56/66 fo22/372/206/9/36 k61/16/1/40/21/0 #835d1db265f91d80` — **idêntico** ao esperado (FlowSim),
+  em 3 execuções seguidas. A assinatura dos catálogos foi `d610b62201892c46 7cb8cd3f7c5ce6cd 0d8715b99f2d0452`.
+- **Custo da ponte por quadro** (tudo que o `Tick` faz com a Sim: passos, snapshot, cópia, instâncias, eventos; ~65 mil quadros a ~320 fps):
+  média **0,036 ms**, p50 0,032, p95 0,055, p99 0,096, máx 3,0 ms (um quadro isolado). Meta < 0,5 ms: cumprida com folga.
+  Numa 4ª execução, pelo `RodarU0.ps1` (com o PC mais ocupado, ~165 fps): média 0,041, p99 0,211, máx **15,3 ms** em um único quadro
+  (não investigado: parece soluço de carga/GC; a média e o p99 seguem muito abaixo da meta).
+  Só os passos da Sim: média 0,002 ms (um tique custa uns 31 µs; cada quadro roda 0 ou 1). `Redraw` + eventos: média 0,034 ms.
+- **Ressalva da medida:** o replay de demonstração tem no máximo **10 inimigos vivos** ao mesmo tempo. O fim de partida real e o
+  `-Estresse` do Unity (60 bichos, 12 torres no máximo) ainda não foram medidos no Unreal; repetir na U1.
+- **Print do viewport (tique 2500):** `Unreal\TDFende\Saved\U0\viewport_t2500.png` (o `viewport_t4000.png` é a primeira tentativa, com
+  enquadramento errado). Duas lanes com piso, torres e tiros sobre o piso; só formas básicas, como previsto para a U0.
+
+### O que foi corrigido / mudou
+
+1. **Passo 0 (Age of Earth):** o `AoEBridgeActor` liga a simulação por **WebSocket** a um servidor TypeScript (`ws://127.0.0.1:8790`, JSON,
+   `state` a ~10 Hz com interpolação no cliente). É outro desenho (processo separado), então **não havia padrão melhor para a nossa ponte em
+   processo** (DLL NativeAOT por ponteiros, snapshot plano, 30 Hz fixos): o `TdfSim`/`TdfSimActor` ficaram como estão. Do AoE aproveitei só a
+   ideia do medidor de desempenho no log e o aviso de que o include certo é `Animation/SkeletalMeshActor.h` (vale para a U1).
+2. **`PublicarParaUnreal.ps1`:** o NativeAOT falhava no link (`'vswhere.exe' não é reconhecido`): o ILCompiler 10.0.10 chama o `vswhere` pelo
+   PATH e o Visual Studio 2026 não o põe lá. O script agora acrescenta `...\Microsoft Visual Studio\Installer` ao PATH. Nada para instalar:
+   o Visual Studio Community 2026 já tinha "Desktop development with C++" (MSVC 14.51).
+3. **Compilação C++:** compilou na primeira tentativa, sem erro. Só o aviso C4005 (`TDF_API` redefinida: o cabeçalho C declara `dllimport`),
+   silenciado com `#pragma warning` ao redor do `#include` em `TdfSim.h`. O cabeçalho `tdfende_sim.h` **não foi tocado**.
+4. **Coordenadas:** a grade da Sim é **centrada na origem** (`GridMap`: x em [-W/2, W/2], z em [-H/2, H/2]), não no canto. A lane 0 fica em
+   X = 0 e a lane 1 em X = `(GridHeight+4) × CellSizeCm`. A nota "Coordenadas" acima continua valendo, com esse detalhe.
+5. **Novo, para teste sem abrir o editor:** `TdfDemoGameMode` (em qualquer nível, inclusive o vazio `/Engine/Maps/Entry`, monta sozinho o
+   `TdfSimActor`, pisos, câmera de cima e luz) e opções de linha de comando no ator: `-TdfReplay=`, `-TdfShot=` + `-TdfShotTick=`, `-TdfQuit`.
+   No fim do replay o log traz o `FINGERPRINT` e o `CUSTO` (média, p50, p95, p99, máx). Tudo roda por
+   `powershell -ExecutionPolicy Bypass -File Unreal\TDFende\RodarU0.ps1` (compila, roda, confere o fingerprint; sai com 0 ou 1; ~3,5 min).
+6. O roteiro manual (abrir o projeto, nível vazio, arrastar o `TdfSimActor`, Play) não foi feito à mão: o `TdfDemoGameMode` faz o mesmo
+   pelo mesmo ator, e o resultado é o do log. Arrastar o ator num nível continua funcionando.

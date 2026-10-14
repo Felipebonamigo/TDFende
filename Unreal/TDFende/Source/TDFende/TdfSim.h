@@ -2,9 +2,12 @@
 
 #include "CoreMinimal.h"
 
-// Evita o dllimport do cabeçalho C: a DLL é carregada à mão e as funções vêm por ponteiro.
-#define TDF_API
+// O cabeçalho C declara as funções como dllimport; aqui a DLL é carregada à mão e elas vêm por ponteiro (nunca são chamadas
+// pelo nome), então só interessam os tipos e as constantes. O aviso de macro redefinida é esperado e inofensivo.
+#pragma warning(push)
+#pragma warning(disable: 4005)
 #include "tdfende_sim.h"
+#pragma warning(pop)
 
 /** Ponte nativa da Sim (Tools/SimBridge). Carrega tdfende_sim.dll e expõe as funções tdf_* como ponteiros. Uma instância por jogo. */
 class FTdfSim

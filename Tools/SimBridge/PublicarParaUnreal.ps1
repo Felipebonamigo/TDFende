@@ -3,6 +3,9 @@
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $repo
+# o ILCompiler chama 'vswhere' pelo PATH para achar o link.exe do Visual Studio; o VS não o põe lá (U0, 14/10/2026)
+$vswhereDir = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer'
+if ((Test-Path $vswhereDir) -and ($env:PATH -notlike "*$vswhereDir*")) { $env:PATH = "$vswhereDir;$env:PATH" }
 dotnet publish Tools/SimBridge -c Release -r win-x64 --nologo -v quiet
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish falhou (NativeAOT no Windows precisa do 'Desktop development with C++' do Visual Studio Build Tools)" }
 $dll = Join-Path $repo 'Tools\SimBridge\bin\Release\net10.0\win-x64\publish\tdfende_sim.dll'
