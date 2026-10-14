@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Portão local: nada entra no histórico com teste vermelho ou sem compilar no Unity.
 #
 # As duas verificações existem porque pegam coisas diferentes:
