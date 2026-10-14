@@ -145,7 +145,8 @@ constrói/sobe, direito vende; Q/E troca a torre; 1-9 envia; **WASD/setas movem 
   `/Game/TDFende/Ambiente/Natureza` (material M_TdfGltf, Nanite) e espalhados em volta das lanes (81 peças), sem árvore alta entre a
   câmera e a sua lane. Licença: 8 entradas `unreal-natureza-*` no `docs/licencas/manifesto.json` (raiz nova só para essa pasta) e os
   créditos regenerados. Ainda faltam árvores de outros biomas quando o tema for escolhido.
-- **Aprovar o visual da U1** pelos prints; **testar o controle** (mouse e teclado reais; aqui só foi testado pelas mesmas chamadas);
+- ~~Aprovar o visual da U1~~ **aprovado pelo Felipe em 14/10/2026** (print com o chão 4K). Falta: **testar o controle** (mouse e
+  teclado reais; aqui só foi testado pelas mesmas chamadas), sobretudo clicar nos cartões do HUD sem construir torre embaixo deles;
   sons (o Claude não ouve); hardware mínimo alvo; conferir os royalties da Epic (5% acima de US$ 1 mi brutos).
 
 ### Chão 4K (14/10/2026)
@@ -162,8 +163,24 @@ cascalho, 15 m), `dirt_aerial_02` (terra pisada, 20 m), `forest_ground_04` (casc
   no quadro 3, compilando shaders); a segunda rodou normal. Se repetir, investigar (dump em `Saved\Logs\*.nv-gpudmp`).
 - Licença: entrada `unreal-chao-polyhaven-4k` no manifesto (raiz nova `Content/TDFende/Ambiente/Chao4K`), créditos regenerados.
 
+### HUD em UMG (U2, 14/10/2026)
+`UTdfHudWidget` (`Source/TDFende/TdfHudWidget.*`), montado em C++ sem asset de Blueprint (a receita continua sem abrir o editor):
+- **Placar:** você (vidas, ouro, renda, torres) à esquerda, a IA (vidas, renda, torres, bichos na sua lane) à direita, relógio no meio
+  (e "MORTE SÚBITA"); aviso curto (comando recusado, fim da partida) abaixo do relógio.
+- **Loja embaixo:** um cartão por torre (clique seleciona; Q/E também; contorno dourado na selecionada) e um por envio (clique envia;
+  1-9 também). Cada cartão tem a **miniatura 3D do próprio modelo**, nome, preço e dica com os números do catálogo; fica apagado (preço
+  em vermelho) quando falta ouro, mas continua clicável (dá para escolher a torre antes de juntar o ouro).
+- **Miniaturas:** fotografadas uma vez, no 12º quadro: um "estúdio" 1,5 km acima do mapa, captura de cena só com o modelo (HDR; o alfa
+  dá o recorte), enquadramento em duas fotos pelo que a câmera viu, luz de preenchimento própria, exposição de compromisso entre a do
+  modelo e a mediana de todos, curva de filme e sRGB no processador. `-TdfMiniaturas=<pasta>` grava os PNG para conferir. Rodando pelo
+  editor (`-game`), espera texturas e shaders compilarem antes (no pacote isso não existe).
+- O clique sobre o HUD não vai para o campo (`IsPointerOverUi`); o contorno da célula e o custo junto ao mouse continuam no `ATdfHUD`
+  (Canvas), porque acompanham o mundo. Os prints do `-TdfShot` agora saem com a interface.
+- Autoteste (5 verificações novas, vistas falhando antes): HUD na tela; 6 + 9 cartões; cartão de torre seleciona; miniatura em todos;
+  cartão aceso só com ouro; cartão de envio envia. Replay de 200 s com o HUD: fingerprint igual, ~114 fps. Print: `Saved\U0\hud_5.png`.
+
 ### Próximo, sem depender de ninguém
-HUD em UMG (a loja de torres e bichos), barras de vida, torreta que mira e disparo com rastro, morte com a animação `Death` (urso,
+Barras de vida, torreta que mira e disparo com rastro, morte com a animação `Death` (urso,
 elefante) e queda nos outros, efeitos de gelo/fogo/empurrão, contorno do território em vez de quadradinhos, otimização (grama com LOD
 e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`), e empacotar (U4).
 

@@ -5,6 +5,7 @@
 #include "TdfPlayerController.generated.h"
 
 class ATdfSimActor;
+class UTdfHudWidget;
 
 /**
  * U2: o jogador. Mouse e teclado viram comandos da Sim (lane 0), pelo ATdfSimActor:
@@ -24,11 +25,14 @@ public:
 	/** Célula do jogador sob o mouse, ou (-1,-1). */
 	FIntPoint GetHoverCell() const { return HoverCell; }
 	ATdfSimActor* GetSim() const { return Sim.Get(); }
+	/** HUD em UMG (placar, loja de torres e envios); nulo até a Sim aparecer. */
+	UTdfHudWidget* GetHud() const { return Hud; }
 
 	virtual void PlayerTick(float DeltaTime) override;
 
 private:
 	TWeakObjectPtr<ATdfSimActor> Sim;
+	UPROPERTY() UTdfHudWidget* Hud = nullptr;
 	void MoveCamera(float DeltaTime);
 	FIntPoint HoverCell = FIntPoint(-1, -1);
 };

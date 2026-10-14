@@ -84,6 +84,10 @@ public:
 	const FString& GetToast() const { return Toast; }
 	float GetToastAge() const { return ToastAge; }
 
+	/** Arte para as miniaturas do HUD: malha da torre no estágio (1-3) e malha + animação de andar do bicho. Nulo sem a arte. */
+	UStaticMesh* TowerArt(int32 Type, int32 Stage) const;
+	USkeletalMesh* SendArt(int32 Type, UAnimSequence*& OutAnim, float& OutYawOffset);
+
 	/** Conversões da lane do jogador (lane 0). A célula inválida volta (-1,-1). */
 	FIntPoint WorldToCell(const FVector& World) const;
 	FVector CellToWorld(int32 CellX, int32 CellY, float Z = 0.f) const;
@@ -203,5 +207,7 @@ private:
 	int32 SelfWaitUntilTick = 0;
 	int32 SelfFailures = 0;
 	int32 SelfGoldBefore = 0;
+	int32 SelfHudWait = 0;
 	void SelfCheck(bool bCondition, const TCHAR* What);
+	class UTdfHudWidget* SelfHud() const;
 };

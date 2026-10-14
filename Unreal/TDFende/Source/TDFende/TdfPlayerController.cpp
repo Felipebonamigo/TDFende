@@ -1,5 +1,6 @@
 #include "TdfPlayerController.h"
 #include "TdfSimActor.h"
+#include "TdfHudWidget.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerInput.h"
@@ -54,10 +55,22 @@ void ATdfPlayerController::PlayerTick(float DeltaTime)
 	}
 	ATdfSimActor* S = Sim.Get();
 
-	// célula sob o mouse: raio da câmera contra o plano do chão (Z = 0)
+	if (!Hud && S->IsRunning() && S->GetTowerTypes().Num() > 0)
+	{
+		Hud = CreateWidget<UTdfHudWidget>(this, UTdfHudWidget::StaticClass());
+		Hud->Bind(S);
+		Hud->AddToViewport(0);
+		// jogo e interface juntos: o cursor não some nem fica preso ao clicar, e o teclado continua no jogo
+		FInputModeGameAndUI Mode;
+		Mode.SetHideCursorDuringCapture(false);
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(Mode);
+	}
+
+	// célula sob o mouse: raio da câmera contra o plano do chão (Z = 0); sobre o HUD, nenhuma (o clique é da interface)
 	HoverCell = FIntPoint(-1, -1);
 	FVector Origin, Dir;
-	if (DeprojectMousePositionToWorld(Origin, Dir) && FMath::Abs(Dir.Z) > KINDA_SMALL_NUMBER)
+	if (!(Hud && Hud->IsPointerOverUi()) && DeprojectMousePositionToWorld(Origin, Dir) && FMath::Abs(Dir.Z) > KINDA_SMALL_NUMBER)
 	{
 		const float T = -Origin.Z / Dir.Z;
 		if (T > 0.f) HoverCell = S->WorldToCell(Origin + Dir * T);

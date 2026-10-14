@@ -14,6 +14,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimSequence.h"
+#include "TdfPlayerController.h"
+#include "TdfHudWidget.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTdf, Log, All);
 
@@ -365,7 +367,7 @@ void ATdfSimActor::StepOnce()
 	}
 	if (!ShotPath.IsEmpty() && ShotTick > 0 && Sim.tick() == ShotTick)
 	{
-		FScreenshotRequest::RequestScreenshot(ShotPath, false, false);
+		FScreenshotRequest::RequestScreenshot(ShotPath, true, false); // com a interface (o HUD em UMG é Slate, fora do viewport)
 		UE_LOG(LogTdf, Display, TEXT("Print pedido no tique %d: %s"), ShotTick, *ShotPath);
 	}
 	if (QuitTick > 0 && Sim.tick() == QuitTick) UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);
@@ -599,6 +601,25 @@ void ATdfSimActor::BuildPreview()
 	}
 }
 
+UStaticMesh* ATdfSimActor::TowerArt(int32 Type, int32 Stage) const
+{
+	if (!bUseArt || !TowerTypes.IsValidIndex(Type)) return nullptr;
+	FString K = TowerTypes[Type].Key;
+	K[0] = FChar::ToUpper(K[0]);
+	const FString Name = FString::Printf(TEXT("Torre_%s_%d"), *K, Stage);
+	return LoadObject<UStaticMesh>(nullptr, *FString::Printf(TEXT("/Game/TDFende/Torres/%s.%s"), *Name, *Name));
+}
+
+USkeletalMesh* ATdfSimActor::SendArt(int32 Type, UAnimSequence*& OutAnim, float& OutYawOffset)
+{
+	OutAnim = nullptr;
+	if (!bUseArt || !SendTypes.IsValidIndex(Type)) return nullptr;
+	FTypeVisual& V = TypeVisual(Type);
+	OutAnim = V.Anim;
+	OutYawOffset = V.YawOffset;
+	return V.Mesh;
+}
+
 UInstancedStaticMeshComponent* ATdfSimActor::TowerIsm(int32 Type, int32 Stage)
 {
 	const int32 Id = Type * 4 + Stage;
@@ -722,6 +743,12 @@ void ATdfSimActor::SelfCheck(bool bCondition, const TCHAR* What)
 	if (!bCondition) ++SelfFailures;
 }
 
+UTdfHudWidget* ATdfSimActor::SelfHud() const
+{
+	const ATdfPlayerController* PC = Cast<ATdfPlayerController>(GetWorld()->GetFirstPlayerController());
+	return PC ? PC->GetHud() : nullptr;
+}
+
 void ATdfSimActor::RunSelfTest(float)
 {
 	const int32 T = Sim.tick();
@@ -731,7 +758,25 @@ void ATdfSimActor::RunSelfTest(float)
 	{
 	case 0:
 	{
+		// o HUD nasce no primeiro quadro do controle e fotografa as miniaturas nos dois seguintes: espera até ~5 s
+		const UTdfHudWidget* Ready = SelfHud();
+		if ((!Ready || !Ready->ThumbnailsDone()) && ++SelfHudWait < 300) return;
 		SelfCheck(TowerTypes.Num() == 6 && SendTypes.Num() == 9, TEXT("catálogo chegou pela ponte (6 torres, 9 envios)"));
+		// HUD em UMG: placar e loja com um cartão por torre e por envio; o cartão é o mesmo caminho do clique do jogador
+		{
+			UTdfHudWidget* Hud = SelfHud();
+			SelfCheck(Hud && Hud->IsInViewport(), TEXT("HUD em UMG na tela"));
+			SelfCheck(Hud && Hud->NumTowerCards() == TowerTypes.Num() && Hud->NumSendCards() == SendTypes.Num(),
+				TEXT("loja: um cartão por torre (6) e por envio (9)"));
+			SelfCheck(Hud && Hud->ClickTowerCard(3) && GetSelectedTower() == 3, TEXT("clicar no cartão da torre 4 a seleciona"));
+			if (bUseArt && TypeVisual(0).Mesh)
+			{
+				bool bThumbs = Hud != nullptr;
+				for (int32 i = 0; bThumbs && i < TowerTypes.Num(); ++i) bThumbs = Hud->TowerThumb(i) != nullptr;
+				for (int32 i = 0; bThumbs && i < SendTypes.Num(); ++i) bThumbs = Hud->SendThumb(i) != nullptr;
+				SelfCheck(bThumbs, TEXT("miniaturas 3D de cada torre e de cada bicho nos cartões"));
+			}
+		}
 		SelfCheck(CanBuildSelected(Cx, Cy) == 0, TEXT("CanBuild: lugar livre com ouro"));
 		SelfCheck(CanBuildSelected(-1, 0) != 0, TEXT("CanBuild: fora do mapa é recusado"));
 		SelfCheck(!BuildAt(-1, 0), TEXT("BuildAt fora do mapa nem entra na fila"));
@@ -754,13 +799,23 @@ void ATdfSimActor::RunSelfTest(float)
 		SelfCheck(UpgradeCost(Cx, Cy) > 0, TEXT("UpgradeCost > 0"));
 		SelfCheck(CanBuildSelected(Cx, Cy) != 0, TEXT("a célula ocupada não aceita outra torre"));
 		SelfCheck(InsideTerritory(Cx, Cy), TEXT("a torre projeta território sobre a própria célula"));
+		if (UTdfHudWidget* Hud = SelfHud())
+		{
+			// cartão apagado = sem ouro para aquilo agora (o ouro acabou de baixar com a construção)
+			Hud->Refresh();
+			bool bMatch = true;
+			for (int32 i = 0; i < TowerTypes.Num(); ++i) bMatch &= Hud->IsTowerCardEnabled(i) == (Lanes[0].Gold >= TowerTypes[i].Cost);
+			for (int32 i = 0; i < SendTypes.Num(); ++i) bMatch &= Hud->IsSendCardEnabled(i) == (Lanes[0].Gold >= SendTypes[i].Cost);
+			SelfCheck(bMatch, TEXT("cartão aceso só quando há ouro para ele"));
+		}
+		else SelfCheck(false, TEXT("cartão aceso só quando há ouro para ele (sem HUD)"));
 		UpgradeAt(Cx, Cy);
 		SelfWaitUntilTick = T + 4;
 		break;
 	case 2:
 		SelfCheck(TowerLevelAt(Cx, Cy) == 2, TEXT("UpgradeAt: nível 2"));
 		SelfGoldBefore = Lanes[0].TotalSent;
-		SelfCheck(SendUnit(1), TEXT("SendUnit aceito"));
+		SelfCheck(SelfHud() && SelfHud()->ClickSendCard(1), TEXT("cartão de envio 2 envia (SendUnit aceito)"));
 		SelfCheck(!SendUnit(99), TEXT("SendUnit com id inexistente nem entra na fila"));
 		SelfWaitUntilTick = T + 4;
 		break;

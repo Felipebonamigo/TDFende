@@ -4,7 +4,7 @@
 #include "GameFramework/HUD.h"
 #include "TdfHUD.generated.h"
 
-/** U2: HUD provisório (texto e retângulos no Canvas). A interface de verdade (UMG, loja de torres e bichos) vem na fase de UI. */
+/** U2: o que acompanha o mundo (contorno da célula sob o mouse e o custo do clique). Placar e loja: UTdfHudWidget (UMG). */
 UCLASS()
 class ATdfHUD : public AHUD
 {
