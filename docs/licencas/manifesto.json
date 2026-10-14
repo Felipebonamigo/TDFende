@@ -5,7 +5,8 @@
   "Assets/Resources",
   "Assets/_Privado",
   "Assets/StreamingAssets",
-  "Unreal/TDFende/Content/TDFende/Ambiente/Natureza"
+  "Unreal/TDFende/Content/TDFende/Ambiente/Natureza",
+  "Unreal/TDFende/Content/TDFende/Ambiente/Chao4K"
  ],
  "ignorar": [
   "**/Thumbs.db",
@@ -945,6 +946,23 @@
    "nota": "Publicar na galeria do Meshy implica CC0 (\"Models: CC0 — free for anyone to use, no credit needed\"). Gerado por IA por terceiros: entra na declaração da Steam. O Content do Unreal fica fora do git (D4): só esta pasta entra nas raízes do manifesto.",
    "credito": "cortesia",
    "creditoTexto": "Cracked Granite Boulder: axx.s (comunidade do Meshy), CC0",
+   "excecoes": []
+  },
+  {
+   "id": "unreal-chao-polyhaven-4k",
+   "grupo": "Cenário, chão, grama e céu (Poly Haven)",
+   "titulo": "Chão 4K do Unreal: rocky_terrain_02, aerial_grass_rock, dirt_aerial_02, forest_ground_04 (cor, normal, ARM)",
+   "caminhos": [
+    "Unreal/TDFende/Content/TDFende/Ambiente/Chao4K/**"
+   ],
+   "origem": "Poly Haven, baixados por Unreal/TDFende/BaixarTexturas.ps1 em 14/10/2026 (4K JPG); fontes em Unreal/TDFende/Fontes (fora do git, backup no D:)",
+   "autor": "Rob Tuytel (aerial_grass_rock, dirt_aerial_02), Rob Tuytel e Rico Cilliers (forest_ground_04), Amal Kumar (rocky_terrain_02)",
+   "licenca": "CC0",
+   "link": "https://polyhaven.com/textures",
+   "derivacao": "importadas no Unreal e misturadas no material M_TdfChao4K (campo fora das lanes, terra e cascalho dentro)",
+   "ia": "nao",
+   "credito": "cortesia",
+   "creditoTexto": "Chão 4K: Poly Haven (polyhaven.com) — Rob Tuytel, Rico Cilliers, Amal Kumar — CC0",
    "excecoes": []
   }
  ]

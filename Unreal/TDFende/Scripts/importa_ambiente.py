@@ -317,7 +317,152 @@ def natureza(gltf_master):
                 model, mesh.get_name(), b.box_extent.x * 2, b.box_extent.y * 2, b.box_extent.z * 2, bool(cor), bool(nor), bool(orm)))
 
 
+POLYHAVEN = os.path.join(REPO, "Unreal", "TDFende", "Fontes", "PolyHaven")  # Unreal\TDFende\BaixarTexturas.ps1
+
+
+def chao4k():
+    """Chão 4K (Poly Haven, fotografado do alto): campo verde fora das lanes, terra pisada e cascalho dentro, com borda suave.
+    Parâmetros (o ATdfEnvironment preenche): LaneX0, LaneX1 (centro das lanes em X), LaneHX, LaneHY (meia largura), Borda (cm)."""
+    sets = {}
+    for sid in ("rocky_terrain_02", "aerial_grass_rock", "dirt_aerial_02", "forest_ground_04"):
+        d = os.path.join(POLYHAVEN, sid)
+        if not os.path.isdir(d):
+            say("chão 4K: falta %s (rode BaixarTexturas.ps1)" % sid)
+            return None
+        dest = GAME + "/Chao4K"
+        def imp(suffix, kind):
+            src = os.path.join(d, "%s_%s_4k.jpg" % (sid, suffix))
+            name = "T_%s_%s" % (sid, suffix)
+            # textura 4K já importada não é reimportada (cada uma leva ~10 s); para trocar a fonte, apague Ambiente/Chao4K
+            if eal.does_asset_exist(dest + "/" + name):
+                return unreal.load_asset(dest + "/" + name)
+            tmp = os.path.join(TMP, name + ".jpg")
+            shutil.copyfile(src, tmp)
+            run_task(tmp, dest, name)
+            t = unreal.load_asset(dest + "/" + name)
+            if kind == "normal":
+                t.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_NORMALMAP)
+                t.set_editor_property("srgb", False)
+            elif kind == "dado":
+                t.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_MASKS)
+                t.set_editor_property("srgb", False)
+            eal.save_loaded_asset(t)
+            return t
+        sets[sid] = (imp("diff", "cor"), imp("nor_gl", "normal"), imp("arm", "dado"))
+
+    path = GAME + "/Chao4K"
+    full = path + "/M_TdfChao4K"
+    if eal.does_asset_exist(full):
+        eal.delete_asset(full)
+    mat = tools.create_asset("M_TdfChao4K", path, unreal.Material, unreal.MaterialFactoryNew())
+
+    wp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -2600, 0)
+    xy = mel.create_material_expression(mat, unreal.MaterialExpressionComponentMask, -2400, 0)
+    for c, v in (("r", True), ("g", True), ("b", False), ("a", False)):
+        xy.set_editor_property(c, v)
+    mel.connect_material_expressions(wp, "", xy, "")
+
+    def uv(scale_cm, y):
+        m = mel.create_material_expression(mat, unreal.MaterialExpressionMultiply, -2200, y)
+        m.set_editor_property("const_b", 1.0 / scale_cm)
+        mel.connect_material_expressions(xy, "", m, "A")
+        return m
+
+    def sample(tex, uvn, x, y, normal=False):
+        s = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSample, x, y)
+        s.set_editor_property("texture", tex)
+        if normal:
+            s.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
+        elif tex.get_editor_property("compression_settings") == unreal.TextureCompressionSettings.TC_MASKS:
+            s.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)
+        mel.connect_material_expressions(uvn, "", s, "UVs")
+        return s
+
+    def triple(sid, uvn, y):
+        c, n, a = sets[sid]
+        return (sample(c, uvn, -1800, y), sample(n, uvn, -1800, y + 250, True), sample(a, uvn, -1800, y + 500))
+
+    def lerp(a, a_out, b, b_out, alpha, x, y):
+        l = mel.create_material_expression(mat, unreal.MaterialExpressionLinearInterpolate, x, y)
+        mel.connect_material_expressions(a, a_out, l, "A")
+        mel.connect_material_expressions(b, b_out, l, "B")
+        mel.connect_material_expressions(alpha, "", l, "Alpha")
+        return l
+
+    # cada textura no tamanho real em que foi fotografada (o campo um pouco menor, para mais detalhe perto)
+    meadow = triple("rocky_terrain_02", uv(6000.0, -1600), -2000)
+    patch = triple("aerial_grass_rock", uv(1500.0, -800), -1200)
+    dirt = triple("dirt_aerial_02", uv(2000.0, 0), -400)
+    gravel = triple("forest_ground_04", uv(320.0, 800), 400)
+
+    # manchas (ruído fbm no mundo, valores com distribuição conhecida, ao contrário da cor das fotos) e máscara das lanes
+    # (1 dentro, 0 fora, borda irregular): um nó HLSL com a posição no mundo e os parâmetros. Saída: x manchas de grama
+    # amarela no campo, y grama sobre a terra das lanes, z cascalho nas lanes, w lane.
+    mix = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, -1300, 2300)
+    mix.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT4)
+    mix.set_editor_property("code",
+        "struct FTdfRuido\n"
+        "{\n"
+        "    float H(float2 q) { return frac(sin(dot(q, float2(127.1, 311.7))) * 43758.5453); }\n"
+        "    float V(float2 q)\n"
+        "    {\n"
+        "        float2 i = floor(q), f = frac(q);\n"
+        "        float2 u = f * f * (3 - 2 * f);\n"
+        "        return lerp(lerp(H(i), H(i + float2(1, 0)), u.x), lerp(H(i + float2(0, 1)), H(i + float2(1, 1)), u.x), u.y);\n"
+        "    }\n"
+        "    float Fbm(float2 q) { return 0.55 * V(q) + 0.3 * V(q * 2.17 + 13.1) + 0.15 * V(q * 4.63 + 7.7); }\n"
+        "};\n"
+        "FTdfRuido R;\n"
+        "float2 p = WP.xy;\n"
+        "float d0 = max(abs(p.x - X0) - HX, abs(p.y) - HY);\n"
+        "float d1 = max(abs(p.x - X1) - HX, abs(p.y) - HY);\n"
+        "float d = min(d0, d1) + (R.Fbm(p / 400 + 19.9) - 0.5) * B * 1.2;\n"
+        "return float4(saturate((R.Fbm(p / 2600 + 3.1) - 0.55) * 4), saturate((R.Fbm(p / 700 + 41.7) - 0.5) * 6),\n"
+        "              saturate((R.Fbm(p / 1100 + 87.3) - 0.56) * 6), saturate(1 - d / max(B, 1)));")
+    names = ["WP", "X0", "X1", "HX", "HY", "B"]
+    ins = []
+    for n in names:
+        ci = unreal.CustomInput()
+        ci.set_editor_property("input_name", n)
+        ins.append(ci)
+    mix.set_editor_property("inputs", ins)
+    mel.connect_material_expressions(wp, "", mix, "WP")
+    defaults = {"X0": ("LaneX0", 0.0), "X1": ("LaneX1", 2000.0), "HX": ("LaneHX", 800.0), "HY": ("LaneHY", 1200.0), "B": ("Borda", 320.0)}
+    for i, n in enumerate(names[1:]):
+        p = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -1600, 2400 + i * 90)
+        p.set_editor_property("parameter_name", defaults[n][0])
+        p.set_editor_property("default_value", defaults[n][1])
+        mel.connect_material_expressions(p, "", mix, n)
+
+    def channel(c, y):
+        m = mel.create_material_expression(mat, unreal.MaterialExpressionComponentMask, -1100, y)
+        for k in ("r", "g", "b", "a"):
+            m.set_editor_property(k, k == c)
+        mel.connect_material_expressions(mix, "", m, "")
+        return m
+
+    a_patch, a_grama, a_gravel, lane = channel("r", 2100), channel("g", 2200), channel("b", 2300), channel("a", 2400)
+
+    out = {}
+    # i: qual amostra do conjunto (0 cor, 1 normal, 2 ARM: oclusão no R, aspereza no G)
+    for k, (i, o, x) in enumerate(((0, "RGB", "cor"), (1, "RGB", "normal"), (2, "G", "aspereza"), (2, "R", "oclusao"))):
+        fora = lerp(meadow[i], o, patch[i], o, a_patch, -900, -1600 + k * 500)
+        dentro0 = lerp(dirt[i], o, patch[i], o, a_grama, -900, -1400 + k * 500)
+        dentro = lerp(dentro0, "", gravel[i], o, a_gravel, -700, -1400 + k * 500)
+        out[x] = lerp(fora, "", dentro, "", lane, -500, -1500 + k * 500)
+
+    mel.connect_material_property(out["cor"], "", unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.connect_material_property(out["normal"], "", unreal.MaterialProperty.MP_NORMAL)
+    mel.connect_material_property(out["aspereza"], "", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(out["oclusao"], "", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
+    mel.recompile_material(mat)
+    eal.save_loaded_asset(mat)
+    say("chão 4K: M_TdfChao4K (campo verde fora, terra e cascalho nas lanes)")
+    return mat
+
+
 def main():
+    chao4k()
     pbr = master_pbr()
     natureza(master_gltf())
     fol = master_folhagem()

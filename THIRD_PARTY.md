@@ -42,14 +42,17 @@ CC0 não exige crédito; fica registrado para saber de onde veio cada coisa. O q
 |---|---|---|---|---|
 | [Barris, caixas, pedras, tocos e troncos](https://polyhaven.com/models) | Poly Haven (vários artistas) | CC0 | não | ok |
 | [grass_medium_01/02, leafy_grass, aerial_grass_rock e céu kloofendal_48d_partly_cloudy_puresky](https://polyhaven.com) | Poly Haven (vários artistas) | CC0 | não | ok |
+| [Chão 4K do Unreal: rocky_terrain_02, aerial_grass_rock, dirt_aerial_02, forest_ground_04 (cor, normal, ARM)](https://polyhaven.com/textures) | Rob Tuytel (aerial_grass_rock, dirt_aerial_02), Rob Tuytel e Rico Cilliers (forest_ground_04), Amal Kumar (rocky_terrain_02) | CC0 | não | ok |
 
 - **Barris, caixas, pedras, tocos e troncos**. Origem: Poly Haven, baixados por Tools/BaixarArte.ps1 (cada pasta leva o id do asset). Alterações nossas: usados como baixados. plastic_crate_01 e _02 saem na VIS-04 (denunciam maquete).
 - **grass_medium_01/02, leafy_grass, aerial_grass_rock e céu kloofendal_48d_partly_cloudy_puresky**. Origem: Poly Haven, baixados por Tools/BaixarArte.ps1. Alterações nossas: usados como baixados.
+- **Chão 4K do Unreal: rocky_terrain_02, aerial_grass_rock, dirt_aerial_02, forest_ground_04 (cor, normal, ARM)**. Origem: Poly Haven, baixados por Unreal/TDFende/BaixarTexturas.ps1 em 14/10/2026 (4K JPG); fontes em Unreal/TDFende/Fontes (fora do git, backup no D:). Alterações nossas: importadas no Unreal e misturadas no material M_TdfChao4K (campo fora das lanes, terra e cascalho dentro).
 
 <details><summary>Arquivos deste grupo</summary>
 
 - `cenario-polyhaven`: `Assets/Resources/TDFende/Cenario/**`
 - `chao-grama-ceu`: `Assets/Resources/Art/**`
+- `unreal-chao-polyhaven-4k`: `Unreal/TDFende/Content/TDFende/Ambiente/Chao4K/**`
 
 </details>
 

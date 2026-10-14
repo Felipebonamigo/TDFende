@@ -138,8 +138,8 @@ constrói/sobe, direito vende; Q/E troca a torre; 1-9 envia; **WASD/setas movem 
 ### Pendente — depende do Felipe
 - **Tema e bioma** (decisão da Fase 1): o ambiente atual é um campo seco com rochas, neutro. Para o "realista bonito" de verdade falta
   escolher o bioma; com ele, a paleta, a vegetação e o céu seguem.
-- **Downloads novos (CC0, Poly Haven, sem login):** texturas 4K de chão com aspereza/AO/relevo e mais rochas/plantas. A regra é pedir
-  antes de baixar: dizer quais arquivos e o tamanho.
+- ~~Texturas 4K de chão~~ **feito com o ok do Felipe (14/10/2026):** ver "Chão 4K" abaixo. Mais rochas/plantas da Poly Haven continuam
+  pedindo autorização antes de baixar (dizer quais arquivos e o tamanho).
 - ~~Árvores realistas~~ **resolvido no mesmo dia:** o acervo comum (`Felipebonamigo/acervo-3d`, regra nova do CLAUDE.md) tem carvalho,
   oliveira, dois ciprestes, arbusto e rochas da galeria do Meshy (CC0), já neste PC na pasta do Age of Earth. Importados em
   `/Game/TDFende/Ambiente/Natureza` (material M_TdfGltf, Nanite) e espalhados em volta das lanes (81 peças), sem árvore alta entre a
@@ -147,6 +147,20 @@ constrói/sobe, direito vende; Q/E troca a torre; 1-9 envia; **WASD/setas movem 
   créditos regenerados. Ainda faltam árvores de outros biomas quando o tema for escolhido.
 - **Aprovar o visual da U1** pelos prints; **testar o controle** (mouse e teclado reais; aqui só foi testado pelas mesmas chamadas);
   sons (o Claude não ouve); hardware mínimo alvo; conferir os royalties da Epic (5% acima de US$ 1 mi brutos).
+
+### Chão 4K (14/10/2026)
+Fotografias aéreas 4K da Poly Haven (CC0): `rocky_terrain_02` (campo verde com pedras, 90 m), `aerial_grass_rock` (grama amarelada com
+cascalho, 15 m), `dirt_aerial_02` (terra pisada, 20 m), `forest_ground_04` (cascalho e folhas, 3,2 m); cor, normal e ARM de cada.
+- **Baixar:** `powershell -ExecutionPolicy Bypass -File Unreal\TDFende\BaixarTexturas.ps1` (135 MB em `Unreal\TDFende\Fontes\PolyHaven`,
+  fora do git, no backup do D: como `unreal-fontes`). Depois `ImportarArte.ps1 -Script importa_ambiente.py`.
+- **Material `M_TdfChao4K`** (`/Game/TDFende/Ambiente/Chao4K`): cada foto no tamanho real; fora das lanes, campo verde com manchas de
+  grama amarela; dentro, terra pisada com manchas de grama e de cascalho; borda irregular. As manchas e a máscara das lanes saem de um
+  nó HLSL (ruído fbm pela posição no mundo); o `ATdfEnvironment` passa onde ficam as lanes (`LaneX0/X1/HX/HY`, `Borda`). Sem o
+  material, o chão volta ao `M_TdfChao` antigo.
+- Antes e depois: `Saved\U0\ambiente_4.png` (campo seco) e `ambiente_8.png` (atual). 100-145 fps no mesmo replay (1600×900).
+- **Atenção:** a primeira execução depois de mudar o material derrubou o driver de vídeo uma vez ("GPU Crashed or D3D Device Removed",
+  no quadro 3, compilando shaders); a segunda rodou normal. Se repetir, investigar (dump em `Saved\Logs\*.nv-gpudmp`).
+- Licença: entrada `unreal-chao-polyhaven-4k` no manifesto (raiz nova `Content/TDFende/Ambiente/Chao4K`), créditos regenerados.
 
 ### Próximo, sem depender de ninguém
 HUD em UMG (a loja de torres e bichos), barras de vida, torreta que mira e disparo com rastro, morte com a animação `Death` (urso,

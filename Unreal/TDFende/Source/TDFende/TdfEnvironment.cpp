@@ -9,6 +9,7 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Math/RandomStream.h"
 #include "UObject/ConstructorHelpers.h"
@@ -125,7 +126,19 @@ void ATdfEnvironment::BuildGround()
 	const FVector2D C = PlayArea.GetCenter();
 	Ground->SetWorldLocation(FVector(C.X, C.Y, -1.f));
 	Ground->SetWorldScale3D(FVector(600.f, 600.f, 1.f));
-	if (UMaterialInterface* M = LoadObject<UMaterialInterface>(nullptr, *FString::Printf(TEXT("%s/Materiais/M_TdfChao.M_TdfChao"), AmbPath)))
+	if (UMaterialInterface* M4k = LoadObject<UMaterialInterface>(nullptr, *FString::Printf(TEXT("%s/Chao4K/M_TdfChao4K.M_TdfChao4K"), AmbPath)))
+	{
+		// chão 4K (Poly Haven): campo verde fora, terra pisada e cascalho dentro das lanes; o material precisa saber onde elas estão
+		UMaterialInstanceDynamic* Mid = UMaterialInstanceDynamic::Create(M4k, this);
+		Mid->SetScalarParameterValue(TEXT("LaneX0"), 0.f);
+		Mid->SetScalarParameterValue(TEXT("LaneX1"), LaneOffsetX);
+		Mid->SetScalarParameterValue(TEXT("LaneHX"), LaneHalfX);
+		Mid->SetScalarParameterValue(TEXT("LaneHY"), LaneHalfY);
+		Mid->SetScalarParameterValue(TEXT("Borda"), 320.f);
+		Ground->SetMaterial(0, Mid);
+		KeepAlive.Add(Mid);
+	}
+	else if (UMaterialInterface* M = LoadObject<UMaterialInterface>(nullptr, *FString::Printf(TEXT("%s/Materiais/M_TdfChao.M_TdfChao"), AmbPath)))
 	{
 		Ground->SetMaterial(0, M);
 		KeepAlive.Add(M);

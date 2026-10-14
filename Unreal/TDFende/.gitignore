@@ -10,3 +10,5 @@ Content/
 *.VC.db
 *.opensdf
 *.sdf
+# fontes baixadas (texturas 4K da Poly Haven etc.): arte pesada fica no PC, backup no D:
+Fontes/
