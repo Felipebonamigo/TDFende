@@ -83,12 +83,19 @@ serve aos dois). Depois da U2, o código de vista do Unity é arquivado (tag no 
 - **IA (Meshy) e assets** seguem o manifesto de licenças; o Unreal não muda isso.
 - Multiplayer futuro: a Sim determinística com replay e assinatura já é a base de lockstep; o Unreal só exibe.
 
+## 5b. Já existe prática de Unreal nas suas outras sessões
+
+O Felipe já usa o Unreal 5.8 em outros projetos (Age of Earth, com `AoEBridgeActor` em C++ e `Config/AoEVisuais.json`; Detonauto).
+Antes de escrever a ponte da U0, a sessão do PC deve **descrever como o Age of Earth liga a simulação ao Unreal** (formato do
+snapshot, quem compila, armadilhas de include como `SkeletalMeshActor.h`) para reaproveitarmos o padrão que já funciona em vez de
+inventar outro. Isso entra como passo 0 da U0.
+
 ## 6. Decisões pedidas ao Felipe
 
 | | Pergunta | Recomendação |
 |---|---|---|
 | **D1** | Sim em C# como DLL nativa (A), porta para C++ (B)? | **A**, com a U0 como teste eliminatório (se falhar, reabrimos B). |
-| **D2** | Qual versão do Unreal está instalada (5.5, 5.6, 5.7...)? | Preciso saber para escrever o plugin C++; a mais nova estável que você tiver. |
+| **D2** | Versão do Unreal | **Respondida: UE 5.8** (`C:\Program Files\Epic Games\UE_5.8`, vista na sessão "Age of Earth Local", que já compila um projeto C++ em `AgeOfEarth\unreal\AgeOfEarthUE`). |
 | **D3** | Unity congelado como referência até a U2 fechar, depois arquivado (A); ou apagar já (B)? | **A.** |
 | **D4** | `Content/` do Unreal fora do git público, com backup no D: (A); ou um repositório privado à parte para o conteúdo (B)? | **A** hoje (zero custo); B se você quiser que a nuvem enxergue o Content algum dia. |
 | **D5** | Reescrever o ROADMAP para as fases U0 a U4, marcando as tarefas Unity como "substituídas" (A)? | **A**, depois desta aprovação. |
