@@ -1,5 +1,7 @@
 #include "TdfDemoGameMode.h"
 #include "TdfSimActor.h"
+#include "TdfPlayerController.h"
+#include "TdfHUD.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/DirectionalLight.h"
@@ -11,6 +13,13 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
+
+ATdfDemoGameMode::ATdfDemoGameMode()
+{
+	PlayerControllerClass = ATdfPlayerController::StaticClass();
+	HUDClass = ATdfHUD::StaticClass();
+	DefaultPawnClass = nullptr; // a câmera é um ator fixo; nada de pawn andando pelo nível
+}
 
 void ATdfDemoGameMode::StartPlay()
 {
@@ -43,9 +52,9 @@ void ATdfDemoGameMode::StartPlay()
 	Cam->GetCameraComponent()->SetConstraintAspectRatio(false);
 
 	ADirectionalLight* Sun = World->SpawnActor<ADirectionalLight>(FVector(0.f, 0.f, 3000.f), FRotator(-55.f, 30.f, 0.f), P);
-	Sun->GetLightComponent()->SetIntensity(8.f);
+	Sun->GetLightComponent()->SetIntensity(3.f);
 	ASkyLight* Sky = World->SpawnActor<ASkyLight>(P);
-	Sky->GetLightComponent()->SetIntensity(1.5f);
+	Sky->GetLightComponent()->SetIntensity(0.6f);
 	Sky->GetLightComponent()->SetMobility(EComponentMobility::Movable);
 	Sky->GetLightComponent()->RecaptureSky();
 

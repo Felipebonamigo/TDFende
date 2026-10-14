@@ -69,6 +69,51 @@ namespace TDFende
             }
         }
 
+        // ---------------- perguntas da vista (U2): o que dá para fazer agora, sem conhecer C# ----------------
+
+        /// <summary>
+        /// Catálogo em texto, uma linha por tipo, campos separados por ';' (parta por ';', todo número em ponto decimal):
+        /// kind 0 = torres: chave;nome;custo;alcance;recarga;dano;raio_de_área;raio_de_fronteira;fator_de_lentidão;
+        /// kind 1 = envios: chave;nome;custo;vida;velocidade;quantidade;bônus_de_renda;recompensa;vidas_que_tira.
+        /// Nulo se o kind é desconhecido. Campos novos entram SEMPRE no fim da linha (quem lê ignora o que não conhece).
+        /// </summary>
+        public string CatalogText(int kind)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var sb = new System.Text.StringBuilder();
+            if (kind == 0)
+            {
+                for (int i = 0; i < TowerCatalog.Count; i++)
+                {
+                    var t = TowerCatalog.Get(i);
+                    sb.Append(string.Format(inv, "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n", t.Key, t.Name, t.Cost, t.Range, t.Cooldown,
+                        t.Damage, t.SplashRadius, t.BorderRadius, t.SlowFactor));
+                }
+                return sb.ToString();
+            }
+            if (kind == 1)
+            {
+                for (int i = 0; i < SendCatalog.Count; i++)
+                {
+                    var u = SendCatalog.Get(i);
+                    sb.Append(string.Format(inv, "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n", u.Key, u.Name, u.Cost, u.Hp, u.Speed, u.Count,
+                        u.IncomeBonus, u.Bounty, u.LivesCost));
+                }
+                return sb.ToString();
+            }
+            return null;
+        }
+
+        /// <summary>Por que NÃO dá para construir a torre <paramref name="type"/> na célula do jogador (0 = dá; senão um <see cref="RejectReason"/>).</summary>
+        public int CanBuild(int x, int y, int type)
+        {
+            if (type < 0 || type >= TowerCatalog.Count) return (int)RejectReason.UnknownType;
+            return (int)Runner.Player.BuildBlocker(new Vector2Int(x, y), type);
+        }
+
+        /// <summary>Custo de subir a torre da célula do jogador: -1 sem torre, 0 no nível máximo.</summary>
+        public int UpgradeCost(int x, int y) => Runner.Player.UpgradeCostAt(new Vector2Int(x, y));
+
         /// <summary>Avança até <paramref name="ticks"/> tiques (para quando a partida acaba). Devolve quantos rodou.</summary>
         public int Step(int ticks)
         {

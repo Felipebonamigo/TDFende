@@ -68,3 +68,25 @@ Rodado no PC (UE 5.8.3, Visual Studio 2026 com C++, .NET SDK 10.0.302, RTX 4070 
    `powershell -ExecutionPolicy Bypass -File Unreal\TDFende\RodarU0.ps1` (compila, roda, confere o fingerprint; sai com 0 ou 1; ~3,5 min).
 6. O roteiro manual (abrir o projeto, nível vazio, arrastar o `TdfSimActor`, Play) não foi feito à mão: o `TdfDemoGameMode` faz o mesmo
    pelo mesmo ator, e o resultado é o do log. Arrastar o ator num nível continua funcionando.
+
+## U2, parte 1: jogo jogável com formas simples (14/10/2026)
+
+O `TdfSimActor` virou a vista jogável da Sim (formas simples; as malhas reais são a U3). O que existe, tudo por **código C++** no git:
+
+- **Ponte, ABI 2** (só acréscimos, o resto do contrato não mudou): `tdf_catalog_text` (catálogo de torres e de envios em texto,
+  `chave;nome;custo;...`), `tdf_can_build(x,y,tipo)` (0 = dá; senão o `RejectReason`) e `tdf_upgrade_cost(x,y)`. Testados no FlowSim
+  (9 verificações novas, vistas falhando antes de existir o código). A vista não conhece mais números de balanceamento: tudo vem do catálogo.
+- **Controle** (`TdfPlayerController`): botão esquerdo constrói a torre selecionada na célula sob o mouse (ou sobe, se já há torre),
+  botão direito vende, **Q/E** troca a torre, **1 a 9** envia o bicho. O mouse vira célula por raio contra o chão.
+- **HUD provisório** (`TdfHUD`, Canvas): vidas, ouro, renda, torres, tempo (você e a IA), paleta de torres com custo, lista de envios,
+  contorno da célula sob o mouse (verde = dá, vermelho = não, amarelo = subir) com o custo, e aviso curto quando um comando é recusado.
+- **Território** desenhado (placas por célula, só reconstruídas quando muda), cor por tipo de torre e por estado do inimigo (normal,
+  lento/congelado, queimando, voador).
+- **Partida gravada** em `Saved/Tdf/partida.txt` (formato do replay), pronta para o F9 da U2 parte 2.
+- **Autoteste** `-TdfSelfTest` (ou `RodarU0.ps1 -AutoTeste`, ~10 s, sai com 0 ou 1): 19 verificações — catálogo pela ponte, `CanBuild`,
+  conversão célula↔mundo em todas as células, construir, subir, enviar, vender, comandos gravados. Passou.
+- Opções novas de linha de comando: `-TdfQuitTick=<n>`; `-TdfSelfTest`.
+
+**Limites conhecidos da U2 parte 1:** o HUD é de teste (a loja de verdade é a fase de UI); as formas ainda são cubos e cilindros (as cores
+da engine saíram lavadas pela exposição automática); não há som, Niagara, câmera livre, nem replay F9 de leitura; nenhum teste com mouse
+real, só com as mesmas chamadas (a conversão do raio do mouse foi testada pela volta célula↔mundo, não pela projeção da câmera).

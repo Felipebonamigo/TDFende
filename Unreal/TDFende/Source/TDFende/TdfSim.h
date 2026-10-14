@@ -35,9 +35,14 @@ public:
 	int (*events)(TdfEvent*, int) = nullptr;
 	int (*fingerprint)(char*, int) = nullptr;
 	int (*signature)(char*, int) = nullptr;
+	int (*catalog_text)(int, char*, int) = nullptr;
+	int (*can_build)(int, int, int) = nullptr;
+	int (*upgrade_cost)(int, int) = nullptr;
 
 	FString LastError() const;
 	FString Fingerprint() const;
+	/** Catálogo em texto (0 torres, 1 envios): uma linha por tipo, campos separados por ';' (ver tdfende_sim.h). */
+	FString CatalogText(int Kind) const;
 
 private:
 	void* Handle = nullptr;

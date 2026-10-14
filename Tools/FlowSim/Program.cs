@@ -1172,6 +1172,29 @@ class Program
             if (h2.Events[i].Kind == BridgeEventKind.CommandRejected && h2.Events[i].B == (int)RejectReason.UnknownType) rejected = true;
         Check(rejected, "Ponte: comando recusado vira evento com o motivo");
 
+        // U2: a vista pergunta o catálogo (texto), o custo de subir e se dá para construir, sem conhecer C#
+        var cat = SimHost.Create(3, 1, 24, 16, null, null, out _);
+        string towersTxt = cat.CatalogText(0), sendsTxt = cat.CatalogText(1);
+        var towerLines = towersTxt.Split(new[] { (char)10 }, StringSplitOptions.RemoveEmptyEntries);
+        var sendLines = sendsTxt.Split(new[] { (char)10 }, StringSplitOptions.RemoveEmptyEntries);
+        Check(towerLines.Length == TowerCatalog.Count && sendLines.Length == SendCatalog.Count,
+            $"Ponte: catálogo em texto tem uma linha por tipo ({towerLines.Length} torres, {sendLines.Length} envios)");
+        var f0 = towerLines[0].Split(';');
+        Check(f0[0] == TowerCatalog.Get(0).Key && f0[1] == TowerCatalog.Get(0).Name && int.Parse(f0[2]) == TowerCatalog.Get(0).Cost,
+            "Ponte: linha da torre 0 = chave;nome;custo...");
+        var g0 = sendLines[0].Split(';');
+        Check(g0[0] == SendCatalog.Get(0).Key && int.Parse(g0[2]) == SendCatalog.Get(0).Cost, "Ponte: linha do envio 0 = chave;nome;custo...");
+        Check(cat.CatalogText(7) == null, "Ponte: tipo de catálogo desconhecido devolve nulo");
+        Check(cat.CanBuild(9, 6, 0) == (int)RejectReason.None, "Ponte: CanBuild num lugar livre com ouro devolve 0 (ok)");
+        Check(cat.CanBuild(-1, 6, 0) != (int)RejectReason.None, "Ponte: CanBuild fora do mapa é recusado");
+        Check(cat.UpgradeCost(9, 6) == -1, "Ponte: UpgradeCost sem torre devolve -1");
+        cat.Enqueue(BridgeCommand.Build, 9, 6, 0);
+        cat.Step(1);
+        Check(cat.UpgradeCost(9, 6) > 0 && cat.CanBuild(9, 6, 0) != (int)RejectReason.None,
+            "Ponte: depois de construir, UpgradeCost > 0 e a célula não aceita outra torre");
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+
         // catálogo torto volta erro, sem derrubar
         SendCatalog.ResetToDefaults(); // destranca (os catálogos são estáticos e trancam na primeira lane)
         var bad = SimHost.Create(1, 1, 24, 16, "key=nao_existe;cost=1", null, out string badErr);

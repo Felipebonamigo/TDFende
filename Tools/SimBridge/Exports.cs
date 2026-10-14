@@ -21,7 +21,7 @@ namespace TDFende.Bridge
 
         /// <summary>Versão do contrato (sobe quando um struct ou função muda).</summary>
         [UnmanagedCallersOnly(EntryPoint = "tdf_abi_version")]
-        public static int AbiVersion() => 1;
+        public static int AbiVersion() => 2;
 
         /// <summary>Tamanhos dos structs planos, para a vista conferir contra o cabeçalho: lane, inimigo, torre, tiro, evento.</summary>
         [UnmanagedCallersOnly(EntryPoint = "tdf_struct_sizes")]
@@ -139,6 +139,20 @@ namespace TDFende.Bridge
         [UnmanagedCallersOnly(EntryPoint = "tdf_signature")]
         public static int Signature(byte* buffer, int capacity) =>
             WriteText(SimSignature.Sends() + " " + SimSignature.Towers() + " " + SimSignature.Rules(), buffer, capacity);
+
+        /// <summary>Catálogo em texto (0 torres, 1 envios); ver SimHost.CatalogText. -1 se o kind é desconhecido.</summary>
+        [UnmanagedCallersOnly(EntryPoint = "tdf_catalog_text")]
+        public static int CatalogText(int kind, byte* buffer, int capacity)
+        {
+            try { return _host == null ? -1 : WriteText(_host.CatalogText(kind), buffer, capacity); }
+            catch (Exception e) { Fail(e.Message); return -2; }
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "tdf_can_build")]
+        public static int CanBuild(int x, int y, int type) => _host == null ? -1 : _host.CanBuild(x, y, type);
+
+        [UnmanagedCallersOnly(EntryPoint = "tdf_upgrade_cost")]
+        public static int UpgradeCost(int x, int y) => _host == null ? -2 : _host.UpgradeCost(x, y);
 
         static int CopyOut<T>(T[] src, int count, T* dst, int capacity) where T : unmanaged
         {

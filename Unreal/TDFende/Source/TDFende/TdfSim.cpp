@@ -32,6 +32,9 @@ bool FTdfSim::Load(FString& OutError)
 	TDF_BIND(events, "tdf_events")
 	TDF_BIND(fingerprint, "tdf_fingerprint")
 	TDF_BIND(signature, "tdf_signature")
+	TDF_BIND(catalog_text, "tdf_catalog_text")
+	TDF_BIND(can_build, "tdf_can_build")
+	TDF_BIND(upgrade_cost, "tdf_upgrade_cost")
 #undef TDF_BIND
 
 	int Sizes[5] = {};
@@ -62,6 +65,17 @@ FString FTdfSim::LastError() const
 	char Buf[512] = {};
 	last_error(Buf, sizeof(Buf));
 	return UTF8_TO_TCHAR(Buf);
+}
+
+FString FTdfSim::CatalogText(int Kind) const
+{
+	if (!catalog_text) return TEXT("");
+	const int Need = catalog_text(Kind, nullptr, 0);
+	if (Need <= 0) return TEXT("");
+	TArray<char> Buf;
+	Buf.SetNumZeroed(Need + 1);
+	catalog_text(Kind, Buf.GetData(), Buf.Num());
+	return UTF8_TO_TCHAR(Buf.GetData());
 }
 
 FString FTdfSim::Fingerprint() const

@@ -15,5 +15,6 @@ class ATdfDemoGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+	ATdfDemoGameMode();
 	virtual void StartPlay() override;
 };

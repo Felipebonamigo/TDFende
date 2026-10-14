@@ -2,7 +2,8 @@
 #   powershell -ExecutionPolicy Bypass -File Unreal\TDFende\RodarU0.ps1 [-SemCompilar] [-ShotTick 2500]
 # Sai com 0 se o fingerprint for IGUAL ao do FlowSim e 1 se não for (ou se o jogo travar). Demora ~3,5 min (200 s de jogo em tempo real).
 # Saída em Unreal\TDFende\Saved\U0 (log, print do viewport): fora do git.
-param([switch]$SemCompilar, [int]$ShotTick = 2500, [int]$Tempo = 420)
+# -AutoTeste: em vez do replay de 200 s, roda o autoteste de jogo (construir, subir, enviar, vender, célula<->mundo; ~10 s).
+param([switch]$SemCompilar, [int]$ShotTick = 2500, [int]$Tempo = 420, [switch]$AutoTeste)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $uproj = Join-Path $PSScriptRoot 'TDFende.uproject'
@@ -17,6 +18,16 @@ if (-not $SemCompilar) {
     if ($LASTEXITCODE -ne 0) { Write-Host "compilação falhou ($LASTEXITCODE)"; exit 1 }
 }
 if (-not (Test-Path (Join-Path $PSScriptRoot 'Binaries\Win64\tdfende_sim.dll'))) { Write-Host 'falta a DLL: rode Tools\SimBridge\PublicarParaUnreal.ps1'; exit 1 }
+
+if ($AutoTeste) {
+    $log = Join-Path $out ("auto-{0:HHmmss}.log" -f (Get-Date))
+    $jogo = @("`"$uproj`"", '/Engine/Maps/Entry?game=/Script/TDFende.TdfDemoGameMode', '-game', '-windowed', '-ResX=1600', '-ResY=900',
+        '-nosplash', '-unattended', '-NoSound', "-abslog=`"$log`"", '-TdfSelfTest')
+    $p = Start-Process "$ue\Binaries\Win64\UnrealEditor.exe" -ArgumentList $jogo -PassThru
+    if (-not $p.WaitForExit(120 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $log)"; exit 1 }
+    Select-String -Path $log -Pattern 'AUTOTESTE' | ForEach-Object { $_.Line }
+    exit $p.ExitCode
+}
 
 $log = Join-Path $out ("u0-{0:HHmmss}.log" -f (Get-Date))
 $jogo = @("`"$uproj`"", '/Engine/Maps/Entry?game=/Script/TDFende.TdfDemoGameMode', '-game', '-windowed', '-ResX=1600', '-ResY=900',

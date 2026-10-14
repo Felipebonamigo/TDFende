@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
-#define TDF_ABI_VERSION 1
+#define TDF_ABI_VERSION 2   /* 2 (U2): + tdf_catalog_text, tdf_can_build, tdf_upgrade_cost (só acréscimos) */
 
 #if defined(_WIN32)
   #define TDF_API __declspec(dllimport)
@@ -92,6 +92,16 @@ TDF_API int  tdf_events(TdfEvent* buf, int capacity);       /* copia e ESVAZIA o
 
 TDF_API int  tdf_fingerprint(char* buffer, int capacity);   /* prova de igualdade da partida (texto) */
 TDF_API int  tdf_signature(char* buffer, int capacity);     /* "sends towers rules" (3 blocos de 16 hexa) */
+
+/* Perguntas da vista (U2). Catálogo em texto UTF-8, uma linha por tipo, campos separados por ';' (números em ponto decimal):
+   kind 0 = torres: chave;nome;custo;alcance;recarga;dano;raio_de_area;raio_de_fronteira;fator_de_lentidao
+   kind 1 = envios: chave;nome;custo;vida;velocidade;quantidade;bonus_de_renda;recompensa;vidas_que_tira
+   Campos novos entram sempre no fim da linha. Devolve o tamanho necessário (sem o zero), ou -1 para kind desconhecido. */
+TDF_API int  tdf_catalog_text(int kind, char* buffer, int capacity);
+/* Por que NÃO dá para construir a torre `type` na célula (x,y) da lane do jogador: 0 = dá; senão o RejectReason (SimEvents.cs). */
+TDF_API int  tdf_can_build(int x, int y, int type);
+/* Custo de subir a torre da célula (x,y) do jogador: -1 sem torre, 0 no nível máximo. */
+TDF_API int  tdf_upgrade_cost(int x, int y);
 
 #ifdef __cplusplus
 }
