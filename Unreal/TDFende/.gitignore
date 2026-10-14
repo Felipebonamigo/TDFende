@@ -1,0 +1,12 @@
+# Unreal: só código e configuração vão para o git público (D4 do design da migração). Content/ e saídas ficam no PC (backup no D:).
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Content/
+.vs/
+*.sln
+*.suo
+*.VC.db
+*.opensdf
+*.sdf

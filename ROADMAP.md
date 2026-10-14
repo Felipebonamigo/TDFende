@@ -88,6 +88,18 @@ Candidatos ao inventário: natureza/expedição, fantasia realista 'baixa' e med
 > [`docs/designs/migracao-unreal.md`](docs/designs/migracao-unreal.md), **aprovado**. Nada é apagado; as tarefas
 > específicas de Unity (VIS, UX, TEC de vista) serão reclassificadas depois da aprovação.
 
+## Migração para o Unreal (14/10/2026) — fases U0 a U4
+
+Design aprovado: [`docs/designs/migracao-unreal.md`](docs/designs/migracao-unreal.md). A Sim (C#) continua; só a vista muda. Tarefas
+de vista do Unity (VIS-*, UX-*, TEC-09/10/25 e afins) ficam **"substituídas pela migração"**: serão refeitas no formato Unreal
+na ordem abaixo, e nada delas é apagado antes da paridade (U2).
+
+- [ ] **U0** — Ponte Sim → Unreal. *Nuvem (feito):* `SimHost`, interface C (`Tools/SimBridge`), NativeAOT, fingerprint igual ao gerenciado, ~31 µs/tique, esqueleto C++ em `Unreal/TDFende`. *PC (falta):* ver o padrão do Age of Earth, publicar a DLL, compilar, provar o fingerprint no Unreal (`Unreal/LEIA-ME.md`).
+- [ ] **U1** — Fatia de beleza no Unreal (relevo, Lumen, 3 torres, 3 bichos, câmera da partida; comparação com Total War: Warhammer III). PC.
+- [ ] **U2** — Paridade de jogo (construir/subir/vender/enviar, território, HUD UMG, Niagara, áudio, replay F9, captura automática).
+- [ ] **U3** — Conteúdo completo (6 torres em 3 estágios, 9 bichos animados, tema, ambiente vivo).
+- [ ] **U4** — Empacotar para Windows/Steam, selo de build, orçamento de FPS.
+
 ## Tarefas por fase
 
 ### [Fase 0 — Bichos visíveis e executável confiável](docs/roadmap/fase-00-bichos-visiveis-e-executavel-confiavel.md)

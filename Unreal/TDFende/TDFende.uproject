@@ -1,0 +1,14 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "TDFende — vista em Unreal sobre a Sim em C# (ponte nativa em Tools/SimBridge). Ver docs/designs/migracao-unreal.md",
+	"Modules": [
+		{
+			"Name": "TDFende",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": []
+}
