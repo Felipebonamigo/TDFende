@@ -152,3 +152,11 @@ constrói/sobe, direito vende; Q/E troca a torre; 1-9 envia; **WASD/setas movem 
 HUD em UMG (a loja de torres e bichos), barras de vida, torreta que mira e disparo com rastro, morte com a animação `Death` (urso,
 elefante) e queda nos outros, efeitos de gelo/fogo/empurrão, contorno do território em vez de quadradinhos, otimização (grama com LOD
 e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`), e empacotar (U4).
+
+### Recursos do Unreal a usar (proposta de 14/10/2026, aguardando o Felipe)
+
+- **Unreal MCP:** ligar uma vez com a skill `ligar-unreal-mcp` (porta 8030); depois a sessão do PC monta HUD, materiais e
+  efeitos pelo editor aberto, com a skill `unreal-mcp`.
+- **Upscalers:** TSR já é o padrão; DLSS, FSR e XeSS como opção do jogador entram na U4, medidos no `MedirFps.ps1`.
+- **PCG:** espalhar a natureza do acervo em volta das lanes por regra (densidade, distância da câmera), em vez de peça a peça.
+- **Niagara e MetaSounds:** os efeitos de gelo, fogo e empurrão, e os sons da Fase 8 sem um arquivo por situação.
