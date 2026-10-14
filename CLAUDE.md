@@ -4,15 +4,22 @@
 armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tarefa no
 [`ROADMAP.md`](ROADMAP.md) (o que fazer, em ordem, com critério de pronto).
 
-- **Estúdio:** os 4 jogos do Felipe, ferramentas, pré-configurações e pendências em comum
+- **Estúdio:** os jogos do Felipe, ferramentas, pré-configurações e pendências em comum
   estão em https://claude.ai/artifact/72KXW2Tve5gB65BHD1CDp6 (documento do Claude Docs,
   lido pelo conector).
-- **Modelos 3D em comum aos 4 jogos:** antes de baixar ou gerar, procure na aba "Modelos 3D"
+- **Modelos 3D em comum aos jogos do estúdio:** antes de baixar ou gerar, procure na aba "Modelos 3D"
   do doc do estúdio e no repositório `Felipebonamigo/acervo-3d`. Modelo novo entra nos
   dois no mesmo dia, além do `docs/licencas/manifesto.json`.
 - **Rotinas do Claude** em `.claude/skills/`: `verificar`, `captura-do-executavel`, `ponte-unreal`,
   `modelo-3d`, `triar-playtest` e `ligar-unreal-mcp` (sessão do PC, porta 8030; depois a skill `unreal-mcp`
-  comanda o editor aberto). Na nuvem, o hook `.claude/hooks/session-start.sh` instala o .NET 10.
+  comanda o editor aberto). Desde 14/10/2026 também `revisar-sem-compilar` (C++ do `Unreal/` sem compilar),
+  `achar-gargalo`, `ler-crash`, `publicar-na-steam`, `declaracao-ia`, `conferir-fato`, `som-livre` e `traduzir`.
+  Também servem as skills do Claude que já vêm instaladas: `skill-creator` (testa se uma rotina dispara com
+  o jeito de o Felipe pedir), `statistical-analysis` (quantas partidas ou rodadas uma comparação precisa
+  para valer), `computer-use` (no PC, pelo app do Claude, abre o executável, navega pelos menus e tira
+  print; o Felipe liga em Settings > This computer > Computer use) e `fewer-permission-prompts` (no PC,
+  libera de vez os comandos só de leitura que mais pedem permissão). Na nuvem, o hook
+  `.claude/hooks/session-start.sh` instala o .NET 10.
   Problemas de playtest chegam como Issues "[Playtest]" (`.github/ISSUE_TEMPLATE/playtest.yml`); o
   commit que corrige diz "fecha #N".
 - **Git:** commit e push direto na `main` (pedido do Felipe, 27/09/2026). Nada de branch
