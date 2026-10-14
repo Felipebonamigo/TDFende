@@ -1,6 +1,6 @@
 ---
 name: ponte-unreal
-description: Ciclo da ponte Sim → Unreal do TDFende: na nuvem o Smoke.sh (fingerprint nativo × gerenciado), no PC o PublicarParaUnreal.ps1 e o RodarU0.ps1 (-AutoTeste, -SemCompilar, -ShotTick), as opções -Tdf* e a versão da ABI. Use quando mexer na Sim, em Tools/SimBridge ou em Unreal/TDFende, ou quando pedirem "testa a ponte", "publica a DLL", "roda a U0", "roda o autoteste", "sobe a ABI".
+description: 'Ciclo da ponte Sim → Unreal do TDFende: na nuvem o Smoke.sh (fingerprint nativo × gerenciado), no PC o PublicarParaUnreal.ps1 e o RodarU0.ps1 (-AutoTeste, -SemCompilar, -ShotTick), as opções -Tdf* e a versão da ABI. Use quando mexer na Sim, em Tools/SimBridge ou em Unreal/TDFende, ou quando pedirem "testa a ponte", "publica a DLL", "roda a U0", "roda o autoteste", "sobe a ABI".'
 ---
 # Ponte Sim → Unreal (NativeAOT)
 
