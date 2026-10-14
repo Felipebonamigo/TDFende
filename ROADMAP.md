@@ -84,6 +84,10 @@ Candidatos ao inventário: natureza/expedição, fantasia realista 'baixa' e med
 | 18 | Fase 17 — Vitrine | 5-6 | 6 | 0 | [abrir](docs/roadmap/fase-17-vitrine.md) |
 | 19 | Fase 18 — Lançamento em Early Access e pós-lançamento | 3-5 | 4 | 0 | [abrir](docs/roadmap/fase-18-lancamento-em-early-access-e-pos-lancamento.md) |
 
+> **Mudança de engine (14/10/2026):** o Felipe decidiu migrar a vista para o Unreal Engine 5; a Sim em C# continua. Design em
+> [`docs/designs/migracao-unreal.md`](docs/designs/migracao-unreal.md), **aguardando aprovação**. Até lá nada é apagado; as tarefas
+> específicas de Unity (VIS, UX, TEC de vista) serão reclassificadas depois da aprovação.
+
 ## Tarefas por fase
 
 ### [Fase 0 — Bichos visíveis e executável confiável](docs/roadmap/fase-00-bichos-visiveis-e-executavel-confiavel.md)
