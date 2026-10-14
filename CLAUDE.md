@@ -10,6 +10,11 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
 - **Modelos 3D em comum aos 4 jogos:** antes de baixar ou gerar, procure na aba "Modelos 3D"
   do doc do estúdio e no repositório `Felipebonamigo/acervo-3d`. Modelo novo entra nos
   dois no mesmo dia, além do `docs/licencas/manifesto.json`.
+- **Rotinas do Claude** em `.claude/skills/`: `verificar`, `captura-do-executavel`, `ponte-unreal`,
+  `modelo-3d`, `triar-playtest` e `ligar-unreal-mcp` (sessão do PC, porta 8030; depois a skill `unreal-mcp`
+  comanda o editor aberto). Na nuvem, o hook `.claude/hooks/session-start.sh` instala o .NET 10.
+  Problemas de playtest chegam como Issues "[Playtest]" (`.github/ISSUE_TEMPLATE/playtest.yml`); o
+  commit que corrige diz "fecha #N".
 - **Git:** commit e push direto na `main` (pedido do Felipe, 27/09/2026). Nada de branch
   separado: ele roda o projeto pela `main` e mais de uma sessão do Claude trabalha no
   repositório. Começo: `git pull --rebase --autostash`. Push: `git pull --rebase --autostash`
