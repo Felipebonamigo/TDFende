@@ -1,0 +1,356 @@
+tdfende-replay 2
+seed 2024
+difficulty Normal
+grid 24 16
+ticks 6000
+0 build 9 6 2
+0 upgrade 14 5
+0 send 1
+0 sell 17 9
+31 build 5 7 4
+62 build 4 9 0
+73 send 0
+93 build 5 8 2
+97 upgrade 5 6
+124 build 5 9 2
+146 send 0
+155 build 17 9 0
+186 build 7 10 4
+194 upgrade 13 5
+217 build 13 9 2
+219 send 0
+248 build 7 5 4
+279 build 17 6 2
+291 upgrade 10 6
+292 send 8
+310 build 5 9 2
+341 build 12 11 4
+365 send 2
+372 build 5 9 4
+388 upgrade 14 6
+403 build 9 5 4
+434 build 15 5 4
+438 send 0
+465 build 13 6 2
+485 upgrade 14 9
+496 build 10 11 2
+509 sell 11 9
+511 send 7
+527 build 9 7 0
+558 build 16 6 4
+582 upgrade 16 6
+584 send 1
+589 build 13 7 4
+620 build 11 7 4
+651 build 11 7 4
+657 send 1
+679 upgrade 5 9
+682 build 10 6 2
+713 build 6 8 2
+730 send 0
+744 build 14 5 4
+775 build 13 11 2
+776 upgrade 9 10
+803 send 5
+806 build 13 8 4
+837 build 16 8 0
+868 build 17 5 2
+873 upgrade 11 10
+876 send 1
+899 build 4 10 4
+930 build 8 10 4
+949 send 7
+961 build 8 10 2
+970 upgrade 14 7
+992 build 4 8 2
+1018 sell 6 9
+1022 send 1
+1023 build 11 5 0
+1054 build 16 7 0
+1067 upgrade 15 6
+1085 build 10 8 2
+1095 send 1
+1116 build 6 8 2
+1147 build 12 7 0
+1164 upgrade 17 8
+1168 send 8
+1178 build 8 10 2
+1209 build 9 10 2
+1240 build 7 6 0
+1241 send 2
+1261 upgrade 6 6
+1271 build 14 6 0
+1302 build 11 11 4
+1314 send 2
+1333 build 8 7 0
+1358 upgrade 6 8
+1364 build 12 7 4
+1387 send 5
+1395 build 6 10 4
+1426 build 13 10 4
+1455 upgrade 15 5
+1457 build 11 11 4
+1460 send 8
+1488 build 10 8 2
+1519 build 10 5 2
+1527 sell 14 8
+1533 send 0
+1550 build 7 5 0
+1552 upgrade 11 6
+1581 build 5 7 4
+1606 send 0
+1612 build 5 5 4
+1643 build 6 9 0
+1649 upgrade 9 9
+1674 build 4 5 0
+1679 send 6
+1705 build 6 10 2
+1736 build 9 9 2
+1746 upgrade 11 5
+1752 send 1
+1767 build 17 8 2
+1798 build 11 8 2
+1825 send 1
+1829 build 6 5 4
+1843 upgrade 9 10
+1860 build 8 8 4
+1891 build 6 9 0
+1898 send 3
+1922 build 12 7 0
+1940 upgrade 15 9
+1953 build 4 11 4
+1971 send 4
+1984 build 14 11 0
+2015 build 15 11 2
+2036 sell 12 7
+2037 upgrade 6 7
+2044 send 3
+2046 build 12 9 4
+2077 build 9 10 0
+2108 build 13 11 0
+2117 send 3
+2134 upgrade 17 8
+2139 build 15 11 0
+2170 build 7 9 2
+2190 send 5
+2201 build 15 5 0
+2231 upgrade 16 7
+2232 build 11 7 0
+2263 build 15 9 2
+2263 send 7
+2294 build 16 10 2
+2325 build 9 5 0
+2328 upgrade 5 6
+2336 send 7
+2356 build 7 7 0
+2387 build 11 9 4
+2409 send 0
+2418 build 11 10 2
+2425 upgrade 16 10
+2449 build 5 11 4
+2480 build 5 8 4
+2482 send 3
+2511 build 11 6 2
+2522 upgrade 16 10
+2542 build 9 5 4
+2545 sell 10 8
+2555 send 6
+2573 build 15 5 4
+2604 build 6 6 0
+2619 upgrade 4 6
+2628 send 7
+2635 build 16 10 0
+2666 build 13 11 4
+2697 build 11 10 2
+2701 send 2
+2716 upgrade 12 9
+2728 build 6 5 0
+2759 build 16 10 4
+2774 send 1
+2790 build 12 10 0
+2813 upgrade 10 11
+2821 build 7 11 0
+2847 send 0
+2852 build 8 6 2
+2883 build 12 6 4
+2910 upgrade 9 7
+2914 build 12 8 0
+2920 send 0
+2945 build 15 7 2
+2976 build 14 9 4
+2993 send 6
+3007 build 17 9 0
+3007 upgrade 12 6
+3038 build 12 9 0
+3054 sell 17 8
+3066 send 2
+3069 build 13 5 0
+3100 build 6 6 2
+3104 upgrade 13 10
+3131 build 5 9 0
+3139 send 5
+3162 build 14 9 4
+3193 build 12 8 0
+3201 upgrade 12 5
+3212 send 3
+3224 build 7 7 0
+3255 build 16 5 4
+3285 send 7
+3286 build 12 5 0
+3298 upgrade 11 7
+3317 build 13 9 4
+3348 build 12 6 4
+3358 send 4
+3379 build 11 9 4
+3395 upgrade 16 8
+3410 build 12 6 4
+3431 send 8
+3441 build 8 9 0
+3472 build 17 8 0
+3492 upgrade 10 5
+3503 build 10 8 2
+3504 send 1
+3534 build 14 6 2
+3563 sell 5 6
+3565 build 14 7 0
+3577 send 2
+3589 upgrade 15 10
+3596 build 14 7 0
+3627 build 8 6 2
+3650 send 3
+3658 build 15 5 2
+3686 upgrade 11 6
+3689 build 14 11 0
+3720 build 6 10 2
+3723 send 8
+3751 build 10 7 2
+3782 build 7 7 2
+3783 upgrade 5 10
+3796 send 5
+3813 build 4 7 4
+3844 build 11 8 4
+3869 send 0
+3875 build 10 7 4
+3880 upgrade 13 7
+3906 build 12 5 0
+3937 build 16 6 0
+3942 send 1
+3968 build 8 7 0
+3977 upgrade 16 6
+3999 build 8 11 0
+4015 send 6
+4030 build 17 10 2
+4061 build 10 6 4
+4072 sell 12 9
+4074 upgrade 11 10
+4088 send 5
+4092 build 5 7 0
+4123 build 16 10 0
+4154 build 10 5 2
+4161 send 0
+4171 upgrade 14 5
+4185 build 16 7 0
+4216 build 13 11 0
+4234 send 1
+4247 build 8 11 0
+4268 upgrade 11 5
+4278 build 9 9 2
+4307 send 4
+4309 build 13 6 0
+4340 build 12 10 0
+4365 upgrade 5 6
+4371 build 8 5 0
+4380 send 3
+4402 build 8 10 2
+4433 build 12 11 0
+4453 send 4
+4462 upgrade 11 9
+4464 build 14 6 2
+4495 build 9 11 0
+4526 build 8 5 0
+4526 send 0
+4557 build 15 9 4
+4559 upgrade 7 9
+4581 sell 11 6
+4588 build 11 5 4
+4599 send 6
+4619 build 14 8 4
+4650 build 17 8 4
+4656 upgrade 8 10
+4672 send 3
+4681 build 7 7 0
+4712 build 17 10 4
+4743 build 14 6 2
+4745 send 5
+4753 upgrade 4 11
+4774 build 6 5 0
+4805 build 14 10 2
+4818 send 6
+4836 build 6 5 0
+4850 upgrade 14 11
+4867 build 10 11 4
+4891 send 4
+4898 build 13 6 4
+4929 build 8 5 2
+4947 upgrade 6 6
+4960 build 8 8 0
+4964 send 4
+4991 build 9 7 4
+5022 build 9 6 0
+5037 send 4
+5044 upgrade 7 7
+5053 build 6 5 2
+5084 build 10 5 2
+5090 sell 8 9
+5110 send 3
+5115 build 7 9 0
+5141 upgrade 5 7
+5146 build 17 5 0
+5177 build 10 9 0
+5183 send 6
+5208 build 4 7 2
+5238 upgrade 14 6
+5239 build 5 9 4
+5256 send 2
+5270 build 14 10 4
+5301 build 10 11 2
+5329 send 7
+5332 build 6 7 4
+5335 upgrade 13 10
+5363 build 6 5 4
+5394 build 12 10 2
+5402 send 8
+5425 build 6 9 4
+5432 upgrade 13 11
+5456 build 17 11 0
+5475 send 3
+5487 build 5 5 0
+5518 build 6 10 2
+5529 upgrade 5 8
+5548 send 7
+5549 build 12 5 4
+5580 build 4 10 4
+5599 sell 14 6
+5611 build 11 7 0
+5621 send 7
+5626 upgrade 16 5
+5642 build 15 9 4
+5673 build 5 10 4
+5694 send 1
+5704 build 15 10 2
+5723 upgrade 8 11
+5735 build 5 11 2
+5766 build 7 10 0
+5767 send 3
+5797 build 15 10 2
+5820 upgrade 11 11
+5828 build 10 5 2
+5840 send 4
+5859 build 16 5 4
+5890 build 14 10 0
+5913 send 1
+5917 upgrade 13 6
+5921 build 9 7 4
+5952 build 15 10 2
+5983 build 13 9 0
+5986 send 0

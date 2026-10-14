@@ -170,6 +170,9 @@ namespace TDFende
         /// <summary>Esvazia a fila de eventos (a vista já os consumiu). O snapshot não depende disto.</summary>
         public void ClearEvents() => _eventCount = 0;
 
+        /// <summary>Mantém só os primeiros <paramref name="count"/> eventos (a ponte consumiu os outros).</summary>
+        public void TrimEvents(int count) => _eventCount = count < 0 ? 0 : Math.Min(count, _eventCount);
+
         void Push(in BridgeEvent e)
         {
             Grow(ref _events, _eventCount);

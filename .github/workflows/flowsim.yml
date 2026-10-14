@@ -30,3 +30,17 @@ jobs:
         env:
           TDFENDE_FALHA_DE_PROPOSITO: ${{ inputs.falha_de_proposito && '1' || '' }}
         run: dotnet run --project Tools/FlowSim --nologo
+
+  # U0 da migração para o Unreal: a Sim compilada em NativeAOT, chamada pelo C, tem que dar o MESMO fingerprint do C# gerenciado.
+  ponte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Dependências do NativeAOT
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang zlib1g-dev
+      - name: Ponte nativa (fingerprint igual ao gerenciado)
+        run: Tools/SimBridge/Smoke.sh

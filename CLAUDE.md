@@ -24,7 +24,7 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
 - **Plataforma (09/10/2026, revista em 14/10/2026):** Steam no PC; celular fora da meta. **O Felipe decidiu migrar a vista para o
   Unreal Engine 5** ("não tem problema a demora, é melhor"). A **Sim em C# continua** (`Runtime/Sim` e `Grid`, testada no FlowSim) e
   fala com o Unreal por uma ponte; o Unity fica congelado como referência até a paridade. O **design da migração está em
-  `docs/designs/migracao-unreal.md` (aprovado)**: não escrever código de vista do Unreal antes dela. Divisão entre a
+  `docs/designs/migracao-unreal.md` (aprovado em 14/10/2026; fases U0 a U4, começando pela ponte)**. Divisão entre a
   sessão na nuvem e a do PC: MANUAL, seção 10.
 - **Modelos 3D (pedido do Felipe, 04/10/2026):** primeiro procurar pronto na comunidade para
   baixar (Sketchfab, galeria do Meshy...), conferindo licença e autoria. Gerar no Meshy só em

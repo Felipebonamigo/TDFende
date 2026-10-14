@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Ponte nativa da Sim (U0 da migração para o Unreal): compila a MESMA Sim em C# como biblioteca nativa (NativeAOT) com uma
+    interface em C (include/tdfende_sim.h). O Unreal carrega a DLL; nada de .NET em tempo de execução no jogo.
+
+    Gerar (no PC, Windows):  dotnet publish Tools/SimBridge -c Release -r win-x64
+      -> Tools/SimBridge/bin/Release/net10.0/win-x64/publish/tdfende_sim.dll
+    Teste de fumaça na nuvem (Linux):  dotnet publish Tools/SimBridge -c Release -r linux-x64  (gera tdfende_sim.so)
+
+    A Sim é compilada daqui por LINK dos mesmos .cs do projeto Unity (como o FlowSim): uma só fonte da verdade.
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>tdfende_sim</AssemblyName>
+    <RootNamespace>TDFende.Bridge</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols>false</StripSymbols>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\FlowSim\UnityStubs.cs" Link="Stubs\UnityStubs.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Grid\GridMap.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Grid\FlowField.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Grid\TerritoryField.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Core\GameConfig.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Core\DespawnReason.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerWarsConfig.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SendCatalog.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CatalogMerge.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SimSignature.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CatalogJson.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerCatalog.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SimEvents.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LabSwitches.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\Bridge\BridgeTypes.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\Bridge\SimHost.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LaneSim.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\LeakRouter.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\TowerWarsAi.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchSim.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchCommand.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\StateHash.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\SimFingerprint.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\CountingRandom.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\MatchRunner.cs" />
+    <Compile Include="..\..\Assets\_Project\Scripts\Runtime\Sim\Replay.cs" />
+  </ItemGroup>
+
+</Project>
