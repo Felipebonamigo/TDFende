@@ -2,8 +2,8 @@
 
 [← cronograma](../../ROADMAP.md) · decisão do Felipe em 14/10/2026: **"vamos mudar para o Unreal; não tem problema a demora, é melhor"**
 
-**Estado:** escrito, **aguardando aprovação do Felipe** (tarefa "architectural" na definição do CLAUDE.md: troca de engine, formato
-de integração e multiplayer futuro). Nenhum código escrito. A decisão de *mudar* já é do Felipe; o que este documento pede é a
+**Estado:** escrito e **aprovado pelo Felipe em 14/10/2026 ("pode seguir, com o unreal engine"), com D1 a D7 como recomendado; U0 em andamento** (tarefa "architectural" na definição do CLAUDE.md: troca de engine, formato
+de integração e multiplayer futuro). A decisão de *mudar* já é do Felipe; o que este documento pede é a
 aprovação de **como**.
 
 ## 1. O que existe hoje e o que a troca atinge

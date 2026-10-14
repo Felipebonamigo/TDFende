@@ -157,6 +157,7 @@ class Program
         BorderAtTests();
         CounterMatrixTests();
         LabSwitchTests();
+        SimHostTests();
         LivesCostTests();
         ArmorTests();
         RegenTests();
@@ -1081,6 +1082,102 @@ class Program
         Check(SendCatalog.Merge(SendCatalog.All, "key=lobo;regen=0.02", out var m, out _) && m[2].RegenPctPerSecond == 0.02f && m[urso].RegenPctPerSecond == 0.015f,
             "Regeneração: regen= no arquivo muda o envio citado");
         Check(!SendCatalog.Merge(SendCatalog.All, "key=lobo;regen=-0.1", out _, out string err) && err.Contains("regen"), "Regeneração: valor negativo é recusado");
+    }
+
+    /// <summary>
+    /// U0 (migração para o Unreal): a Sim vista de fora. SimHost é a MatchRunner do jogo atrás de um snapshot plano e de uma fila
+    /// de eventos. Tem que dar o MESMO fingerprint que a MatchRunner direta, e ler o estado não pode mudá-lo.
+    /// </summary>
+    static void SimHostTests()
+    {
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
+        int canhao = TowerCatalog.IdOf("canhao"), gelo = TowerCatalog.IdOf("gelo"), fogo = TowerCatalog.IdOf("fogo");
+
+        // tamanhos dos structs: o cabeçalho C (tdfende_sim.h) espelha estes números
+        Check(System.Runtime.InteropServices.Marshal.SizeOf<BridgeLane>() == 64 && System.Runtime.InteropServices.Marshal.SizeOf<BridgeEnemy>() == 40
+              && System.Runtime.InteropServices.Marshal.SizeOf<BridgeTower>() == 48 && System.Runtime.InteropServices.Marshal.SizeOf<BridgeProjectile>() == 32
+              && System.Runtime.InteropServices.Marshal.SizeOf<BridgeEvent>() == 36,
+            "Ponte: tamanhos dos structs planos (lane 64, inimigo 40, torre 48, tiro 32, evento 36)");
+
+        // o mesmo jogador sintético, pela ponte e direto na MatchRunner
+        void Drive(System.Action<int, int, int, int> enqueue, System.Action step, int ticks)
+        {
+            var r = new Random(11);
+            for (int t = 0; t < ticks; t++)
+            {
+                if (t % 31 == 0) enqueue(BridgeCommand.Build, 4 + r.Next(14), 5 + r.Next(7), new[] { canhao, gelo, fogo }[r.Next(3)]);
+                if (t % 97 == 0) enqueue(BridgeCommand.Upgrade, 4 + r.Next(14), 5 + r.Next(7), 0);
+                if (t % 73 == 0) enqueue(BridgeCommand.Send, 0, 0, r.Next(SendCatalog.Count));
+                step();
+            }
+        }
+        var direct = new MatchRunner(2024, TowerWarsAi.Personality.Normal, 24, 16);
+        Drive((k, x, y, a) =>
+        {
+            if (k == BridgeCommand.Build) direct.Enqueue(MatchCommand.Build(x, y, a));
+            else if (k == BridgeCommand.Upgrade) direct.Enqueue(MatchCommand.Upgrade(x, y));
+            else direct.Enqueue(MatchCommand.Send(a));
+        }, () => direct.Step(), 4000);
+
+        var host = SimHost.Create(2024, 1, 24, 16, null, null, out string err);
+        Check(host != null && err == null, "Ponte: SimHost.Create com os catálogos de fábrica (" + err + ")");
+        Drive((k, x, y, a) => host.Enqueue(k, x, y, a), () => host.Step(1), 4000);
+        Check(host.Fingerprint() == direct.StateFingerprint(), "Ponte: o fingerprint pela ponte é o da MatchRunner direta");
+
+        // ler o estado (snapshot a cada tique) não muda a partida
+        var watched = SimHost.Create(2024, 1, 24, 16, null, null, out _);
+        Drive((k, x, y, a) => watched.Enqueue(k, x, y, a), () => { watched.Step(1); watched.Snapshot(); }, 4000);
+        Check(watched.Fingerprint() == direct.StateFingerprint(), "Ponte: Snapshot a cada tique não muda o fingerprint");
+
+        // o snapshot bate com o que a Sim diz
+        host.Snapshot();
+        int alive = host.Runner.Player.EnemiesAlive + host.Runner.Foe.EnemiesAlive;
+        int towers = host.Runner.Player.TowerCount + host.Runner.Foe.TowerCount;
+        Check(host.EnemyCount == alive && host.TowerCount == towers, $"Ponte: o snapshot tem os inimigos ({host.EnemyCount}/{alive}) e as torres ({host.TowerCount}/{towers}) vivos");
+        Check(host.Lanes[0].Lives == host.Runner.Player.Lives && host.Lanes[1].Gold == host.Runner.Foe.Gold && host.Lanes[0].Id == 0 && host.Lanes[1].Id == 1,
+            "Ponte: placar das duas lanes no snapshot");
+        int terr = 0;
+        for (int i = 0; i < 24 * 16; i++) terr += host.Territory[i];
+        Check(terr == TerritoryCells(host.Runner.Player), $"Ponte: o mapa de território da lane 0 tem as células da Sim ({terr})");
+        bool enemiesOk = true;
+        for (int i = 0; i < host.EnemyCount; i++)
+        {
+            var e = host.Enemies[i];
+            enemiesOk &= e.Hp > 0f && e.Hp <= e.MaxHp + 1e-3f && (e.Lane == 0 || e.Lane == 1) && e.TypeId >= 0 && e.TypeId < SendCatalog.Count;
+        }
+        Check(enemiesOk && host.EnemyCount > 0, "Ponte: cada inimigo do snapshot tem vida válida, lane e tipo");
+        Check(host.ProjectileCount >= 0 && host.TowerCount > 0, "Ponte: o snapshot traz torres");
+
+        // eventos: a fila recebe o que aconteceu e esvazia
+        int bought = 0, income = 0, spawned = 0;
+        for (int i = 0; i < host.EventCount; i++)
+        {
+            var ev = host.Events[i];
+            if (ev.Kind == BridgeEventKind.SendBought) bought++;
+            if (ev.Kind == BridgeEventKind.IncomeTick) income++;
+            if (ev.Kind == BridgeEventKind.EnemySpawned) spawned++;
+        }
+        Check(bought > 0 && income > 0 && spawned >= bought, $"Ponte: eventos de compra, renda e nascimento chegam ({bought}/{income}/{spawned})");
+        host.ClearEvents();
+        Check(host.EventCount == 0, "Ponte: ClearEvents esvazia a fila");
+
+        // comandos e recusas pela ponte
+        var h2 = SimHost.Create(5, 1, 24, 16, null, null, out _);
+        Check(!h2.Enqueue(99, 0, 0, 0), "Ponte: tipo de comando desconhecido é recusado na borda");
+        h2.Enqueue(BridgeCommand.Send, 0, 0, 99);
+        h2.Step(1);
+        bool rejected = false;
+        for (int i = 0; i < h2.EventCount; i++)
+            if (h2.Events[i].Kind == BridgeEventKind.CommandRejected && h2.Events[i].B == (int)RejectReason.UnknownType) rejected = true;
+        Check(rejected, "Ponte: comando recusado vira evento com o motivo");
+
+        // catálogo torto volta erro, sem derrubar
+        SendCatalog.ResetToDefaults(); // destranca (os catálogos são estáticos e trancam na primeira lane)
+        var bad = SimHost.Create(1, 1, 24, 16, "key=nao_existe;cost=1", null, out string badErr);
+        Check(bad == null && badErr != null && badErr.Contains("nao_existe"), "Ponte: catálogo inválido volta o erro por texto (" + badErr + ")");
+        SendCatalog.ResetToDefaults();
+        TowerCatalog.ResetToDefaults();
     }
 
     /// <summary>
