@@ -8,7 +8,7 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
   estão em https://claude.ai/artifact/72KXW2Tve5gB65BHD1CDp6 (documento do Claude Docs,
   lido pelo conector).
 - **Modelos 3D em comum aos 4 jogos:** antes de baixar ou gerar, procure na aba "Modelos 3D"
-  do doc do estúdio e no repositório privado `Felipebonamigo/acervo-3d`. Modelo novo entra nos
+  do doc do estúdio e no repositório `Felipebonamigo/acervo-3d`. Modelo novo entra nos
   dois no mesmo dia, além do `docs/licencas/manifesto.json`.
 - **Git:** commit e push direto na `main` (pedido do Felipe, 27/09/2026). Nada de branch
   separado: ele roda o projeto pela `main` e mais de uma sessão do Claude trabalha no
