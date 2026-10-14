@@ -11,7 +11,9 @@ $itens = @(
     @{ de = "$raiz\Tools\ConverterTorres\glb"; para = 'ConverterTorres-glb' },
     @{ de = "$raiz\Assets\_Privado"; para = 'camada-privada' },
     @{ de = "$env:USERPROFILE\TDFende-quarentena"; para = 'quarentena' },
-    @{ de = "$raiz\Builds\Windows"; para = 'executavel' }
+    @{ de = "$raiz\Builds\Windows"; para = 'executavel' },
+    # Content do Unreal (fora do git, D4): reproduzível por Unreal\TDFende\ImportarArte.ps1, mas guardar é barato
+    @{ de = "$raiz\Unreal\TDFende\Content"; para = 'unreal-content' }
 )
 New-Item -ItemType Directory -Force $Destino | Out-Null
 $falhou = $false

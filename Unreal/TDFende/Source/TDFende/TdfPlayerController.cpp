@@ -3,11 +3,44 @@
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerInput.h"
+#include "Camera/CameraActor.h"
 
 ATdfPlayerController::ATdfPlayerController()
 {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
+}
+
+void ATdfPlayerController::MoveCamera(float DeltaTime)
+{
+	ACameraActor* Cam = Cast<ACameraActor>(GetViewTarget());
+	if (!Cam || !Sim.IsValid()) return;
+	FVector Pos = Cam->GetActorLocation();
+	const FVector Fwd = Cam->GetActorForwardVector();
+	// mover no plano do chão; mais alto = mais rápido (a sensação de velocidade na tela fica parecida)
+	FVector2D Pan(0.f, 0.f);
+	if (IsInputKeyDown(EKeys::W) || IsInputKeyDown(EKeys::Up)) Pan.X += 1.f;
+	if (IsInputKeyDown(EKeys::S) || IsInputKeyDown(EKeys::Down)) Pan.X -= 1.f;
+	if (IsInputKeyDown(EKeys::D) || IsInputKeyDown(EKeys::Right)) Pan.Y += 1.f;
+	if (IsInputKeyDown(EKeys::A) || IsInputKeyDown(EKeys::Left)) Pan.Y -= 1.f;
+	const float Speed = 600.f + 0.9f * Pos.Z;
+	Pos.X += Pan.X * Speed * DeltaTime;
+	Pos.Y += Pan.Y * Speed * DeltaTime;
+	// zoom: anda ao longo da direção da câmera, entre 4 m e 45 m de altura
+	float Wheel = 0.f;
+	if (WasInputKeyJustPressed(EKeys::MouseScrollUp)) Wheel += 1.f;
+	if (WasInputKeyJustPressed(EKeys::MouseScrollDown)) Wheel -= 1.f;
+	if (Wheel != 0.f && FMath::Abs(Fwd.Z) > 0.05f)
+	{
+		const FVector Next = Pos + Fwd * Wheel * (0.12f * Pos.Z / FMath::Abs(Fwd.Z));
+		if (Next.Z > 400.f && Next.Z < 4500.f) Pos = Next;
+	}
+	// não deixa a câmera fugir das lanes
+	const ATdfSimActor* S = Sim.Get();
+	const float LaneOffset = (S->GridHeight + 4) * S->CellSizeCm;
+	Pos.X = FMath::Clamp(Pos.X, -6000.f, LaneOffset + 3000.f);
+	Pos.Y = FMath::Clamp(Pos.Y, -3500.f, 3500.f);
+	if (!Pos.Equals(Cam->GetActorLocation())) Cam->SetActorLocation(Pos);
 }
 
 void ATdfPlayerController::PlayerTick(float DeltaTime)
@@ -29,6 +62,8 @@ void ATdfPlayerController::PlayerTick(float DeltaTime)
 		const float T = -Origin.Z / Dir.Z;
 		if (T > 0.f) HoverCell = S->WorldToCell(Origin + Dir * T);
 	}
+
+	MoveCamera(DeltaTime);
 
 	if (WasInputKeyJustPressed(EKeys::Q)) S->CycleTower(-1);
 	if (WasInputKeyJustPressed(EKeys::E)) S->CycleTower(+1);

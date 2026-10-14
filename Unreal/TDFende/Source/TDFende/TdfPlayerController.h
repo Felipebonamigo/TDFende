@@ -11,6 +11,7 @@ class ATdfSimActor;
  *   botão esquerdo  = construir a torre selecionada na célula sob o mouse; se já há torre ali, subir de nível
  *   botão direito   = vender a torre da célula
  *   Q / E           = torre anterior / próxima        1 a 9 = enviar o bicho do mesmo número
+ *   W A S D / setas = mover a câmera                  roda do mouse = aproximar / afastar
  */
 UCLASS()
 class ATdfPlayerController : public APlayerController
@@ -28,5 +29,6 @@ public:
 
 private:
 	TWeakObjectPtr<ATdfSimActor> Sim;
+	void MoveCamera(float DeltaTime);
 	FIntPoint HoverCell = FIntPoint(-1, -1);
 };

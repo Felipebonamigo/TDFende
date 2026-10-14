@@ -8,6 +8,9 @@
 class UInstancedStaticMeshComponent;
 class UMaterialInstanceDynamic;
 class UStaticMesh;
+class USkeletalMesh;
+class USkeletalMeshComponent;
+class UAnimSequence;
 
 /** Uma linha do catálogo (torre ou envio) como a ponte entrega: tdf_catalog_text. */
 struct FTdfCatalogItem
@@ -104,8 +107,45 @@ private:
 	void Issue(int32 Kind, int32 X, int32 Y, int32 Arg, const TCHAR* Word);
 	void ToastMsg(const FString& Text) { Toast = Text; ToastAge = 0.f; }
 	void SaveRecording() const;
+	static FString RecordingPath();
 	FVector ToUnreal(int32 Lane, float X, float Y, float Z) const;
 	void RunSelfTest(float DeltaSeconds);
+
+	// ---- malhas reais (U3 adiantada): arte importada por Scripts/importa_arte.py em /Game/TDFende; sem ela, as formas simples ----
+	struct FTypeVisual
+	{
+		bool bTried = false;
+		USkeletalMesh* Mesh = nullptr;
+		UAnimSequence* Anim = nullptr;
+		float TargetCm = 50.f;   // altura do bicho no jogo
+		float Fit = -1.f;        // escala medida pelos ossos (calculada no primeiro componente)
+		float GroundZ = 0.f;     // quanto subir para os pes ficarem no chao (ja na escala)
+		float YawOffset = -90.f; // giro que leva a frente da malha ao +X
+	};
+	struct FEnemyView
+	{
+		USkeletalMeshComponent* Comp = nullptr;
+		FVector PrevPos = FVector::ZeroVector;  // posicao no tique anterior (para interpolar: a Sim anda a 30 Hz, a tela a 60+)
+		FVector CurPos = FVector::ZeroVector;   // posicao no ultimo tique
+		float Yaw = 0.f;
+		float TargetYaw = 0.f;
+		int32 Type = -1;
+		bool bSeen = false;
+	};
+	bool bUseArt = true;
+	TMap<int32, FTypeVisual> TypeVisuals;
+	TMap<int64, FEnemyView> Views;
+	TMap<int32, TArray<USkeletalMeshComponent*>> Pool;
+	TMap<int32, UInstancedStaticMeshComponent*> TowerIsms;
+	FTypeVisual& TypeVisual(int32 Type);
+	USkeletalMeshComponent* AcquireComp(int32 Type);
+	bool UpdateEnemyView(const TdfEnemy& E, bool bNewTick, float Alpha, float DeltaSeconds);
+	/** Onde o corpo do bicho fica no mundo (sem a altura dos pés da malha, GroundZ, que vem da medida da arte). */
+	FVector EnemyWorldPos(const TdfEnemy& E) const;
+	void ReleaseUnseenViews();
+	/** -TdfPreview: um de cada bicho e as 6 torres em 3 estagios, parados na lane 0, para conferir escala e frente da arte. */
+	void BuildPreview();
+	UInstancedStaticMeshComponent* TowerIsm(int32 Type, int32 Stage);
 
 	FTdfSim Sim;
 	bool bRunning = false;
@@ -127,18 +167,32 @@ private:
 	UPROPERTY() UInstancedStaticMeshComponent* EnemyMesh[EnemyKinds] = {};
 	UPROPERTY() UInstancedStaticMeshComponent* TowerMesh[TowerKinds] = {};
 	UPROPERTY() UInstancedStaticMeshComponent* ShotMesh = nullptr;
-	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh = nullptr;
+	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh = nullptr;   // lane 0 (você)
+	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh1 = nullptr;  // lane 1 (IA)
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> Mids;
+	/**
+	 * Tudo o que a vista carrega ou cria em tempo de execucao (malhas, animacoes, componentes de bicho e de torre). Os mapas abaixo
+	 * guardam ponteiros crus, que o GC nao enxerga: sem esta lista a animacao era coletada e o jogo caia a ~60 s de partida.
+	 */
+	UPROPERTY() TArray<TObjectPtr<UObject>> KeepAlive;
 
 	TArray<TdfEnemy> EnemyBuf;
 	TArray<TdfTower> TowerBuf;
 	TArray<TdfProjectile> ShotBuf;
 	TArray<TdfEvent> EventBuf;
 	int32 EnemyCountNow = 0, TowerCountNow = 0;
+	int32 LastRedrawTick = -1;
+	uint32 TowerSignature = 0;       // muda quando uma torre entra, sobe ou sai: so entao as instancias sao refeitas
+	TArray<uint8> TerritoryNow;      // buffer reaproveitado (nada de alocacao por quadro)
+	bool bFingerprintLogged = false;
+	float LastDeltaSeconds = 0.f;
 
 	FString ShotPath;
 	int32 ShotTick = 0;
 	int32 QuitTick = 0;
+	float QuitSeconds = 0.f;   // -TdfQuitSeconds=<s>: fecha por tempo real (teste de desempenho)
+	float WallTime = 0.f, FpsWindow = 0.f;
+	int32 FpsFrames = 0;
 	bool bQuitAtEnd = false;
 	int32 LastEnemies = 0, MaxEnemies = 0;
 	TArray<float> CostStepMs, CostRedrawMs, CostTotalMs;

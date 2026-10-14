@@ -2,10 +2,15 @@
 #include "HAL/PlatformProcess.h"
 #include "Misc/Paths.h"
 
+// NativeAOT nao suporta descarregar a biblioteca: as threads do runtime dela (GC, finalizador) continuam apontando para o codigo.
+// Por isso a DLL e carregada UMA vez por processo e nunca liberada (Play/Stop no editor reaproveita o mesmo handle).
+static void* GTdfDllHandle = nullptr;
+
 bool FTdfSim::Load(FString& OutError)
 {
 	const FString Path = FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/Win64/tdfende_sim.dll"));
-	Handle = FPlatformProcess::GetDllHandle(*Path);
+	if (!GTdfDllHandle) GTdfDllHandle = FPlatformProcess::GetDllHandle(*Path);
+	Handle = GTdfDllHandle;
 	if (!Handle)
 	{
 		OutError = FString::Printf(TEXT("não achei/carreguei %s (rode Tools/SimBridge/PublicarParaUnreal.ps1)"), *Path);
@@ -51,12 +56,8 @@ bool FTdfSim::Load(FString& OutError)
 
 void FTdfSim::Unload()
 {
-	if (Handle)
-	{
-		if (destroy) destroy();
-		FPlatformProcess::FreeDllHandle(Handle);
-		Handle = nullptr;
-	}
+	// encerra a partida mas mantem a DLL (e os ponteiros de funcao) validos: ver GTdfDllHandle
+	if (Handle && destroy) destroy();
 }
 
 FString FTdfSim::LastError() const

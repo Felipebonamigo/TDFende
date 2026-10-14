@@ -27,6 +27,7 @@ namespace TDFende
         int _enemyCount, _towerCount, _shotCount;
 
         BridgeEvent[] _events = new BridgeEvent[256];
+        LaneSim[] _laneRefs; // as duas lanes, montado uma vez (o Snapshot roda todo quadro)
         int _eventCount;
 
         SimHost(MatchRunner runner, int width, int height)
@@ -142,7 +143,7 @@ namespace TDFende
         public void Snapshot()
         {
             _enemyCount = _towerCount = _shotCount = 0;
-            var lanes = new[] { Runner.Player, Runner.Foe };
+            var lanes = _laneRefs ?? (_laneRefs = new[] { Runner.Player, Runner.Foe });
             for (int li = 0; li < lanes.Length; li++)
             {
                 var lane = lanes[li];

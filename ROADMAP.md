@@ -95,8 +95,8 @@ de vista do Unity (VIS-*, UX-*, TEC-09/10/25 e afins) ficam **"substituídas pel
 na ordem abaixo, e nada delas é apagado antes da paridade (U2).
 
 - [x] **U0** — Ponte Sim → Unreal (14/10/2026, GO: fingerprint igual, 0,036 ms/quadro; ver `Unreal/LEIA-ME.md`). *Nuvem (feito):* `SimHost`, interface C (`Tools/SimBridge`), NativeAOT, fingerprint igual ao gerenciado, ~31 µs/tique, esqueleto C++ em `Unreal/TDFende`. *PC (falta):* ver o padrão do Age of Earth, publicar a DLL, compilar, provar o fingerprint no Unreal (`Unreal/LEIA-ME.md`).
-- [ ] **U1** — Fatia de beleza no Unreal (relevo, Lumen, 3 torres, 3 bichos, câmera da partida; comparação com Total War: Warhammer III). PC.
-- [ ] **U2** — Paridade de jogo (construir/subir/vender/enviar, território, HUD UMG, Niagara, áudio, replay F9, captura automática).
+- [ ] **U1** — Fatia de beleza no Unreal (relevo, Lumen, 3 torres, 3 bichos, câmera da partida; comparação com Total War: Warhammer III). PC. *Primeira passada (14/10/2026):* céu físico, Lumen, chão Poly Haven, cenário, grama 3D, todas as torres e bichos reais, câmera jogável. Falta o tema/bioma e a aprovação do Felipe (`Unreal/LEIA-ME.md`).
+- [ ] **U2** — Paridade de jogo (construir/subir/vender/enviar, território, HUD UMG, Niagara, áudio, replay F9, captura automática). *Feito (14/10/2026):* construir/subir/vender/enviar pelo mouse e teclado, território, HUD provisório, gravação que reproduz no FlowSim, autoteste. Falta: HUD em UMG, Niagara, áudio, replay F9.
 - [ ] **U3** — Conteúdo completo (6 torres em 3 estágios, 9 bichos animados, tema, ambiente vivo).
 - [ ] **U4** — Empacotar para Windows/Steam, selo de build, orçamento de FPS.
 

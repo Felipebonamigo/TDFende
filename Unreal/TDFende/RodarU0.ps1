@@ -26,7 +26,16 @@ if ($AutoTeste) {
     $p = Start-Process "$ue\Binaries\Win64\UnrealEditor.exe" -ArgumentList $jogo -PassThru
     if (-not $p.WaitForExit(120 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $log)"; exit 1 }
     Select-String -Path $log -Pattern 'AUTOTESTE' | ForEach-Object { $_.Line }
-    exit $p.ExitCode
+    if ($p.ExitCode -ne 0) { exit $p.ExitCode }
+    # a partida jogada no Unreal tem que reproduzir no FlowSim (C#) com o MESMO estado final
+    $gravada = Join-Path $PSScriptRoot 'Saved\Tdf\partida.txt'
+    $saida = & dotnet run --project (Join-Path $repo 'Tools\FlowSim') -v quiet -- replay $gravada
+    $saida | Select-Object -Last 4
+    if ($LASTEXITCODE -ne 0 -or -not ($saida -match 'estado final igual ao gravado')) {
+        Write-Host 'AUTOTESTE: a gravação do Unreal NÃO reproduz no FlowSim'; exit 1
+    }
+    Write-Host 'AUTOTESTE: a gravação do Unreal reproduz no FlowSim com o mesmo estado final'
+    exit 0
 }
 
 $log = Join-Path $out ("u0-{0:HHmmss}.log" -f (Get-Date))

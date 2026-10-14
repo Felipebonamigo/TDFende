@@ -90,3 +90,62 @@ O `TdfSimActor` virou a vista jogável da Sim (formas simples; as malhas reais s
 **Limites conhecidos da U2 parte 1:** o HUD é de teste (a loja de verdade é a fase de UI); as formas ainda são cubos e cilindros (as cores
 da engine saíram lavadas pela exposição automática); não há som, Niagara, câmera livre, nem replay F9 de leitura; nenhum teste com mouse
 real, só com as mesmas chamadas (a conversão do raio do mouse foi testada pela volta célula↔mundo, não pela projeção da câmera).
+
+## U2 parte 2 + U1 primeira passada: arte real, ambiente e revisão (14/10/2026)
+
+**Jogar:** `powershell -ExecutionPolicy Bypass -File Unreal\TDFende\Jogar.ps1 [-Dificuldade 0|1|2] [-TelaCheia]`. Mouse: esquerdo
+constrói/sobe, direito vende; Q/E troca a torre; 1-9 envia; **WASD/setas movem a câmera, a roda aproxima**.
+
+**Receitas do Content (fora do git, D4):** `Unreal\TDFende\ImportarArte.ps1` (torres e bichos, `Scripts/importa_arte.py`) e
+`ImportarArte.ps1 -Script importa_ambiente.py` (chão, cenário, grama). Rodam sem abrir o editor (UnrealEditor-Cmd + Python) e refazem
+`/Game/TDFende` do zero a partir de `Assets/Resources` (a mesma arte do Unity). Backup do Content no D: (`Tools\Backup.ps1`).
+
+### O que entrou
+- **Arte real:** as 18 torres (6 tipos × 3 estágios) e os 9 bichos com esqueleto e animação de andar, texturizados. Torre por estágio do
+  nível (1-2, 3-4, 5-6), instanciada; bicho em componente esquelético com pool, escala medida pelos **ossos** na pose de andar (a caixa
+  guardada mente, como no BUG-01 do Unity), águia pela envergadura e voando a 1,1 m. Frente da malha conferida no `-TdfPreview`.
+- **Ambiente (U1):** `ATdfEnvironment`: céu físico (atmosfera + nuvens volumétricas), névoa de altura volumétrica, sol e luz do céu
+  dinâmicos (Lumen), pós-processo; chão de 600 m com material de UV pelo mundo (duas texturas Poly Haven misturadas por um padrão
+  grande); 64 peças de cenário (paredões, rochas, tocos, troncos) fora das lanes; 549 pedras contornando as lanes; 2.600 touceiras de grama
+  3D (22 variantes, normalizadas a ~42 cm). Nanite nas malhas. Render como o do Age of Earth (`Config/DefaultEngine.ini`: Lumen, sombras
+  virtuais, TSR, DX12 SM6). Território virou véu translúcido por lane (azul você, vermelho a IA).
+- **Câmera jogável** (WASD/setas, roda) e câmera inicial três-quartos de trás da base. **Dificuldade** por `-TdfDificuldade=`.
+- **Ferramentas:** `-TdfPreview` (vitrine de toda a arte), `-TdfCamX/Y/Z/Pitch/Yaw/Fov`, `-TdfSemArte`, `-TdfSemAmbiente`, `-TdfSemGrama`,
+  `-TdfQuitSeconds`, FPS no log a cada 5 s, `MedirFps.ps1` (A/B de desempenho).
+
+### Corrigido (revisão independente + testes que falharam primeiro)
+1. **Crash a ~60 s de partida:** o GC coletava a animação do bicho (ponteiro cru fora de `UPROPERTY`). Teste no autoteste (força um GC e
+   confere componente, malha, animação e torre por `TWeakObjectPtr`): falhou, depois passou com `KeepAlive`.
+2. **Bichos flutuando 50 cm:** a Sim guarda o centro do corpo (y = 0,5); a vista agora põe o pé no chão (teste: falhou, passou).
+3. **A gravação do Unreal não reproduzia no FlowSim** (sem assinaturas; dificuldade sem acento): agora é igual ao `Replay.Serialize`
+   (com `final`), em UTF-8 sem BOM. O `RodarU0.ps1 -AutoTeste` joga no Unreal, grava e **reproduz no FlowSim exigindo o mesmo estado
+   final** (falhou com "não traz as assinaturas", depois passou).
+4. **DLL NativeAOT descarregada** (não suportado): carrega uma vez por processo e nunca libera.
+5. Bichos guardados no pool continuavam animando; movimento a 30 Hz sem interpolação (agora desliza entre tiques, sem virar no empurrão);
+   torres refeitas todo quadro (agora só quando mudam); buffers fixos (agora crescem); alocação por quadro no território e no `Snapshot`
+   do C#; fingerprint só no tique exato (agora também no fim da partida); soluço de ~100-145 ms quando o primeiro bicho de um tipo aparecia
+   (agora a arte é pré-carregada: o pior quadro caiu para 2,7 ms).
+6. Importação: animações recusadas por não caírem em quadro inteiro (lobo, urso, elefante ficavam sem andar) — opção de encaixe ligada;
+   materiais sem a flag de malha esquelética/instanciada (cinza padrão) — corrigido.
+7. `--nologo` no `dotnet run` engolia os argumentos do FlowSim (o replay rodava a suíte de testes no lugar).
+
+### Verificado (14/10/2026)
+- Autoteste no motor: 24 verificações, PASSOU; e a gravação do Unreal reproduz no FlowSim com o mesmo estado final.
+- Replay de 200 s: fingerprint **idêntico** (`#835d1db265f91d80`); custo médio da ponte 0,056 ms/quadro, pior quadro 2,7 ms.
+- Desempenho (1600×900, RTX 4070 Ti, medida com ruído — cada execução recompila shaders): ~100 fps com tudo; sem grama ~147, sem nuvens
+  ~143, sem sombras virtuais ~144. Prints em `Unreal\TDFende\Saved\U0\` (`ambiente_3.png` é o atual).
+
+### Pendente — depende do Felipe
+- **Tema e bioma** (decisão da Fase 1): o ambiente atual é um campo seco com rochas, neutro. Para o "realista bonito" de verdade falta
+  escolher o bioma; com ele, a paleta, a vegetação e o céu seguem.
+- **Downloads novos (CC0, Poly Haven, sem login):** texturas 4K de chão com aspereza/AO/relevo e mais rochas/plantas. A regra é pedir
+  antes de baixar: dizer quais arquivos e o tamanho.
+- **Árvores realistas:** não há CC0 bom no acervo. Opções: Fab/Megascans (precisa de login e aceite seu), Meshy (créditos, ~30 por
+  modelo, só com seu ok) ou o Procedural Vegetation Editor da Unreal (gratuito, experimental; dá para tentar no editor).
+- **Aprovar o visual da U1** pelos prints; **testar o controle** (mouse e teclado reais; aqui só foi testado pelas mesmas chamadas);
+  sons (o Claude não ouve); hardware mínimo alvo; conferir os royalties da Epic (5% acima de US$ 1 mi brutos).
+
+### Próximo, sem depender de ninguém
+HUD em UMG (a loja de torres e bichos), barras de vida, torreta que mira e disparo com rastro, morte com a animação `Death` (urso,
+elefante) e queda nos outros, efeitos de gelo/fogo/empurrão, contorno do território em vez de quadradinhos, otimização (grama com LOD
+e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`), e empacotar (U4).
