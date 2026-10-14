@@ -179,10 +179,32 @@ cascalho, 15 m), `dirt_aerial_02` (terra pisada, 20 m), `forest_ground_04` (casc
 - Autoteste (5 verificações novas, vistas falhando antes): HUD na tela; 6 + 9 cartões; cartão de torre seleciona; miniatura em todos;
   cartão aceso só com ouro; cartão de envio envia. Replay de 200 s com o HUD: fingerprint igual, ~114 fps. Print: `Saved\U0\hud_5.png`.
 
+### Efeitos de combate (U2, 14/10/2026)
+Sem Niagara (montar sistema do Niagara sem abrir o editor não dá): tudo instanciado, barato e determinístico.
+- **Tiros** (`UTdfFxComponent`): cada torre com a sua cara (bala de ferro com fumaça no canhão e no morteiro; cristal azul no gelo;
+  virote dourado na sentinela; bola de fogo; lufada clara no ar), interpolados entre os tiques (cada projétil casa com o do tique
+  anterior: mesma lane e tipo, o mais perto) e com rastro na direção do voo. **Clarão** na boca do cano (evento de disparo) e no
+  impacto (na cor da torre, do tamanho do dano); **poeira** no tiro pesado e quando o bicho cai.
+- **Véu de efeito** no bicho (material de sobreposição `M_TdfStatus`): gelo azul, lentidão azul fraco, fogo laranja pulsando.
+- **Barras de vida** (Canvas, só bicho ferido): cor de verde a vermelho, fundo azulado com gelo e alaranjado com fogo, mais larga
+  para bicho mais forte.
+- **Morte:** o bicho que sai do snapshot sem ter vazado não some: toca a animação `Death` se tem (elefante), senão tomba de lado
+  (a águia despenca), espera e afunda; só então volta ao pool. Quem vazou pela base some na hora.
+- Materiais: `Scripts/importa_efeitos.py` (`ImportarArte.ps1 -Script importa_efeitos.py`): `M_TdfBrilho` (aditivo, cor e brilho
+  por instância), `M_TdfFumaca` (translúcido), `M_TdfStatus`. Brilhos calibrados no print (acima de ~10 a cor estoura para branco).
+- **Ferramentas novas:** `-TdfShotTicks=a,b,c` (um print por tique, com o número de inimigos e tiros no log), `-TdfExec=tique:comando;...`
+  (comando de console num tique, ex.: `ProfileGPU`), e o log de FPS agora diz jogo/render/GPU em ms.
+- Autoteste: 7 verificações novas (vistas falhando antes). Replay de 200 s: fingerprint igual, 140-153 fps, GPU 5,5-6,8 ms.
+  Prints: `Saved\U0\fx6_5850.png` (perto) e `fx4_6000.png` (câmera normal).
+- **Medição:** duas execuções tiveram 15-20 s a ~13 fps em tiques diferentes cada vez; a terceira, com o tempo de GPU no log, não teve
+  nenhuma (GPU sempre ~6 ms). Era algo fora do jogo (janela em segundo plano ou outra carga de vídeo). Se aparecer de novo, o log
+  diz qual dos três segura o quadro.
+
 ### Próximo, sem depender de ninguém
-Barras de vida, torreta que mira e disparo com rastro, morte com a animação `Death` (urso,
-elefante) e queda nos outros, efeitos de gelo/fogo/empurrão, contorno do território em vez de quadradinhos, otimização (grama com LOD
-e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`), e empacotar (U4).
+Torreta que mira (as torres já trazem para onde miram: `HasAim`, `Aim*`; hoje a malha é inteira, sem cano separado), efeito de
+empurrão, partículas de gelo/fogo (Niagara pelo editor, se o Felipe ligar o Unreal MCP), som (MetaSounds), replay F9, contorno do
+território em vez de quadradinhos, otimização (grama com LOD e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`),
+e empacotar (U4).
 
 ### Recursos do Unreal a usar (proposta de 14/10/2026, aguardando o Felipe)
 

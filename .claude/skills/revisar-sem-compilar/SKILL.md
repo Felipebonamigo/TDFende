@@ -16,8 +16,8 @@ Esta rotina pega o erro mecânico antes do commit. Ela não substitui a compila�
    python3 .claude/skills/revisar-sem-compilar/conferir_cpp.py --todos            # todo o C++ (leva segundos)
    ```
    Sai 1 se achou ERRO. ERRO se conserta antes do commit. AVISO se lê e decide. NOTA lembra o que conferir à mão.
-   Hoje o código do `main` passa sem erro (8 avisos: os componentes `ATdfSimActor::Pool` e `TowerIsms` e seis widgets do `UTdfHudWidget`, todos
-   seguros pelo dono, o ator ou a árvore de widgets; confira que continuam presos ao dono antes de mexer neles, porque o
+   Hoje o código do `main` passa sem erro (2 avisos: os mapas de componentes `ATdfSimActor::Pool` e `TowerIsms`, que o
+   `UPROPERTY` não aceita, seguros pelo `KeepAlive` do ator; os widgets do `UTdfHudWidget` já viraram `UPROPERTY`); confira que continuam presos ao dono antes de mexer neles, porque o
    único crash do projeto, a cerca de 60 s, foi um ponteiro cru que o coletor de lixo apagou).
 2. Revise à mão a lista "O que o conferidor não pega", abaixo, só nos trechos que você mudou.
 3. Siga as regras do TDFende: a Sim em C# é a dona das regras e o Unreal só desenha

@@ -6,7 +6,7 @@ public class TDFende : ModuleRules
 	public TDFende(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AssetRegistry", "UMG", "Slate", "SlateCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AssetRegistry", "UMG", "Slate", "SlateCore", "RenderCore", "RHI" });
 
 		// O cabeçalho C da Sim é UM só, em Tools/SimBridge/include (raiz do repositório = 4 níveis acima deste módulo).
 		string RepoRoot = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", ".."));

@@ -17,6 +17,22 @@ void ATdfHUD::DrawHUD()
 	if (!S || !S->IsRunning()) return;
 
 	// placar, loja e avisos ficam no HUD em UMG (UTdfHudWidget); aqui só o que acompanha o mundo:
+	// barras de vida dos bichos feridos
+	for (const FTdfBar& B : S->GetBars())
+	{
+		FVector2D P;
+		if (!PC->ProjectWorldLocationToScreen(B.Head, P)) continue;
+		if (P.X < -40.f || P.Y < -20.f || P.X > Canvas->ClipX + 40.f || P.Y > Canvas->ClipY + 20.f) continue;
+		const float W = 26.f + 16.f * FMath::Clamp(B.MaxHp / 600.f, 0.f, 1.f), Hh = 4.f; // bicho mais forte, barra mais larga
+		// fundo escuro; com gelo fica azulado, com fogo alaranjado
+		const FLinearColor Back = (B.Flags & TDF_ENEMY_BURNING) ? FLinearColor(0.55f, 0.18f, 0.02f, 0.85f)
+			: (B.Flags & (TDF_ENEMY_FROZEN | TDF_ENEMY_SLOWED)) ? FLinearColor(0.05f, 0.30f, 0.55f, 0.85f) : FLinearColor(0.f, 0.f, 0.f, 0.6f);
+		DrawRect(Back, P.X - W * 0.5f - 1.f, P.Y - 1.f, W + 2.f, Hh + 2.f);
+		const FLinearColor Fill = B.Frac > 0.5f ? FMath::Lerp(FLinearColor(1.f, 0.85f, 0.2f), FLinearColor(0.35f, 0.9f, 0.35f), (B.Frac - 0.5f) * 2.f)
+			: FMath::Lerp(FLinearColor(0.95f, 0.22f, 0.15f), FLinearColor(1.f, 0.85f, 0.2f), B.Frac * 2.f);
+		DrawRect(Fill, P.X - W * 0.5f, P.Y, W * B.Frac, Hh);
+	}
+
 	// a célula sob o mouse, com contorno e o custo do que o clique faria
 	const FLinearColor Green(0.5f, 1.f, 0.55f), Red(1.f, 0.4f, 0.35f);
 	const TdfLane& Me = S->GetLane(0);

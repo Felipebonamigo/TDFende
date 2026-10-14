@@ -14,8 +14,12 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimSequence.h"
+#include "Engine/Engine.h"
+#include "RenderCore.h"
+#include "RHI.h"
 #include "TdfPlayerController.h"
 #include "TdfHudWidget.h"
+#include "TdfFxComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTdf, Log, All);
 
@@ -77,7 +81,8 @@ ATdfSimActor::ATdfSimActor()
 	};
 	for (int32 i = 0; i < EnemyKinds; ++i) EnemyMesh[i] = Make(FString::Printf(TEXT("Inimigos%d"), i), Cube.Object);
 	for (int32 i = 0; i < TowerKinds; ++i) TowerMesh[i] = Make(FString::Printf(TEXT("Torres%d"), i), Cylinder.Object);
-	ShotMesh = Make(TEXT("Tiros"), Sphere.Object);
+	Fx = CreateDefaultSubobject<UTdfFxComponent>(TEXT("Efeitos"));
+	Fx->SetupAttachment(RootScene);
 	TerritoryMesh = Make(TEXT("Territorio"), Plane.Object);
 	TerritoryMesh1 = Make(TEXT("Territorio1"), Plane.Object);
 }
@@ -100,7 +105,22 @@ void ATdfSimActor::BeginPlay()
 	};
 	for (int32 i = 0; i < EnemyKinds; ++i) Paint(EnemyMesh[i], EnemyColors[i]);
 	for (int32 i = 0; i < TowerKinds; ++i) Paint(TowerMesh[i], TowerColors[i]);
-	Paint(ShotMesh, FLinearColor(1.f, 0.95f, 0.3f));
+	Fx->Setup();
+	// véus de efeito no bicho (material de sobreposição): gelo, lentidão, fogo (este pulsa)
+	if (UMaterialInterface* St = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/TDFende/Efeitos/M_TdfStatus.M_TdfStatus")))
+	{
+		const FLinearColor Cor[3] = { FLinearColor(0.35f, 0.75f, 1.f), FLinearColor(0.45f, 0.62f, 0.9f), FLinearColor(1.f, 0.42f, 0.08f) };
+		const float Intensidade[3] = { 1.6f, 0.7f, 1.3f }, Pulso[3] = { 0.f, 0.f, 0.35f }; // medidos no print: mais forte apaga a pelagem
+		for (int32 i = 0; i < 3; ++i)
+		{
+			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(St, this);
+			M->SetVectorParameterValue(TEXT("Cor"), Cor[i]);
+			M->SetScalarParameterValue(TEXT("Intensidade"), Intensidade[i]);
+			M->SetScalarParameterValue(TEXT("Pulso"), Pulso[i]);
+			StatusMids.Add(M);
+		}
+	}
+	else UE_LOG(LogTdf, Warning, TEXT("Sem M_TdfStatus: bicho congelado ou queimando não muda de cara (rode ImportarArte.ps1 -Script importa_efeitos.py)"));
 	// território: véu translúcido sobre o chão (M_TdfTerritorio, do importa_ambiente.py); azul é seu, vermelho é da IA
 	if (UMaterialInterface* Veil = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/TDFende/Ambiente/Materiais/M_TdfTerritorio.M_TdfTerritorio")))
 	{
@@ -128,6 +148,24 @@ void ATdfSimActor::BeginPlay()
 	FParse::Value(FCommandLine::Get(), TEXT("TdfReplay="), ReplayPath);
 	FParse::Value(FCommandLine::Get(), TEXT("TdfShot="), ShotPath);
 	FParse::Value(FCommandLine::Get(), TEXT("TdfShotTick="), ShotTick);
+	FString ExecList;
+	if (FParse::Value(FCommandLine::Get(), TEXT("TdfExec="), ExecList, false))
+	{
+		TArray<FString> Items;
+		ExecList.ParseIntoArray(Items, TEXT(";"), true);
+		for (const FString& It : Items)
+		{
+			FString L, R;
+			if (It.Split(TEXT(":"), &L, &R)) ExecAt.Add({FCString::Atoi(*L), R});
+		}
+	}
+	FString TickList;
+	if (FParse::Value(FCommandLine::Get(), TEXT("TdfShotTicks="), TickList, false))
+	{
+		TArray<FString> Parts;
+		TickList.ParseIntoArray(Parts, TEXT(","), true);
+		for (const FString& S : Parts) ShotTicks.Add(FCString::Atoi(*S));
+	}
 	FParse::Value(FCommandLine::Get(), TEXT("TdfQuitTick="), QuitTick);
 	FParse::Value(FCommandLine::Get(), TEXT("TdfDificuldade="), Difficulty); // 0 Fácil, 1 Normal, 2 Difícil
 	FParse::Value(FCommandLine::Get(), TEXT("TdfQuitSeconds="), QuitSeconds);
@@ -370,6 +408,20 @@ void ATdfSimActor::StepOnce()
 		FScreenshotRequest::RequestScreenshot(ShotPath, true, false); // com a interface (o HUD em UMG é Slate, fora do viewport)
 		UE_LOG(LogTdf, Display, TEXT("Print pedido no tique %d: %s"), ShotTick, *ShotPath);
 	}
+	// -TdfExec=<tique>:<comando>;<tique>:<comando>: roda um comando de console no tique (medir: ProfileGPU, stat unit...)
+	for (const TPair<int32, FString>& C : ExecAt)
+		if (C.Key == Sim.tick() && GEngine)
+		{
+			UE_LOG(LogTdf, Display, TEXT("Comando no tique %d: %s"), C.Key, *C.Value);
+			GEngine->Exec(GetWorld(), *C.Value);
+		}
+	// -TdfShotTicks=a,b,c: um print por tique da lista, <arquivo>_<tique>.png (achar o momento certo sem rodar várias vezes)
+	if (!ShotPath.IsEmpty() && ShotTicks.Contains(Sim.tick()))
+	{
+		const FString P = FPaths::Combine(FPaths::GetPath(ShotPath), FString::Printf(TEXT("%s_%d.png"), *FPaths::GetBaseFilename(ShotPath), Sim.tick()));
+		FScreenshotRequest::RequestScreenshot(P, true, false);
+		UE_LOG(LogTdf, Display, TEXT("Print pedido no tique %d: %s (inimigos %d, tiros %d)"), Sim.tick(), *P, EnemyCountNow, Fx->NumShotInstances());
+	}
 	if (QuitTick > 0 && Sim.tick() == QuitTick) UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);
 }
 
@@ -382,7 +434,10 @@ void ATdfSimActor::Tick(float DeltaSeconds)
 	WallTime += DeltaSeconds; FpsWindow += DeltaSeconds; ++FpsFrames;
 	if (FpsWindow >= 5.f)
 	{
-		UE_LOG(LogTdf, Display, TEXT("FPS %.1f (quadro medio %.1f ms) no tique %d"), FpsFrames / FpsWindow, 1000.f * FpsWindow / FpsFrames, Sim.tick());
+		// quem segura o quadro: jogo, render ou placa de vídeo (último quadro de cada); quadro longo com os três curtos = fora do jogo
+		UE_LOG(LogTdf, Display, TEXT("FPS %.1f (quadro medio %.1f ms) no tique %d | jogo %.1f ms, render %.1f ms, GPU %.1f ms"),
+			FpsFrames / FpsWindow, 1000.f * FpsWindow / FpsFrames, Sim.tick(), FPlatformTime::ToMilliseconds(GGameThreadTime),
+			FPlatformTime::ToMilliseconds(GRenderThreadTime), FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()));
 		FpsWindow = 0.f; FpsFrames = 0;
 	}
 	if (QuitSeconds > 0.f && WallTime >= QuitSeconds) UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);
@@ -397,14 +452,23 @@ void ATdfSimActor::Tick(float DeltaSeconds)
 		if (ReplayTicks > 0 && Sim.tick() >= ReplayTicks) { Accumulator = 0.f; break; } // replay acabou: congela
 	}
 	const double T1 = FPlatformTime::Seconds();
-	Redraw();
+	// eventos dos tiques que acabaram de rodar: os de vazamento antes do desenho (bicho que vazou não cai morto)
 	const int32 NEv = FMath::Min<int32>(Sim.events(EventBuf.GetData(), EventBuf.Num()), EventBuf.Num());
+	LeakedAt.Reset();
+	for (int32 i = 0; i < NEv; ++i)
+		if (EventBuf[i].Kind == TDF_EV_ENEMY_DESPAWNED && EventBuf[i].A == 2)
+			LeakedAt.Add(ToUnreal(EventBuf[i].Lane, EventBuf[i].X, 0.f, EventBuf[i].Z));
+	Redraw();
 	for (int32 i = 0; i < NEv; ++i)
 	{
 		const TdfEvent& E = EventBuf[i];
 		if (E.Kind == TDF_EV_COMMAND_REJECTED) ToastMsg(RejectText(E.B));
 		else if (E.Kind == TDF_EV_MATCH_ENDED) ToastMsg(E.A == 0 ? TEXT("Você perdeu a partida") : TEXT("Você venceu a partida!"));
+		else if (E.Kind == TDF_EV_TOWER_FIRED) FireFx(E);
+		else if (E.Kind == TDF_EV_ENEMY_HIT) HitFx(E);
 	}
+	Fx->TickFx(DeltaSeconds);
+	TickDying(DeltaSeconds);
 	const double T2 = FPlatformTime::Seconds();
 	if (ReplayTicks == 0 || Sim.tick() < ReplayTicks)
 	{
@@ -463,9 +527,11 @@ ATdfSimActor::FTypeVisual& ATdfSimActor::TypeVisual(int32 Type)
 		V.Anim = LoadObject<UAnimSequence>(nullptr, *FString::Printf(TEXT("/Game/TDFende/Bichos/%s%s.%s%s"), *Key, Suffix, *Key, Suffix));
 		if (V.Anim) break;
 	}
+	V.DeathAnim = LoadObject<UAnimSequence>(nullptr, *FString::Printf(TEXT("/Game/TDFende/Bichos/%sBicho_Death.%sBicho_Death"), *Key, *Key));
 	V.TargetCm = TargetHeightCm(Key);
 	if (V.Mesh) KeepAlive.Add(V.Mesh);
 	if (V.Anim) KeepAlive.Add(V.Anim);
+	if (V.DeathAnim) KeepAlive.Add(V.DeathAnim);
 	UE_LOG(LogTdf, Display, TEXT("Arte do bicho %s: malha %s, animacao %s"), *Key, V.Mesh ? TEXT("sim") : TEXT("NAO (formas simples)"),
 		V.Anim ? *V.Anim->GetName() : TEXT("nenhuma"));
 	return V;
@@ -520,8 +586,7 @@ bool ATdfSimActor::UpdateEnemyView(const TdfEnemy& E, bool bNewTick, float Alpha
 {
 	FTypeVisual& V = TypeVisual(E.TypeId);
 	if (!V.Mesh) return false;
-	const int64 Id = (int64(E.Lane) << 48) | (int64(E.Slot) << 20) | int64(E.Generation & 0xFFFFF);
-	FEnemyView& W = Views.FindOrAdd(Id);
+	FEnemyView& W = Views.FindOrAdd(ViewId(E));
 	const FVector P = EnemyWorldPos(E);
 	if (!W.Comp)
 	{
@@ -543,8 +608,127 @@ bool ATdfSimActor::UpdateEnemyView(const TdfEnemy& E, bool bNewTick, float Alpha
 	const FVector Draw = FMath::Lerp(W.PrevPos, W.CurPos, FMath::Clamp(Alpha, 0.f, 1.f));
 	W.Yaw = FMath::FixedTurn(W.Yaw, W.TargetYaw, 540.f * DeltaSeconds);
 	W.Comp->SetWorldTransform(FTransform(FRotator(0.f, W.Yaw + V.YawOffset, 0.f), Draw + FVector(0.f, 0.f, V.GroundZ), FVector(V.Fit)));
+	UMaterialInterface* Veil = StatusMaterial(E.Flags);
+	if (W.Comp->GetOverlayMaterial() != Veil) W.Comp->SetOverlayMaterial(Veil);
+	// ave: o corpo já está no alto (GroundZ) e a "altura" medida é a envergadura
+	AddBar(E, Draw + FVector(0.f, 0.f, V.GroundZ), SendTypes.IsValidIndex(E.TypeId) && SendTypes[E.TypeId].Key == TEXT("aguia") ? 30.f : V.TargetCm);
 	W.bSeen = true;
 	return true;
+}
+
+void ATdfSimActor::FireFx(const TdfEvent& E)
+{
+	// a Sim diz onde fica a boca do cano; o tipo da torre é o da torre mais perto, na mesma lane
+	const FVector Muzzle = ToUnreal(E.Lane, E.X, E.Y, E.Z);
+	int32 Type = -1;
+	float Best = FLT_MAX;
+	for (int32 i = 0; i < TowerCountNow; ++i)
+	{
+		const TdfTower& T = TowerBuf[i];
+		if (T.Lane != E.Lane) continue;
+		const float D = FVector::DistSquared2D(ToUnreal(T.Lane, T.X, T.Y, T.Z), Muzzle);
+		if (D < Best) { Best = D; Type = T.TypeId; }
+	}
+	Fx->Flash(Muzzle, ETdfFx::Muzzle, Type, Type == 1 ? 1.4f : 1.f);
+	if (Type == 0 || Type == 1) Fx->Flash(Muzzle, ETdfFx::Dust, -1, Type == 1 ? 0.7f : 0.45f); // fumaça da pólvora
+}
+
+void ATdfSimActor::HitFx(const TdfEvent& E)
+{
+	// onde está o bicho atingido (lane + vaga); se já saiu do snapshot, o despawn cuida da poeira
+	for (int32 i = 0; i < EnemyCountNow; ++i)
+	{
+		const TdfEnemy& En = EnemyBuf[i];
+		if (En.Lane != E.Lane || En.Slot != E.A) continue;
+		const FTypeVisual* V = TypeVisuals.Find(En.TypeId);
+		const float Body = V && V->Mesh ? V->GroundZ + V->TargetCm * 0.55f : 30.f;
+		const FVector At = EnemyWorldPos(En) + FVector(0.f, 0.f, (En.Flags & TDF_ENEMY_FLYING) && V ? V->GroundZ : Body);
+		Fx->Flash(At, ETdfFx::Impact, E.C, FMath::Clamp(E.F / 25.f, 0.6f, 1.8f));
+		if (E.C == 0 || E.C == 1) Fx->Flash(FVector(At.X, At.Y, 0.f), ETdfFx::Dust, -1, E.C == 1 ? 1.3f : 0.7f); // bala pesada levanta terra
+		return;
+	}
+}
+
+UMaterialInterface* ATdfSimActor::StatusMaterial(int32 Flags) const
+{
+	const int32 K = (Flags & TDF_ENEMY_BURNING) ? 2 : (Flags & TDF_ENEMY_FROZEN) ? 0 : (Flags & TDF_ENEMY_SLOWED) ? 1 : -1; // fogo vence
+	return StatusMids.IsValidIndex(K) ? StatusMids[K].Get() : nullptr;
+}
+
+void ATdfSimActor::AddBar(const TdfEnemy& E, const FVector& Feet, float HeightCm)
+{
+	if (E.MaxHp <= 0.f || E.Hp <= 0.f || E.Hp >= E.MaxHp) return; // só bicho ferido (e vivo) mostra barra
+	FTdfBar B;
+	B.Head = Feet + FVector(0.f, 0.f, HeightCm + 18.f);
+	B.Frac = E.Hp / E.MaxHp;
+	B.MaxHp = E.MaxHp;
+	B.Flags = E.Flags;
+	Bars.Add(B);
+}
+
+void ATdfSimActor::KillView(int64 Id, bool bLeaked)
+{
+	FEnemyView W;
+	if (!Views.RemoveAndCopyValue(Id, W) || !W.Comp) return;
+	USkeletalMeshComponent* C = W.Comp;
+	C->SetOverlayMaterial(nullptr);
+	if (bLeaked)
+	{
+		// vazou pela base: some ali mesmo (quem viu foi a barra de vidas)
+		C->SetVisibility(false);
+		C->SetComponentTickEnabled(false);
+		Pool.FindOrAdd(W.Type).Add(C);
+		return;
+	}
+	const FTypeVisual& V = TypeVisual(W.Type);
+	FDying D;
+	D.Comp = C;
+	D.Type = W.Type;
+	D.Pos = C->GetComponentLocation();
+	D.Yaw = W.Yaw;
+	D.Scale = V.Fit;
+	if (V.DeathAnim)
+	{
+		C->SetAnimation(V.DeathAnim);
+		C->Play(false);
+		D.DeathLen = V.DeathAnim->GetPlayLength();
+	}
+	Dying.Add(D);
+	Fx->Flash(FVector(D.Pos.X, D.Pos.Y, 0.f), ETdfFx::Dust, -1, FMath::Clamp(V.TargetCm / 50.f, 0.6f, 2.5f));
+}
+
+void ATdfSimActor::TickDying(float DeltaSeconds)
+{
+	for (int32 i = Dying.Num() - 1; i >= 0; --i)
+	{
+		FDying& D = Dying[i];
+		D.Age += DeltaSeconds;
+		const FTypeVisual& V = TypeVisual(D.Type);
+		// com animação de morte: toca, espera um pouco e afunda; sem ela: tomba de lado (ave cai do alto), espera e afunda
+		const float Fall = D.DeathLen > 0.f ? D.DeathLen : 0.4f;
+		const float SinkStart = Fall + 0.6f, End = SinkStart + 0.9f;
+		if (D.Age >= End)
+		{
+			D.Comp->SetVisibility(false);
+			D.Comp->SetComponentTickEnabled(false);
+			if (D.DeathLen > 0.f && V.Anim) { D.Comp->SetAnimation(V.Anim); D.Comp->Play(true); } // volta a andar quando reaproveitado
+			Pool.FindOrAdd(D.Type).Add(D.Comp);
+			Dying.RemoveAtSwap(i, EAllowShrinking::No);
+			continue;
+		}
+		FVector P = D.Pos;
+		FQuat Q = FRotator(0.f, D.Yaw + V.YawOffset, 0.f).Quaternion();
+		if (D.DeathLen <= 0.f)
+		{
+			const float T = FMath::Clamp(D.Age / Fall, 0.f, 1.f);
+			const float Ease = 1.f - (1.f - T) * (1.f - T);
+			const FVector Heading = FRotator(0.f, D.Yaw, 0.f).Vector();
+			Q = FQuat(Heading, FMath::DegreesToRadians(84.f * Ease)) * Q;          // tomba de lado
+			P.Z = FMath::Lerp(D.Pos.Z, V.GroundZ > 50.f ? 0.f : D.Pos.Z, T * T);   // ave despenca até o chão
+		}
+		if (D.Age > SinkStart) P.Z -= (D.Age - SinkStart) / (End - SinkStart) * FMath::Max(V.TargetCm, 30.f) * 0.8f;
+		D.Comp->SetWorldTransform(FTransform(Q, P, FVector(D.Scale)));
+	}
 }
 
 FVector ATdfSimActor::EnemyWorldPos(const TdfEnemy& E) const
@@ -555,17 +739,16 @@ FVector ATdfSimActor::EnemyWorldPos(const TdfEnemy& E) const
 
 void ATdfSimActor::ReleaseUnseenViews()
 {
-	for (auto It = Views.CreateIterator(); It; ++It)
+	// quem sumiu do snapshot: vazou pela base (evento de despawn com motivo "vazou" ali perto) ou morreu
+	TArray<TPair<int64, bool>, TInlineAllocator<32>> Gone;
+	for (auto& Pair : Views)
 	{
-		if (It->Value.bSeen) { It->Value.bSeen = false; continue; }
-		if (It->Value.Comp)
-		{
-			It->Value.Comp->SetVisibility(false);
-			It->Value.Comp->SetComponentTickEnabled(false); // guardado no pool: não anima nem atualiza ossos
-			Pool.FindOrAdd(It->Value.Type).Add(It->Value.Comp);
-		}
-		It.RemoveCurrent();
+		if (Pair.Value.bSeen) { Pair.Value.bSeen = false; continue; }
+		bool bLeaked = false;
+		for (const FVector& L : LeakedAt) bLeaked |= FVector::DistSquared2D(L, Pair.Value.CurPos) < 250.f * 250.f;
+		Gone.Add({Pair.Key, bLeaked});
 	}
+	for (const TPair<int64, bool>& G : Gone) KillView(G.Key, G.Value);
 }
 
 void ATdfSimActor::BuildPreview()
@@ -668,13 +851,16 @@ void ATdfSimActor::Redraw()
 	const float Alpha = Accumulator / FixedStep;
 
 	for (int32 k = 0; k < EnemyKinds; ++k) EnemyMesh[k]->ClearInstances();
+	Bars.Reset();
 	for (int32 i = 0; i < NE; ++i)
 	{
 		const TdfEnemy& E = EnemyBuf[i];
 		if (bUseArt && UpdateEnemyView(E, bNewTick, Alpha, LastDeltaSeconds)) continue;
 		const int32 Kind = (E.Flags & TDF_ENEMY_FLYING) ? 3 : (E.Flags & TDF_ENEMY_BURNING) ? 2 : (E.Flags & (TDF_ENEMY_FROZEN | TDF_ENEMY_SLOWED)) ? 1 : 0;
 		const float Scale = 0.25f * (0.6f + 0.8f * FMath::Clamp(E.MaxHp / 400.f, 0.f, 1.f));
-		EnemyMesh[Kind]->AddInstance(FTransform(FRotator::ZeroRotator, ToUnreal(E.Lane, E.X, 0.f, E.Z) + FVector(0.f, 0.f, 50.f * Scale), FVector(Scale)));
+		const FVector Feet = ToUnreal(E.Lane, E.X, 0.f, E.Z);
+		EnemyMesh[Kind]->AddInstance(FTransform(FRotator::ZeroRotator, Feet + FVector(0.f, 0.f, 50.f * Scale), FVector(Scale)));
+		AddBar(E, Feet, 100.f * Scale);
 	}
 	if (bUseArt) ReleaseUnseenViews();
 	// torres são estáticas: só refaz as instâncias quando alguma entra, sobe ou sai (assinatura das torres)
@@ -705,12 +891,8 @@ void ATdfSimActor::Redraw()
 			FTransform(FRotator::ZeroRotator, ToUnreal(T.Lane, T.X, T.Y + 0.4f, T.Z), FVector(0.35f, 0.35f, 0.4f + 0.1f * T.Level)));
 	}
 	}
-	ShotMesh->ClearInstances();
-	for (int32 i = 0; i < NS; ++i)
-	{
-		const TdfProjectile& S = ShotBuf[i];
-		ShotMesh->AddInstance(FTransform(FRotator::ZeroRotator, ToUnreal(S.Lane, S.X, S.Y, S.Z), FVector(0.08f)));
-	}
+	// tiros: a cara do tipo de torre, interpolados entre os tiques e com rastro (UTdfFxComponent)
+	Fx->UpdateShots(ShotBuf.GetData(), NS, bNewTick, Alpha, [this](int32 L, float X, float Y, float Z) { return ToUnreal(L, X, Y, Z); });
 
 	// território: só reconstrói as instâncias quando muda (muda quando uma torre entra, sobe ou sai)
 	TerritoryNow.SetNumZeroed(2 * GridWidth * GridHeight, EAllowShrinking::No);
@@ -776,6 +958,43 @@ void ATdfSimActor::RunSelfTest(float)
 				for (int32 i = 0; bThumbs && i < SendTypes.Num(); ++i) bThumbs = Hud->SendThumb(i) != nullptr;
 				SelfCheck(bThumbs, TEXT("miniaturas 3D de cada torre e de cada bicho nos cartões"));
 			}
+		}
+		// efeitos de combate, com dados de mentira direto na vista (não passam pela Sim: a partida não muda)
+		{
+			TdfProjectile Shots[2] = {};
+			Shots[0].Lane = 0; Shots[0].TowerType = 2; Shots[0].X = 1.f; Shots[0].Y = 0.5f; Shots[0].Z = 1.f;
+			Shots[1].Lane = 0; Shots[1].TowerType = 0; Shots[1].X = -2.f; Shots[1].Y = 0.5f; Shots[1].Z = 3.f;
+			auto ToWorld = [this](int32 L, float X, float Y, float Z) { return ToUnreal(L, X, Y, Z); };
+			Fx->UpdateShots(Shots, 2, true, 0.f, ToWorld);
+			SelfCheck(Fx->NumShotInstances() == 2 && Fx->NumTrailInstances() == 0, TEXT("tiro novo: um núcleo por projétil, ainda sem rastro"));
+			Shots[0].Z += 0.3f; Shots[1].Z += 0.3f;
+			Fx->UpdateShots(Shots, 2, true, 0.5f, ToWorld);
+			const FVector Mid = ToUnreal(0, 1.f, 0.5f, 1.15f);
+			SelfCheck(Fx->NumTrailInstances() == 2 && Fx->ShotDrawPos(0).Equals(Mid, 1.f), TEXT("tiro que andou: rastro e posição interpolada entre os tiques"));
+			Fx->Flash(Mid, ETdfFx::Impact, 2, 1.f);
+			const int32 Flashes = Fx->NumFlashes();
+			Fx->TickFx(3.f);
+			SelfCheck(Flashes >= 1 && Fx->NumFlashes() == 0, TEXT("clarão aparece e some sozinho"));
+		}
+		// bicho de mentira na lane da IA: véu de efeito, barra de vida e morte (cai e só depois volta ao pool)
+		if (bUseArt && TypeVisual(0).Mesh)
+		{
+			TdfEnemy Fake = {};
+			Fake.Lane = 1; Fake.Slot = 4000; Fake.Generation = 1; Fake.TypeId = 0; Fake.Z = 5.f; Fake.Hp = 50.f; Fake.MaxHp = 100.f;
+			Fake.Flags = TDF_ENEMY_FROZEN;
+			const int32 BarsBefore = Bars.Num();
+			UpdateEnemyView(Fake, true, 1.f, 0.016f);
+			const FEnemyView* V = Views.Find(ViewId(Fake));
+			USkeletalMeshComponent* C = V ? V->Comp : nullptr;
+			SelfCheck(C && StatusMaterial(TDF_ENEMY_FROZEN) && C->GetOverlayMaterial() == StatusMaterial(TDF_ENEMY_FROZEN), TEXT("bicho congelado ganha o véu de gelo"));
+			SelfCheck(Bars.Num() == BarsBefore + 1 && FMath::IsNearlyEqual(Bars.Last().Frac, 0.5f), TEXT("bicho ferido ganha barra de vida (metade)"));
+			Fake.Flags = 0;
+			UpdateEnemyView(Fake, false, 1.f, 0.016f);
+			SelfCheck(C && C->GetOverlayMaterial() == nullptr, TEXT("o véu sai quando o efeito acaba"));
+			KillView(ViewId(Fake), false);
+			SelfCheck(C && NumDying() == 1 && C->IsVisible() && !Views.Contains(ViewId(Fake)), TEXT("bicho morto fica caído na cena"));
+			TickDying(5.f);
+			SelfCheck(C && NumDying() == 0 && !C->IsVisible() && Pool.FindOrAdd(0).Contains(C), TEXT("depois da queda o bicho volta ao pool"));
 		}
 		SelfCheck(CanBuildSelected(Cx, Cy) == 0, TEXT("CanBuild: lugar livre com ouro"));
 		SelfCheck(CanBuildSelected(-1, 0) != 0, TEXT("CanBuild: fora do mapa é recusado"));

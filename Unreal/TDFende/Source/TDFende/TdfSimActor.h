@@ -7,10 +7,20 @@
 
 class UInstancedStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class UMaterialInterface;
 class UStaticMesh;
 class USkeletalMesh;
 class USkeletalMeshComponent;
 class UAnimSequence;
+
+/** Barra de vida de um bicho ferido (o ATdfHUD desenha por cima do mundo). */
+struct FTdfBar
+{
+	FVector Head = FVector::ZeroVector; // ponto acima da cabeça, no mundo
+	float Frac = 1.f;                   // vida que sobra, 0 a 1
+	float MaxHp = 0.f;                  // bicho mais forte, barra mais larga
+	int32 Flags = 0;                    // TDF_ENEMY_*: gelo e fogo pintam a borda
+};
 
 /** Uma linha do catálogo (torre ou envio) como a ponte entrega: tdf_catalog_text. */
 struct FTdfCatalogItem
@@ -84,6 +94,9 @@ public:
 	const FString& GetToast() const { return Toast; }
 	float GetToastAge() const { return ToastAge; }
 
+	/** Barras de vida dos bichos feridos neste quadro (as duas lanes). */
+	const TArray<FTdfBar>& GetBars() const { return Bars; }
+
 	/** Arte para as miniaturas do HUD: malha da torre no estágio (1-3) e malha + animação de andar do bicho. Nulo sem a arte. */
 	UStaticMesh* TowerArt(int32 Type, int32 Stage) const;
 	USkeletalMesh* SendArt(int32 Type, UAnimSequence*& OutAnim, float& OutYawOffset);
@@ -121,6 +134,7 @@ private:
 		bool bTried = false;
 		USkeletalMesh* Mesh = nullptr;
 		UAnimSequence* Anim = nullptr;
+		UAnimSequence* DeathAnim = nullptr; // <chave>Bicho_Death (urso, elefante...); sem ela o bicho tomba de lado
 		float TargetCm = 50.f;   // altura do bicho no jogo
 		float Fit = -1.f;        // escala medida pelos ossos (calculada no primeiro componente)
 		float GroundZ = 0.f;     // quanto subir para os pes ficarem no chao (ja na escala)
@@ -144,6 +158,30 @@ private:
 	FTypeVisual& TypeVisual(int32 Type);
 	USkeletalMeshComponent* AcquireComp(int32 Type);
 	bool UpdateEnemyView(const TdfEnemy& E, bool bNewTick, float Alpha, float DeltaSeconds);
+	static int64 ViewId(const TdfEnemy& E) { return (int64(E.Lane) << 48) | (int64(E.Slot) << 20) | int64(E.Generation & 0xFFFFF); }
+	/** Véu do efeito no bicho (gelo, lentidão, fogo) pelos flags da Sim; nulo = nenhum. */
+	UMaterialInterface* StatusMaterial(int32 Flags) const;
+	/** Barra de vida do bicho, se ferido; Feet = onde o corpo está desenhado, HeightCm = altura até a cabeça. */
+	void AddBar(const TdfEnemy& E, const FVector& Feet, float HeightCm);
+	/** O bicho saiu do snapshot: vazou (some na hora) ou morreu (cai, afunda e só então volta ao pool). */
+	void KillView(int64 Id, bool bLeaked);
+	/** Efeitos dos eventos da Sim: clarão (e fumaça) no disparo; clarão no impacto (e terra, se a bala é pesada). */
+	void FireFx(const TdfEvent& E);
+	void HitFx(const TdfEvent& E);
+	void TickDying(float DeltaSeconds);
+	int32 NumDying() const { return Dying.Num(); }
+	struct FDying
+	{
+		USkeletalMeshComponent* Comp = nullptr;
+		int32 Type = -1;
+		float Age = 0.f;
+		float DeathLen = 0.f;   // duração da animação Death (0 = não tem: tomba de lado)
+		FVector Pos = FVector::ZeroVector;
+		float Yaw = 0.f, Scale = 1.f;
+	};
+	TArray<FDying> Dying;
+	TArray<FTdfBar> Bars;
+	TArray<FVector> LeakedAt;   // onde bichos vazaram neste quadro (eventos de despawn): esses não caem mortos
 	/** Onde o corpo do bicho fica no mundo (sem a altura dos pés da malha, GroundZ, que vem da medida da arte). */
 	FVector EnemyWorldPos(const TdfEnemy& E) const;
 	void ReleaseUnseenViews();
@@ -170,7 +208,9 @@ private:
 	UPROPERTY() USceneComponent* RootScene = nullptr;
 	UPROPERTY() UInstancedStaticMeshComponent* EnemyMesh[EnemyKinds] = {};
 	UPROPERTY() UInstancedStaticMeshComponent* TowerMesh[TowerKinds] = {};
-	UPROPERTY() UInstancedStaticMeshComponent* ShotMesh = nullptr;
+	UPROPERTY() class UTdfFxComponent* Fx = nullptr;
+	/** Véus de efeito (sobreposição no bicho): 0 gelo, 1 lentidão, 2 fogo. */
+	UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> StatusMids;
 	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh = nullptr;   // lane 0 (você)
 	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh1 = nullptr;  // lane 1 (IA)
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> Mids;
@@ -193,6 +233,8 @@ private:
 
 	FString ShotPath;
 	int32 ShotTick = 0;
+	TArray<int32> ShotTicks;
+	TArray<TPair<int32, FString>> ExecAt;
 	int32 QuitTick = 0;
 	float QuitSeconds = 0.f;   // -TdfQuitSeconds=<s>: fecha por tempo real (teste de desempenho)
 	float WallTime = 0.f, FpsWindow = 0.f;

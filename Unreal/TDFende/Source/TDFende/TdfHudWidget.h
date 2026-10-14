@@ -119,12 +119,12 @@ private:
 	TWeakObjectPtr<ATdfSimActor> Sim;
 	TArray<FCard> TowerCards, SendCards;
 	FStat MyLives, MyGold, MyIncome, MyTowers, FoeLives, FoeIncome, FoeTowers, FoeEnemies;
-	UTextBlock* Clock = nullptr;
-	UTextBlock* Sudden = nullptr;
-	UTextBlock* ToastText = nullptr;
-	UBorder* TopLeft = nullptr;
-	UBorder* TopRight = nullptr;
-	UBorder* Shop = nullptr;
+	UPROPERTY() TObjectPtr<UTextBlock> Clock;
+	UPROPERTY() TObjectPtr<UTextBlock> Sudden;
+	UPROPERTY() TObjectPtr<UTextBlock> ToastText;
+	UPROPERTY() TObjectPtr<UBorder> TopLeft;
+	UPROPERTY() TObjectPtr<UBorder> TopRight;
+	UPROPERTY() TObjectPtr<UBorder> Shop;
 	int32 LastClock = -1;
 	FString LastToast;
 

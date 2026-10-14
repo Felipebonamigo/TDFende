@@ -1,6 +1,7 @@
 ﻿# Importa a arte para o Content do Unreal, sem abrir o editor (UnrealEditor-Cmd + Python).
 #   powershell -ExecutionPolicy Bypass -File Unreal\TDFende\ImportarArte.ps1                      torres e bichos (importa_arte.py)
 #   powershell -ExecutionPolicy Bypass -File Unreal\TDFende\ImportarArte.ps1 -Script importa_ambiente.py   chão, rochas, troncos, grama
+#   powershell -ExecutionPolicy Bypass -File Unreal\TDFende\ImportarArte.ps1 -Script importa_efeitos.py    materiais dos efeitos de combate
 # Refaz /Game/TDFende (Content/ fica fora do git: os scripts são a receita; backup no D: pelo Tools\Backup.ps1).
 param([string]$Script = 'importa_arte.py')
 $ErrorActionPreference = 'Stop'
