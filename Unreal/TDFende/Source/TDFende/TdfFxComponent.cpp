@@ -160,7 +160,8 @@ void UTdfFxComponent::Flash(const FVector& At, ETdfFx Style, int32 TowerType, fl
 	F.Style = Style;
 	F.Size = Size;
 	F.Color = Style == ETdfFx::Dust ? DustColor : TowerType >= 0 ? Look(TowerType).Flash : FLinearColor(1.f, 0.9f, 0.7f);
-	F.Life = Style == ETdfFx::Muzzle ? 0.12f : Style == ETdfFx::Impact ? 0.25f : 0.9f;
+	F.Life = Style == ETdfFx::Muzzle ? 0.12f : Style == ETdfFx::Impact ? 0.25f : Style == ETdfFx::Gust ? 0.4f : 0.9f;
+	if (Style == ETdfFx::Gust) F.Color = FLinearColor(0.85f, 0.95f, 1.f);
 	Live.Add(F);
 	bLiveDirty = true; // desenha uma vez por quadro, no TickFx (num quadro com 50 eventos, refazer a cada um era quadrático)
 }
@@ -210,6 +211,13 @@ void UTdfFxComponent::RedrawLive()
 			const float D = 28.f * F.Size * (0.5f + 1.0f * EaseOut(T));
 			XGlow.Add(FTransform(FQuat::Identity, F.Pos, FVector(D / 100.f)));
 			DGlow.Add(FLinearColor(F.Color.R, F.Color.G, F.Color.B, 9.f * (1.f - T) * (1.f - T)));
+			break;
+		}
+		case ETdfFx::Gust: // disco achatado que abre rápido rente ao chão e apaga
+		{
+			const float D = 60.f * F.Size * (0.4f + 1.6f * EaseOut(T));
+			XGlow.Add(FTransform(FQuat::Identity, F.Pos + FVector(0.f, 0.f, 15.f), FVector(D / 100.f, D / 100.f, D * 0.12f / 100.f)));
+			DGlow.Add(FLinearColor(F.Color.R, F.Color.G, F.Color.B, 3.f * (1.f - T)));
 			break;
 		}
 		case ETdfFx::Dust: // nuvem que sobe, abre e some

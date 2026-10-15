@@ -14,6 +14,7 @@ enum class ETdfFx : uint8
 	Muzzle,   // boca do cano, no disparo
 	Impact,   // onde o tiro acerta
 	Dust,     // poeira (tiro pesado no chão, bicho que cai)
+	Gust,     // onda de ar do empurrão: disco claro que abre rente ao chão
 };
 
 /**

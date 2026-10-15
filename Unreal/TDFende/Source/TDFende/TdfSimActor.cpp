@@ -535,6 +535,7 @@ void ATdfSimActor::Tick(float DeltaSeconds)
 		}
 		else if (E.Kind == TDF_EV_TOWER_FIRED) FireFx(E);
 		else if (E.Kind == TDF_EV_ENEMY_HIT) HitFx(E);
+		else if (E.Kind == TDF_EV_STATUS_APPLIED) StatusFx(E);
 	}
 	Fx->TickFx(DeltaSeconds);
 	TickDying(DeltaSeconds);
@@ -714,6 +715,20 @@ void ATdfSimActor::HitFx(const TdfEvent& E)
 		const FVector At = EnemyWorldPos(En) + FVector(0.f, 0.f, (En.Flags & TDF_ENEMY_FLYING) && V ? V->GroundZ : Body);
 		Fx->Flash(At, ETdfFx::Impact, E.C, FMath::Clamp(E.F / 25.f, 0.6f, 1.8f));
 		if (E.C == 0 || E.C == 1) Fx->Flash(FVector(At.X, At.Y, 0.f), ETdfFx::Dust, -1, E.C == 1 ? 1.3f : 0.7f); // bala pesada levanta terra
+		return;
+	}
+}
+
+void ATdfSimActor::StatusFx(const TdfEvent& E)
+{
+	if (E.C != 3) return; // 0 lentidão, 1 gelo, 2 fogo: o véu do bicho já mostra; 3 empurrão: onda de ar + poeira
+	for (int32 i = 0; i < EnemyCountNow; ++i)
+	{
+		const TdfEnemy& En = EnemyBuf[i];
+		if (En.Lane != E.Lane || En.Slot != E.A) continue;
+		const FVector Feet = EnemyWorldPos(En);
+		Fx->Flash(Feet, ETdfFx::Gust, -1, 1.f);
+		Fx->Flash(Feet, ETdfFx::Dust, -1, 0.8f);
 		return;
 	}
 }
@@ -1050,6 +1065,17 @@ void ATdfSimActor::RunSelfTest(float)
 			const int32 Flashes = Fx->NumFlashes();
 			Fx->TickFx(3.f);
 			SelfCheck(Flashes >= 1 && Fx->NumFlashes() == 0, TEXT("clarão aparece e some sozinho"));
+			// empurrão (efeito 3 da Sim): onda de ar e poeira onde o bicho está
+			TdfEnemy Pushed = {};
+			Pushed.Lane = 1; Pushed.Slot = 4001; Pushed.Generation = 1; Pushed.Z = 4.f; Pushed.Hp = Pushed.MaxHp = 50.f;
+			if (EnemyBuf.Num() <= EnemyCountNow) EnemyBuf.SetNum(EnemyCountNow + 1);
+			EnemyBuf[EnemyCountNow++] = Pushed;
+			TdfEvent Ev = {};
+			Ev.Kind = TDF_EV_STATUS_APPLIED; Ev.Lane = 1; Ev.A = 4001; Ev.C = 3; Ev.F = 0.5f;
+			StatusFx(Ev);
+			--EnemyCountNow;
+			SelfCheck(Fx->NumFlashes() >= 2, TEXT("empurrão mostra a onda e a poeira"));
+			Fx->TickFx(3.f);
 		}
 		// bicho de mentira na lane da IA: véu de efeito, barra de vida e morte (cai e só depois volta ao pool)
 		if (bUseArt && TypeVisual(0).Mesh)

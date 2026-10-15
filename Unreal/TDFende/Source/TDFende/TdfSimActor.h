@@ -174,6 +174,8 @@ private:
 	/** Efeitos dos eventos da Sim: clarão (e fumaça) no disparo; clarão no impacto (e terra, se a bala é pesada). */
 	void FireFx(const TdfEvent& E);
 	void HitFx(const TdfEvent& E);
+	/** Efeito aplicado (StatusApplied): o empurrão vira onda de ar + poeira (gelo e fogo já aparecem pelo véu). */
+	void StatusFx(const TdfEvent& E);
 	void TickDying(float DeltaSeconds);
 	struct FDying;
 	void RecycleDying(const FDying& D);
