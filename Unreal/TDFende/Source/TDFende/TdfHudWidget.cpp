@@ -1,6 +1,10 @@
 #include "TdfHudWidget.h"
 #include "TdfSimActor.h"
 #include "TdfBuildStamp.h"
+#include "GameFramework/GameUserSettings.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
+#include "Widgets/SWindow.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
@@ -80,21 +84,17 @@ UTdfCardButton::UTdfCardButton()
 	InitIsFocusable(false);
 }
 
-void UTdfCardButton::Setup(UTdfHudWidget* InOwner, int32 InIndex, bool bInSend)
+void UTdfCardButton::Setup(UTdfHudWidget* InOwner, int32 InIndex, int32 InKind)
 {
 	Owner = InOwner;
 	Index = InIndex;
-	bSend = bInSend;
+	Kind = InKind;
 	OnClicked.AddDynamic(this, &UTdfCardButton::HandleClicked);
 }
 
 void UTdfCardButton::HandleClicked()
 {
-	if (UTdfHudWidget* H = Owner.Get())
-	{
-		if (bSend) H->ClickSendCard(Index);
-		else H->ClickTowerCard(Index);
-	}
+	if (UTdfHudWidget* H = Owner.Get()) H->OnButton(Kind, Index);
 }
 
 void UTdfHudWidget::Bind(ATdfSimActor* InSim)
@@ -116,11 +116,143 @@ bool UTdfHudWidget::ClickSendCard(int32 Index)
 	return S && S->SendUnit(Index);
 }
 
+namespace
+{
+	const float ScalePercents[3] = { 70.f, 85.f, 100.f };
+	void Highlight(const TArray<TObjectPtr<UBorder>>& Frames, int32 Selected)
+	{
+		for (int32 i = 0; i < Frames.Num(); ++i)
+			if (Frames[i]) Frames[i]->SetBrush(i == Selected ? Rounded(FLinearColor(GoldC.R, GoldC.G, GoldC.B, 0.95f), 8.f) : Rounded(FLinearColor::Transparent, 8.f));
+	}
+}
+
+void UTdfHudWidget::OnButton(int32 Kind, int32 Index)
+{
+	switch (Kind)
+	{
+	case 0: ClickTowerCard(Index); break;
+	case 1: ClickSendCard(Index); break;
+	case 2: SetQuality(Index); break;
+	case 3: if (Index >= 0 && Index < 3) SetScreenPercent(ScalePercents[Index]); break;
+	case 4: SetFullscreen(Index == 1); break;
+	}
+}
+
+void UTdfHudWidget::ToggleSettings()
+{
+	if (!Settings) return;
+	Settings->SetVisibility(IsSettingsOpen() ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+}
+
+bool UTdfHudWidget::IsSettingsOpen() const
+{
+	return Settings && Settings->GetVisibility() == ESlateVisibility::Visible;
+}
+
+void UTdfHudWidget::SetQuality(int32 Level)
+{
+	UGameUserSettings* Gus = UGameUserSettings::GetGameUserSettings();
+	if (!Gus) return;
+	Quality = FMath::Clamp(Level, 0, 3);
+	Gus->SetOverallScalabilityLevel(Quality); // os grupos sg.* (sombra, Lumen, efeitos, folhagem, pós) de uma vez
+	Gus->ApplySettings(false);
+	Gus->SaveSettings();
+	Highlight(QualityFrames, Quality);
+}
+
+int32 UTdfHudWidget::SelectedQuality() const { return Quality; }
+
+void UTdfHudWidget::SetScreenPercent(float Percent)
+{
+	UGameUserSettings* Gus = UGameUserSettings::GetGameUserSettings();
+	if (!Gus) return;
+	Gus->SetResolutionScaleValueEx(Percent); // o TSR reconstrói a imagem na resolução da tela
+	Gus->ApplySettings(false);
+	Gus->SaveSettings();
+	int32 Best = 0;
+	for (int32 i = 1; i < 3; ++i) if (FMath::Abs(ScalePercents[i] - Percent) < FMath::Abs(ScalePercents[Best] - Percent)) Best = i;
+	Highlight(ScaleFrames, Best);
+}
+
+void UTdfHudWidget::SetFullscreen(bool bFull)
+{
+	UGameUserSettings* Gus = UGameUserSettings::GetGameUserSettings();
+	if (!Gus) return;
+	Gus->SetFullscreenMode(bFull ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed);
+	Gus->ApplySettings(false);
+	Gus->SaveSettings();
+	Highlight(WindowFrames, bFull ? 1 : 0);
+}
+
+UBorder* UTdfHudWidget::MakeOption(const FString& Text, int32 Kind, int32 Index, TArray<TObjectPtr<UBorder>>& Frames)
+{
+	UTdfCardButton* Btn = WidgetTree->ConstructWidget<UTdfCardButton>();
+	Btn->Setup(this, Index, Kind);
+	FButtonStyle St;
+	St.SetNormal(Rounded(FLinearColor(0.05f, 0.058f, 0.068f, 0.94f), 6.f, FLinearColor(1.f, 1.f, 1.f, 0.08f), 1.f));
+	St.SetHovered(Rounded(FLinearColor(0.11f, 0.12f, 0.135f, 0.97f), 6.f, FLinearColor(1.f, 1.f, 1.f, 0.25f), 1.f));
+	St.SetPressed(Rounded(FLinearColor(0.16f, 0.15f, 0.12f, 0.98f), 6.f));
+	St.SetNormalPadding(FMargin(12.f, 6.f));
+	St.SetPressedPadding(FMargin(12.f, 7.f, 12.f, 5.f));
+	Btn->SetStyle(St);
+	Btn->SetContent(MakeText(Text, 11, Ink, true));
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>();
+	Frame->SetBrush(Rounded(FLinearColor::Transparent, 8.f));
+	Frame->SetPadding(FMargin(2.f));
+	Frame->SetContent(Btn);
+	Frames.Add(Frame);
+	return Frame;
+}
+
+void UTdfHudWidget::BuildSettings(UCanvasPanel* Root)
+{
+	UVerticalBox* V = WidgetTree->ConstructWidget<UVerticalBox>();
+	if (UVerticalBoxSlot* Sl = V->AddChildToVerticalBox(MakeText(TEXT("CONFIGURAÇÕES"), 14, Ink, true, 220))) Sl->SetPadding(FMargin(0.f, 0.f, 0.f, 10.f));
+	auto Row = [this, V](const TCHAR* Label, std::initializer_list<const TCHAR*> Options, int32 Kind, TArray<TObjectPtr<UBorder>>& Frames)
+	{
+		if (UVerticalBoxSlot* Sl = V->AddChildToVerticalBox(MakeText(Label, 8, Muted, true, 180))) Sl->SetPadding(FMargin(2.f, 6.f, 0.f, 3.f));
+		UHorizontalBox* H = WidgetTree->ConstructWidget<UHorizontalBox>();
+		int32 i = 0;
+		for (const TCHAR* O : Options)
+			if (UHorizontalBoxSlot* Sl = H->AddChildToHorizontalBox(MakeOption(O, Kind, i++, Frames))) Sl->SetPadding(FMargin(0.f, 0.f, 4.f, 0.f));
+		V->AddChildToVerticalBox(H);
+	};
+	Row(TEXT("QUALIDADE GRÁFICA"), {TEXT("Baixa"), TEXT("Média"), TEXT("Alta"), TEXT("Épica")}, 2, QualityFrames);
+	Row(TEXT("RESOLUÇÃO DE RENDER (o TSR completa)"), {TEXT("70%"), TEXT("85%"), TEXT("100%")}, 3, ScaleFrames);
+	Row(TEXT("TELA"), {TEXT("Janela"), TEXT("Tela cheia")}, 4, WindowFrames);
+	if (UVerticalBoxSlot* Sl = V->AddChildToVerticalBox(MakeText(TEXT("Esc fecha · fica salvo para a próxima vez"), 9, Muted, false, 40)))
+		Sl->SetPadding(FMargin(2.f, 12.f, 0.f, 0.f));
+
+	Settings = MakePlate(V, Ink);
+	Settings->SetPadding(FMargin(22.f, 16.f));
+	Settings->SetVisibility(ESlateVisibility::Hidden);
+	UCanvasPanelSlot* Sl = Root->AddChildToCanvas(Settings);
+	Sl->SetAnchors(FAnchors(0.5f, 0.5f));
+	Sl->SetAlignment(FVector2D(0.5f, 0.5f));
+	Sl->SetAutoSize(true);
+
+	// o que já está salvo aparece marcado
+	if (UGameUserSettings* Gus = UGameUserSettings::GetGameUserSettings())
+	{
+		Quality = Gus->GetOverallScalabilityLevel();
+		Highlight(QualityFrames, Quality);
+		float Norm = 1.f, Value = 100.f, Min = 0.f, Max = 100.f;
+		Gus->GetResolutionScaleInformationEx(Norm, Value, Min, Max);
+		int32 Best = 0;
+		for (int32 i = 1; i < 3; ++i) if (FMath::Abs(ScalePercents[i] - Value) < FMath::Abs(ScalePercents[Best] - Value)) Best = i;
+		Highlight(ScaleFrames, Best);
+		// o modo real da janela (o -windowed da linha de comando vence o que está salvo)
+		const TSharedPtr<SWindow> Win = GEngine && GEngine->GameViewport ? GEngine->GameViewport->GetWindow() : nullptr;
+		const EWindowMode::Type Mode = Win.IsValid() ? Win->GetWindowMode() : Gus->GetFullscreenMode();
+		Highlight(WindowFrames, Mode == EWindowMode::Windowed ? 0 : 1);
+	}
+}
+
 FString UTdfHudWidget::StampText() const { return Stamp ? Stamp->GetText().ToString() : FString(); }
 
 bool UTdfHudWidget::IsPointerOverUi() const
 {
-	return (TopLeft && TopLeft->IsHovered()) || (TopRight && TopRight->IsHovered()) || (Shop && Shop->IsHovered());
+	return (TopLeft && TopLeft->IsHovered()) || (TopRight && TopRight->IsHovered()) || (Shop && Shop->IsHovered()) || IsSettingsOpen();
 }
 
 // ------------------------------------------------------------------ montagem
@@ -171,7 +303,7 @@ UTdfHudWidget::FCard UTdfHudWidget::MakeCard(int32 Index, bool bSend, float Thum
 	C.Price = Item.Cost;
 
 	UTdfCardButton* Btn = WidgetTree->ConstructWidget<UTdfCardButton>();
-	Btn->Setup(this, Index, bSend);
+	Btn->Setup(this, Index, bSend ? 1 : 0);
 	FButtonStyle St;
 	St.SetNormal(Rounded(FLinearColor(0.05f, 0.058f, 0.068f, 0.94f), 8.f, FLinearColor(1.f, 1.f, 1.f, 0.07f), 1.f));
 	St.SetHovered(Rounded(FLinearColor(0.11f, 0.12f, 0.135f, 0.97f), 8.f, FLinearColor(1.f, 1.f, 1.f, 0.22f), 1.f));
@@ -263,7 +395,7 @@ void UTdfHudWidget::BuildTree()
 	Sudden = MakeText(TEXT("MORTE SÚBITA"), 10, RedC, true, 200);
 	Sudden->SetVisibility(ESlateVisibility::Collapsed);
 	if (UVerticalBoxSlot* Sl = Mid->AddChildToVerticalBox(Sudden)) Sl->SetHorizontalAlignment(HAlign_Center);
-	if (UVerticalBoxSlot* Sl = Mid->AddChildToVerticalBox(MakeText(TEXT("R partida nova · F9 salva o replay"), 8, Muted, false, 40)))
+	if (UVerticalBoxSlot* Sl = Mid->AddChildToVerticalBox(MakeText(TEXT("R partida nova · F9 salva o replay · Esc configurações"), 8, Muted, false, 40)))
 		Sl->SetHorizontalAlignment(HAlign_Center);
 	UBorder* ClockPlate = WidgetTree->ConstructWidget<UBorder>();
 	ClockPlate->SetBrush(Rounded(Panel, 10.f));
@@ -310,6 +442,8 @@ void UTdfHudWidget::BuildTree()
 	Shop->SetPadding(FMargin(12.f, 10.f, 9.f, 10.f));
 	Shop->SetContent(Sections);
 	Place(Shop, FAnchors(0.5f, 1.f), FVector2D(0.5f, 1.f), FVector2D(0.f, -12.f));
+
+	BuildSettings(Root);
 
 	// selo de build no canto inferior direito (MANUAL: executável sem selo reprova a captura)
 	Stamp = MakeText(TEXT("build ") + TdfBuildStamp(), 8, Muted, false, 20);

@@ -28,12 +28,13 @@ class UTdfCardButton : public UButton
 
 public:
 	UTdfCardButton();
-	void Setup(class UTdfHudWidget* InOwner, int32 InIndex, bool bInSend);
+	/** Kind: 0 torre, 1 envio, 2 qualidade, 3 resolução, 4 janela (UTdfHudWidget::OnButton). */
+	void Setup(class UTdfHudWidget* InOwner, int32 InIndex, int32 InKind);
 
 private:
 	TWeakObjectPtr<class UTdfHudWidget> Owner;
 	int32 Index = 0;
-	bool bSend = false;
+	int32 Kind = 0;
 
 	UFUNCTION() void HandleClicked();
 };
@@ -75,6 +76,16 @@ public:
 	bool IsPointerOverUi() const;
 	/** O texto do selo de build no canto ("build <hash>"). */
 	FString StampText() const;
+
+	/** Configurações (Esc): qualidade gráfica 0-3 (grupos sg.* do Unreal), escala de resolução e janela/tela cheia; salvas. */
+	void ToggleSettings();
+	bool IsSettingsOpen() const;
+	void SetQuality(int32 Level);
+	int32 SelectedQuality() const;
+	void SetScreenPercent(float Percent);
+	void SetFullscreen(bool bFull);
+	/** Clique de um botão do HUD: Kind 0 torre, 1 envio, 2 qualidade, 3 resolução, 4 janela. */
+	void OnButton(int32 Kind, int32 Index);
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -131,6 +142,13 @@ private:
 	UPROPERTY() TObjectPtr<UBorder> EndPanel;
 	UPROPERTY() TObjectPtr<UTextBlock> EndTitle;
 	UPROPERTY() TObjectPtr<UTextBlock> Stamp;
+	UPROPERTY() TObjectPtr<UBorder> Settings;
+	UPROPERTY() TArray<TObjectPtr<UBorder>> QualityFrames;
+	UPROPERTY() TArray<TObjectPtr<UBorder>> ScaleFrames;
+	UPROPERTY() TArray<TObjectPtr<UBorder>> WindowFrames;
+	int32 Quality = -1;
+	void BuildSettings(class UCanvasPanel* Root);
+	UBorder* MakeOption(const FString& Text, int32 Kind, int32 Index, TArray<TObjectPtr<UBorder>>& Frames);
 	int32 LastResult = 0;
 	int32 LastClock = -1;
 	FString LastToast;

@@ -1,6 +1,8 @@
 #include "TdfPlayerController.h"
 #include "TdfSimActor.h"
 #include "TdfHudWidget.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerInput.h"
@@ -65,6 +67,7 @@ void ATdfPlayerController::PlayerTick(float DeltaTime)
 		Mode.SetHideCursorDuringCapture(false);
 		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(Mode);
+		if (FParse::Param(FCommandLine::Get(), TEXT("TdfConfiguracoes"))) Hud->ToggleSettings(); // conferir o painel no print
 	}
 
 	// célula sob o mouse: raio da câmera contra o plano do chão (Z = 0); sobre o HUD, nenhuma (o clique é da interface)
@@ -78,6 +81,7 @@ void ATdfPlayerController::PlayerTick(float DeltaTime)
 
 	MoveCamera(DeltaTime);
 
+	if (Hud && WasInputKeyJustPressed(EKeys::Escape)) Hud->ToggleSettings(); // configurações
 	// R: partida nova; F9: salva o replay (como no Unity)
 	if (WasInputKeyJustPressed(EKeys::R)) S->RestartMatch();
 	if (WasInputKeyJustPressed(EKeys::F9)) { FString Path; S->SaveReplayNow(Path); }

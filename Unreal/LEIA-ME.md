@@ -227,8 +227,14 @@ Sem Niagara (montar sistema do Niagara sem abrir o editor não dá): tudo instan
 - **Orçamento:** `MedirFps.ps1` mede FPS e GPU por caso (completo, qualidade média, leve e os A/B de grama, névoa, nuvens, Lumen,
   sombra virtual) e sai 1 se a GPU média do caso completo passar de 8 ms (1600×900, este PC).
 
+### Configurações (Esc, 15/10/2026)
+Painel no HUD: qualidade gráfica Baixa/Média/Alta/Épica (os grupos sg.* do Unreal de uma vez), resolução de render 70/85/100%
+(o TSR completa) e janela/tela cheia; salvo no `GameUserSettings` para a próxima vez. Com o painel aberto o clique não vai para o
+campo. `-TdfConfiguracoes` abre o painel ao começar (para o print). Medidas: Média ~7,9 ms de GPU, Leve (Baixa + 70%) ~4,8 ms.
+DLSS/FSR/XeSS como opção: precisam dos plugins dos fabricantes (baixar = autorização do Felipe).
+
 ### Próximo
-Sem depender do Felipe: menu de configurações (qualidade gráfica pelos grupos sg.*, resolução, upscaler). Dependem dele: sons
+Dependem do Felipe: sons
 (baixar pede autorização), partículas de gelo/fogo (Niagara: ligar o Unreal MCP), torreta que mira (arte com a parte de cima
 separada), Steam (app, login), tema/bioma (U3).
 

@@ -22,6 +22,7 @@
 #include "TdfHudWidget.h"
 #include "TdfFxComponent.h"
 #include "TdfBuildStamp.h"
+#include "GameFramework/GameUserSettings.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTdf, Log, All);
 
@@ -1099,6 +1100,20 @@ void ATdfSimActor::RunSelfTest(float)
 				SelfCheck(bThumbs, TEXT("miniaturas 3D de cada torre e de cada bicho nos cartões"));
 			}
 		}
+		// configurações (Esc): abre, troca a qualidade gráfica de verdade (GameUserSettings) e fecha; volta a qualidade de antes
+		if (UTdfHudWidget* Hud = SelfHud())
+		{
+			UGameUserSettings* Gus = UGameUserSettings::GetGameUserSettings();
+			const int32 Before = Gus ? Gus->GetOverallScalabilityLevel() : -1;
+			Hud->ToggleSettings();
+			const bool bOpen = Hud->IsSettingsOpen();
+			Hud->SetQuality(1);
+			const bool bLow = Gus && Gus->GetOverallScalabilityLevel() == 1 && Hud->SelectedQuality() == 1;
+			Hud->SetQuality(Before >= 0 ? Before : 3);
+			Hud->ToggleSettings();
+			SelfCheck(bOpen && bLow && !Hud->IsSettingsOpen(), TEXT("configurações: Esc abre, qualidade muda de verdade, Esc fecha"));
+		}
+		else SelfCheck(false, TEXT("configurações (sem HUD)"));
 		// selo de build (U4): o hash do git no canto do HUD; executável sem selo reprova
 		{
 			const FString Stamp = TdfBuildStamp();
