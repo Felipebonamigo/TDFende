@@ -86,6 +86,10 @@ ATdfSimActor::ATdfSimActor()
 	Fx->SetupAttachment(RootScene);
 	TerritoryMesh = Make(TEXT("Territorio"), Plane.Object);
 	TerritoryMesh1 = Make(TEXT("Territorio1"), Plane.Object);
+	OutlineMesh = Make(TEXT("Contorno"), Cube.Object);
+	OutlineMesh1 = Make(TEXT("Contorno1"), Cube.Object);
+	OutlineMesh->NumCustomDataFloats = 4;
+	OutlineMesh1->NumCustomDataFloats = 4;
 }
 
 void ATdfSimActor::BeginPlay()
@@ -107,6 +111,11 @@ void ATdfSimActor::BeginPlay()
 	for (int32 i = 0; i < EnemyKinds; ++i) Paint(EnemyMesh[i], EnemyColors[i]);
 	for (int32 i = 0; i < TowerKinds; ++i) Paint(TowerMesh[i], TowerColors[i]);
 	Fx->Setup();
+	if (UMaterialInterface* Glow = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/TDFende/Efeitos/M_TdfBrilho.M_TdfBrilho")))
+	{
+		OutlineMesh->SetMaterial(0, Glow);
+		OutlineMesh1->SetMaterial(0, Glow);
+	}
 	// véus de efeito no bicho (material de sobreposição): gelo, lentidão, fogo (este pulsa)
 	if (UMaterialInterface* St = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/TDFende/Efeitos/M_TdfStatus.M_TdfStatus")))
 	{
@@ -131,7 +140,7 @@ void ATdfSimActor::BeginPlay()
 		{
 			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(Veil, this);
 			M->SetVectorParameterValue(TEXT("Cor"), LaneColor[i]);
-			M->SetScalarParameterValue(TEXT("Opacidade"), 0.16f);
+			M->SetScalarParameterValue(TEXT("Opacidade"), 0.10f); // o contorno marca o limite; o véu só tinge
 			Veils[i]->SetMaterial(0, M);
 			Veils[i]->SetCastShadow(false);
 			Mids.Add(M);
@@ -719,6 +728,21 @@ void ATdfSimActor::HitFx(const TdfEvent& E)
 	}
 }
 
+void ATdfSimActor::TerritoryEdges(const uint8* Cells, int32 W, int32 H, TArray<FIntVector4>& Out)
+{
+	Out.Reset();
+	auto In = [Cells, W, H](int32 X, int32 Y) { return X >= 0 && Y >= 0 && X < W && Y < H && Cells[Y * W + X] != 0; };
+	for (int32 Y = 0; Y < H; ++Y)
+		for (int32 X = 0; X < W; ++X)
+		{
+			if (!In(X, Y)) continue;
+			if (!In(X - 1, Y)) Out.Add(FIntVector4(X, Y, X, Y + 1));
+			if (!In(X + 1, Y)) Out.Add(FIntVector4(X + 1, Y, X + 1, Y + 1));
+			if (!In(X, Y - 1)) Out.Add(FIntVector4(X, Y, X + 1, Y));
+			if (!In(X, Y + 1)) Out.Add(FIntVector4(X, Y + 1, X + 1, Y + 1));
+		}
+}
+
 void ATdfSimActor::StatusFx(const TdfEvent& E)
 {
 	if (E.C != 3) return; // 0 lentidão, 1 gelo, 2 fogo: o véu do bicho já mostra; 3 empurrão: onda de ar + poeira
@@ -991,18 +1015,42 @@ void ATdfSimActor::Redraw()
 	{
 		Swap(TerritoryBuf, TerritoryNow);
 		UInstancedStaticMeshComponent* Veils[2] = { TerritoryMesh, TerritoryMesh1 };
+		UInstancedStaticMeshComponent* Lines[2] = { OutlineMesh, OutlineMesh1 };
+		const FLinearColor LaneGlow[2] = { FLinearColor(0.25f, 0.6f, 1.f, 2.2f), FLinearColor(1.f, 0.35f, 0.22f, 2.2f) };
+		TArray<FIntVector4> Edges;
 		for (int32 Lane = 0; Lane < 2; ++Lane)
 		{
+			const FVector LaneShift(Lane * (GridHeight + 4) * CellSizeCm, 0.f, 0.f);
+			// véu contínuo (células encostadas, sem fresta): a grade de quadradinhos sumiu
 			Veils[Lane]->ClearInstances();
 			TArray<FTransform> Cells;
+			const uint8* Grid = TerritoryBuf.GetData() + Lane * GridWidth * GridHeight;
 			for (int32 Y = 0; Y < GridHeight; ++Y)
 				for (int32 X = 0; X < GridWidth; ++X)
-					if (TerritoryBuf[Lane * GridWidth * GridHeight + Y * GridWidth + X])
-					{
-						const FVector P = CellToWorld(X, Y, 3.f) + FVector(Lane * (GridHeight + 4) * CellSizeCm, 0.f, 0.f);
-						Cells.Add(FTransform(FRotator::ZeroRotator, P, FVector(CellSizeCm * 0.0097f, CellSizeCm * 0.0097f, 1.f)));
-					}
+					if (Grid[Y * GridWidth + X])
+						Cells.Add(FTransform(FRotator::ZeroRotator, CellToWorld(X, Y, 3.f) + LaneShift, FVector(CellSizeCm * 0.01f, CellSizeCm * 0.01f, 1.f)));
 			Veils[Lane]->AddInstances(Cells, false);
+			// contorno: uma faixa fina que brilha em cada lado de célula que dá para fora
+			if (!Lines[Lane]) continue;
+			Lines[Lane]->ClearInstances();
+			TerritoryEdges(Grid, GridWidth, GridHeight, Edges);
+			TArray<FTransform> Segs;
+			for (const FIntVector4& E : Edges)
+			{
+				// canto (cx, cy) da grade -> mundo: X = (cy - H/2) * célula, Y = (cx - W/2) * célula (como CellToWorld, sem o meio)
+				const FVector A((E.Y - GridHeight * 0.5f) * CellSizeCm, (E.X - GridWidth * 0.5f) * CellSizeCm, 5.f);
+				const FVector B((E.W - GridHeight * 0.5f) * CellSizeCm, (E.Z - GridWidth * 0.5f) * CellSizeCm, 5.f);
+				const bool bAlongX = FMath::Abs(B.X - A.X) > 1.f;
+				const float Len = CellSizeCm + 7.f; // passa um pouco do canto: as esquinas fecham
+				Segs.Add(FTransform(FRotator::ZeroRotator, (A + B) * 0.5f + LaneShift,
+					FVector(bAlongX ? Len : 7.f, bAlongX ? 7.f : Len, 2.f) / 100.f));
+			}
+			Lines[Lane]->AddInstances(Segs, false);
+			for (int32 i = 0; i < Segs.Num(); ++i)
+			{
+				const float V[4] = { LaneGlow[Lane].R, LaneGlow[Lane].G, LaneGlow[Lane].B, LaneGlow[Lane].A };
+				Lines[Lane]->SetCustomData(i, TArrayView<const float>(V, 4), i == Segs.Num() - 1);
+			}
 		}
 	}
 }
@@ -1048,6 +1096,19 @@ void ATdfSimActor::RunSelfTest(float)
 				for (int32 i = 0; bThumbs && i < SendTypes.Num(); ++i) bThumbs = Hud->SendThumb(i) != nullptr;
 				SelfCheck(bThumbs, TEXT("miniaturas 3D de cada torre e de cada bicho nos cartões"));
 			}
+		}
+		// contorno do território: só os lados de célula que dão para fora (vizinho fora do território ou da grade)
+		{
+			uint8 G[9] = {0, 0, 0, 0, 1, 0, 0, 0, 0}; // 3x3, só o meio
+			TArray<FIntVector4> Edges;
+			TerritoryEdges(G, 3, 3, Edges);
+			const bool bOne = Edges.Num() == 4;
+			G[5] = 1; // e o vizinho à direita: 2x1 tem 6 lados de fora
+			TerritoryEdges(G, 3, 3, Edges);
+			const bool bTwo = Edges.Num() == 6;
+			uint8 Corner[4] = {1, 0, 0, 0}; // célula no canto da grade: a borda da grade também é limite
+			TerritoryEdges(Corner, 2, 2, Edges);
+			SelfCheck(bOne && bTwo && Edges.Num() == 4, TEXT("contorno do território: só os lados que dão para fora"));
 		}
 		// efeitos de combate, com dados de mentira direto na vista (não passam pela Sim: a partida não muda)
 		{

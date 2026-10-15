@@ -176,6 +176,8 @@ private:
 	void HitFx(const TdfEvent& E);
 	/** Efeito aplicado (StatusApplied): o empurrão vira onda de ar + poeira (gelo e fogo já aparecem pelo véu). */
 	void StatusFx(const TdfEvent& E);
+	/** Lados de célula na borda do território (cantos em coordenadas de célula: x0, y0, x1, y1). Cells: W*H, 1 = território. */
+	static void TerritoryEdges(const uint8* Cells, int32 W, int32 H, TArray<FIntVector4>& Out);
 	void TickDying(float DeltaSeconds);
 	struct FDying;
 	void RecycleDying(const FDying& D);
@@ -225,6 +227,8 @@ private:
 	UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> StatusMids;
 	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh = nullptr;   // lane 0 (você)
 	UPROPERTY() UInstancedStaticMeshComponent* TerritoryMesh1 = nullptr;  // lane 1 (IA)
+	UPROPERTY() UInstancedStaticMeshComponent* OutlineMesh = nullptr;     // contorno do território (lane 0), M_TdfBrilho
+	UPROPERTY() UInstancedStaticMeshComponent* OutlineMesh1 = nullptr;    // contorno do território (lane 1)
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> Mids;
 	/**
 	 * Tudo o que a vista carrega ou cria em tempo de execucao (malhas, animacoes, componentes de bicho e de torre). Os mapas abaixo
