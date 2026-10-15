@@ -177,6 +177,19 @@ void UTdfFxComponent::TickFx(float DeltaSeconds)
 	bLiveDirty = Live.Num() > 0; // o último quadro com clarão ainda limpa as instâncias
 }
 
+void UTdfFxComponent::Clear()
+{
+	Prev.Reset();
+	Cur.Reset();
+	From.Reset();
+	Drawn.Reset();
+	TrailCount = 0;
+	Live.Reset();
+	bLiveDirty = false;
+	for (UInstancedStaticMeshComponent* C : {Iron.Get(), Glow.Get(), Smoke.Get(), Flashes.Get(), Puffs.Get()})
+		if (C) C->ClearInstances();
+}
+
 void UTdfFxComponent::RedrawLive()
 {
 	XGlow.Reset(); DGlow.Reset(); XSmoke.Reset(); DSmoke.Reset();

@@ -76,6 +76,12 @@ public:
 	void SelectTower(int32 TypeId) { SelectedTower = FMath::Clamp(TypeId, 0, FMath::Max(0, TowerTypes.Num() - 1)); }
 	void CycleTower(int32 Delta);
 	int32 GetSelectedTower() const { return SelectedTower; }
+	/** R: partida nova com outra semente (como o Unity); a anterior fica gravada em partida.txt. Não vale reproduzindo replay. */
+	bool RestartMatch();
+	/** F9: grava o replay da partida em andamento em <Saved>/Tdf/replays/tdfende-AAAAMMDD-HHMMSS.txt. */
+	bool SaveReplayNow(FString& OutPath);
+	/** 0 jogando, 1 você venceu, -1 você perdeu. */
+	int32 MatchResult() const;
 
 	// ---- perguntas para a vista / HUD ----
 	bool IsRunning() const { return bRunning; }
@@ -169,6 +175,10 @@ private:
 	void FireFx(const TdfEvent& E);
 	void HitFx(const TdfEvent& E);
 	void TickDying(float DeltaSeconds);
+	struct FDying;
+	void RecycleDying(const FDying& D);
+	/** O texto do replay da partida em andamento (formato do Replay.Serialize do C#). */
+	FString RecordingText() const;
 	int32 NumDying() const { return Dying.Num(); }
 	struct FDying
 	{
@@ -250,6 +260,8 @@ private:
 	int32 SelfFailures = 0;
 	int32 SelfGoldBefore = 0;
 	int32 SelfHudWait = 0;
+	int32 SelfSeedBefore = 0;
+	int32 SelfStartGold = 0;
 	void SelfCheck(bool bCondition, const TCHAR* What);
 	class UTdfHudWidget* SelfHud() const;
 };

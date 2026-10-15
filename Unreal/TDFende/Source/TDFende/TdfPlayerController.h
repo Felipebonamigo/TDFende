@@ -13,6 +13,7 @@ class UTdfHudWidget;
  *   botão direito   = vender a torre da célula
  *   Q / E           = torre anterior / próxima        1 a 9 = enviar o bicho do mesmo número
  *   W A S D / setas = mover a câmera                  roda do mouse = aproximar / afastar
+ *   R               = partida nova                    F9 = salvar o replay
  */
 UCLASS()
 class ATdfPlayerController : public APlayerController

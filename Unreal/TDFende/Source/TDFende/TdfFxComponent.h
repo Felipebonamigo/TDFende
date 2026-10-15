@@ -44,6 +44,8 @@ public:
 	void Flash(const FVector& At, ETdfFx Style, int32 TowerType, float Size = 1.f);
 	/** Anda os clarões (crescer, apagar, sumir). */
 	void TickFx(float DeltaSeconds);
+	/** Partida nova: some tudo (tiros, rastros, clarões, poeira) e esquece o tique anterior. */
+	void Clear();
 
 	int32 NumShotInstances() const { return Drawn.Num(); }
 	int32 NumTrailInstances() const { return TrailCount; }

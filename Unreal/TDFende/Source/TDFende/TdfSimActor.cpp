@@ -15,6 +15,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimSequence.h"
 #include "Engine/Engine.h"
+#include "Misc/DateTime.h"
 #include "RenderCore.h"
 #include "RHI.h"
 #include "TdfPlayerController.h"
@@ -312,14 +313,46 @@ void ATdfSimActor::CycleTower(int32 Delta)
 	SelectedTower = (SelectedTower + Delta + TowerTypes.Num()) % TowerTypes.Num();
 }
 
-FString ATdfSimActor::RecordingPath()
+bool ATdfSimActor::RestartMatch()
 {
-	return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Tdf"), TEXT("partida.txt"));
+	if (!bRunning || bReplaying || !Sim.IsLoaded()) return false;
+	SaveRecording(); // a partida que acabou fica em partida.txt
+
+	// vista: tudo da partida anterior sai da tela (bicho volta ao pool sem cair, morto some, tiros e clarões somem)
+	TArray<int64> Ids;
+	Views.GetKeys(Ids);
+	for (int64 Id : Ids) KillView(Id, true);
+	for (const FDying& D : Dying) RecycleDying(D);
+	Dying.Reset();
+	Fx->Clear();
+	Bars.Reset();
+	LeakedAt.Reset();
+
+	// Sim: partida nova com outra semente, como o R do Unity (a semente vai no replay: continua reprodutível)
+	Sim.destroy();
+	const int32 Old = Seed;
+	Seed = int32(FDateTime::Now().GetTicks() % 2000000000);
+	if (Seed == Old) ++Seed;
+	if (Sim.create(Seed, Difficulty, GridWidth, GridHeight, nullptr, nullptr) != 0)
+	{
+		UE_LOG(LogTdf, Error, TEXT("tdf_create falhou ao reiniciar: %s"), *Sim.LastError());
+		bRunning = false;
+		return false;
+	}
+	Recorded.Reset();
+	Accumulator = 0.f;
+	LastRedrawTick = -1;
+	TowerSignature = MAX_uint32; // refaz as torres no próximo desenho
+	bFingerprintLogged = false;
+	FMemory::Memzero(TerritoryBuf.GetData(), TerritoryBuf.Num());
+	Redraw(); // placar e perguntas do HUD já valem para a partida nova
+	ToastMsg(TEXT("Partida nova"));
+	UE_LOG(LogTdf, Display, TEXT("Partida nova (semente %d)"), Seed);
+	return true;
 }
 
-void ATdfSimActor::SaveRecording() const
+FString ATdfSimActor::RecordingText() const
 {
-	if (Recorded.Num() == 0 || bReplaying || !Sim.IsLoaded()) return;
 	// mesmo formato do Replay.Serialize (C#): o FlowSim reproduz e confere o estado final ("final")
 	char Sig[192] = {};
 	Sim.signature(Sig, sizeof(Sig));
@@ -331,8 +364,37 @@ void ATdfSimActor::SaveRecording() const
 		Out += FString::Printf(TEXT("sends %s\ntowers %s\nrules %s\n"), *Parts[0], *Parts[1], *Parts[2]);
 	Out += FString::Printf(TEXT("final %s\n"), *Sim.Fingerprint());
 	for (const FString& L : Recorded) Out += L + TEXT("\n");
+	return Out;
+}
+
+bool ATdfSimActor::SaveReplayNow(FString& OutPath)
+{
+	if (!bRunning || bReplaying || !Sim.IsLoaded()) return false;
+	// como o F9 do Unity: um arquivo por vez que aperta, com data e hora no nome
+	OutPath = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Tdf"), TEXT("replays"),
+		FString::Printf(TEXT("tdfende-%s.txt"), *FDateTime::Now().ToString(TEXT("%Y%m%d-%H%M%S"))));
+	const bool bOk = FFileHelper::SaveStringToFile(RecordingText(), *OutPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+	ToastMsg(bOk ? FString::Printf(TEXT("Replay salvo: %s"), *FPaths::GetCleanFilename(OutPath)) : FString(TEXT("Não consegui salvar o replay")));
+	UE_LOG(LogTdf, Display, TEXT("F9: %s %s"), bOk ? TEXT("replay salvo em") : TEXT("falhou ao salvar"), *OutPath);
+	return bOk;
+}
+
+int32 ATdfSimActor::MatchResult() const
+{
+	if (!bRunning || !Sim.IsLoaded() || !Sim.over()) return 0;
+	return Lanes[1].Dead && !Lanes[0].Dead ? 1 : -1;
+}
+
+FString ATdfSimActor::RecordingPath()
+{
+	return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Tdf"), TEXT("partida.txt"));
+}
+
+void ATdfSimActor::SaveRecording() const
+{
+	if (Recorded.Num() == 0 || bReplaying || !Sim.IsLoaded()) return;
 	const FString Path = RecordingPath();
-	FFileHelper::SaveStringToFile(Out, *Path, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+	FFileHelper::SaveStringToFile(RecordingText(), *Path, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 	UE_LOG(LogTdf, Display, TEXT("Partida gravada (%d comandos): %s"), Recorded.Num(), *Path);
 }
 
@@ -463,7 +525,14 @@ void ATdfSimActor::Tick(float DeltaSeconds)
 	{
 		const TdfEvent& E = EventBuf[i];
 		if (E.Kind == TDF_EV_COMMAND_REJECTED) ToastMsg(RejectText(E.B));
-		else if (E.Kind == TDF_EV_MATCH_ENDED) ToastMsg(E.A == 0 ? TEXT("Você perdeu a partida") : TEXT("Você venceu a partida!"));
+		else if (E.Kind == TDF_EV_MATCH_ENDED)
+		{
+			// o painel de VITÓRIA/DERROTA do HUD diz o resultado (MatchResult); aqui só o registro
+			UE_LOG(LogTdf, Display, TEXT("Fim da partida no tique %d: %s"), E.C, E.A == 0 ? TEXT("derrota") : TEXT("vitória"));
+			// com -TdfShot, um print do fim (o painel de VITÓRIA/DERROTA)
+			if (!ShotPath.IsEmpty())
+				FScreenshotRequest::RequestScreenshot(FPaths::Combine(FPaths::GetPath(ShotPath), FPaths::GetBaseFilename(ShotPath) + TEXT("_fim.png")), true, false);
+		}
 		else if (E.Kind == TDF_EV_TOWER_FIRED) FireFx(E);
 		else if (E.Kind == TDF_EV_ENEMY_HIT) HitFx(E);
 	}
@@ -697,6 +766,15 @@ void ATdfSimActor::KillView(int64 Id, bool bLeaked)
 	Fx->Flash(FVector(D.Pos.X, D.Pos.Y, 0.f), ETdfFx::Dust, -1, FMath::Clamp(V.TargetCm / 50.f, 0.6f, 2.5f));
 }
 
+void ATdfSimActor::RecycleDying(const FDying& D)
+{
+	D.Comp->SetVisibility(false);
+	D.Comp->SetComponentTickEnabled(false);
+	const FTypeVisual& V = TypeVisual(D.Type);
+	if (D.DeathLen > 0.f && V.Anim) { D.Comp->SetAnimation(V.Anim); D.Comp->Play(true); } // volta a andar quando reaproveitado
+	Pool.FindOrAdd(D.Type).Add(D.Comp);
+}
+
 void ATdfSimActor::TickDying(float DeltaSeconds)
 {
 	for (int32 i = Dying.Num() - 1; i >= 0; --i)
@@ -709,10 +787,7 @@ void ATdfSimActor::TickDying(float DeltaSeconds)
 		const float SinkStart = Fall + 0.6f, End = SinkStart + 0.9f;
 		if (D.Age >= End)
 		{
-			D.Comp->SetVisibility(false);
-			D.Comp->SetComponentTickEnabled(false);
-			if (D.DeathLen > 0.f && V.Anim) { D.Comp->SetAnimation(V.Anim); D.Comp->Play(true); } // volta a andar quando reaproveitado
-			Pool.FindOrAdd(D.Type).Add(D.Comp);
+			RecycleDying(D);
 			Dying.RemoveAtSwap(i, EAllowShrinking::No);
 			continue;
 		}
@@ -1007,6 +1082,7 @@ void ATdfSimActor::RunSelfTest(float)
 		SelfCheck(bRound, TEXT("WorldToCell(CellToWorld(c)) == c em todas as células"));
 		SelfCheck(WorldToCell(FVector(GridHeight * CellSizeCm, 0.f, 0.f)) == FIntPoint(-1, -1), TEXT("WorldToCell fora da grade devolve (-1,-1)"));
 		SelfGoldBefore = Lanes[0].Gold;
+		SelfStartGold = Lanes[0].Gold;
 		SelectTower(2); // gelo
 		SelfCheck(BuildAt(Cx, Cy), TEXT("BuildAt aceito"));
 		SelfWaitUntilTick = T + 4;
@@ -1053,6 +1129,27 @@ void ATdfSimActor::RunSelfTest(float)
 		}
 		SaveRecording();
 		SelfCheck(FPaths::FileExists(RecordingPath()), TEXT("a partida foi gravada em Saved/Tdf/partida.txt"));
+		{
+			// F9: salva o replay da partida em andamento num arquivo novo, no formato do FlowSim
+			FString Saved, Text;
+			const bool bSaved = SaveReplayNow(Saved);
+			SelfCheck(bSaved && FFileHelper::LoadFileToString(Text, *Saved) && Text.StartsWith(TEXT("tdfende-replay 2")) && Text.Contains(TEXT("\nfinal "))
+				&& Text.Contains(Recorded.Last()), TEXT("F9 salva o replay (cabeçalho, estado final e os comandos)"));
+			// R: partida nova, com outra semente; a anterior fica gravada em partida.txt (o FlowSim a reproduz no fim do teste)
+			SelfSeedBefore = Seed;
+			SelfCheck(RestartMatch(), TEXT("R reinicia a partida"));
+		}
+		SelfWaitUntilTick = 5; // o tique volta a zero
+		break;
+	case 5:
+	{
+		const int32 StartGold = Lanes[0].Gold;
+		SelfCheck(Sim.tick() < 30 && Seed != SelfSeedBefore && Recorded.Num() == 0, TEXT("partida nova: tique do começo, outra semente, gravação vazia"));
+		SelfCheck(Lanes[0].TowerCount == 0 && TowerLevelAt(Cx, Cy) == 0 && StartGold >= SelfStartGold, TEXT("partida nova: sem torres e com o ouro do começo"));
+		SelfCheck(Views.Num() == 0 && Dying.Num() == 0 && Fx->NumShotInstances() == 0, TEXT("partida nova: nenhum bicho, morto ou tiro da anterior na tela"));
+		FString Text;
+		SelfCheck(FFileHelper::LoadFileToString(Text, *RecordingPath()) && Text.Contains(TEXT(" sell ")), TEXT("a partida anterior ficou gravada em partida.txt"));
+	}
 		// coleta de lixo: o que a vista cria em tempo de execução (componente de bicho no pool, malha, animação, torre
 		// instanciada) tem que sobreviver ao GC. Sem isso o jogo caía a ~60 s de partida (o intervalo do GC).
 		if (bUseArt && TypeVisual(0).Mesh)

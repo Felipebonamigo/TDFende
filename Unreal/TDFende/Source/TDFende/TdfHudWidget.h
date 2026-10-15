@@ -125,6 +125,10 @@ private:
 	UPROPERTY() TObjectPtr<UBorder> TopLeft;
 	UPROPERTY() TObjectPtr<UBorder> TopRight;
 	UPROPERTY() TObjectPtr<UBorder> Shop;
+	/** Fim de partida: VITÓRIA / DERROTA por cima de tudo, com "R para jogar de novo". */
+	UPROPERTY() TObjectPtr<UBorder> EndPanel;
+	UPROPERTY() TObjectPtr<UTextBlock> EndTitle;
+	int32 LastResult = 0;
 	int32 LastClock = -1;
 	FString LastToast;
 

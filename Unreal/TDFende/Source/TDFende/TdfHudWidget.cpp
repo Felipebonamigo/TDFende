@@ -260,6 +260,8 @@ void UTdfHudWidget::BuildTree()
 	Sudden = MakeText(TEXT("MORTE SÚBITA"), 10, RedC, true, 200);
 	Sudden->SetVisibility(ESlateVisibility::Collapsed);
 	if (UVerticalBoxSlot* Sl = Mid->AddChildToVerticalBox(Sudden)) Sl->SetHorizontalAlignment(HAlign_Center);
+	if (UVerticalBoxSlot* Sl = Mid->AddChildToVerticalBox(MakeText(TEXT("R partida nova · F9 salva o replay"), 8, Muted, false, 40)))
+		Sl->SetHorizontalAlignment(HAlign_Center);
 	UBorder* ClockPlate = WidgetTree->ConstructWidget<UBorder>();
 	ClockPlate->SetBrush(Rounded(Panel, 10.f));
 	ClockPlate->SetPadding(FMargin(18.f, 6.f));
@@ -270,7 +272,7 @@ void UTdfHudWidget::BuildTree()
 	ToastText = MakeText(TEXT(""), 20, FLinearColor(1.f, 0.72f, 0.32f), true, 40);
 	ToastText->SetShadowOffset(FVector2D(2.f, 2.f));
 	ToastText->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-	ToastText->SetVisibility(ESlateVisibility::Collapsed);
+	ToastText->SetVisibility(ESlateVisibility::Hidden); // Hidden: segue medido (Collapsed nascia torto no 1º quadro)
 	Place(ToastText, FAnchors(0.5f, 0.f), FVector2D(0.5f, 0.f), FVector2D(0.f, 92.f));
 
 	// loja
@@ -305,6 +307,27 @@ void UTdfHudWidget::BuildTree()
 	Shop->SetPadding(FMargin(12.f, 10.f, 9.f, 10.f));
 	Shop->SetContent(Sections);
 	Place(Shop, FAnchors(0.5f, 1.f), FVector2D(0.5f, 1.f), FVector2D(0.f, -12.f));
+
+	// fim de partida: a tela escurece e o resultado aparece no meio (não bloqueia o mouse: o R é que recomeça)
+	UVerticalBox* End = WidgetTree->ConstructWidget<UVerticalBox>();
+	EndTitle = MakeText(TEXT("DERROTA"), 54, Ink, true, 300);
+	EndTitle->SetShadowOffset(FVector2D(3.f, 3.f));
+	if (UVerticalBoxSlot* Sl = End->AddChildToVerticalBox(EndTitle)) Sl->SetHorizontalAlignment(HAlign_Center);
+	if (UVerticalBoxSlot* Sl = End->AddChildToVerticalBox(MakeText(TEXT("R para jogar de novo  ·  F9 salva o replay"), 15, Ink, false, 60)))
+	{
+		Sl->SetHorizontalAlignment(HAlign_Center);
+		Sl->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
+	}
+	EndPanel = WidgetTree->ConstructWidget<UBorder>();
+	EndPanel->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.55f));
+	EndPanel->SetHorizontalAlignment(HAlign_Center);
+	EndPanel->SetVerticalAlignment(VAlign_Center);
+	EndPanel->SetContent(End);
+	// Hidden (e não Collapsed): continua medido a cada quadro; Collapsed aparecia no 1º quadro com o texto sobreposto
+	EndPanel->SetVisibility(ESlateVisibility::Hidden);
+	UCanvasPanelSlot* EndSlot = Root->AddChildToCanvas(EndPanel);
+	EndSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+	EndSlot->SetOffsets(FMargin(0.f));
 }
 
 // ------------------------------------------------------------------ atualização
@@ -350,6 +373,14 @@ void UTdfHudWidget::Refresh()
 		Clock->SetText(FText::FromString(FString::Printf(TEXT("%d:%02d"), Secs / 60, Secs % 60)));
 	}
 	if (Sudden) Sudden->SetVisibility(Me.InSuddenDeath ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	const int32 Result = S->MatchResult();
+	if (EndPanel && Result != LastResult)
+	{
+		LastResult = Result;
+		EndPanel->SetVisibility(Result != 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		EndTitle->SetText(FText::FromString(Result > 0 ? TEXT("VITÓRIA") : TEXT("DERROTA")));
+		EndTitle->SetColorAndOpacity(FSlateColor(Result > 0 ? GoldC : RedC));
+	}
 
 	for (int32 i = 0; i < TowerCards.Num(); ++i) UpdateCard(TowerCards[i], Me.Gold, i == S->GetSelectedTower());
 	for (int32 i = 0; i < SendCards.Num(); ++i) UpdateCard(SendCards[i], Me.Gold, false);
@@ -363,7 +394,7 @@ void UTdfHudWidget::Refresh()
 			LastToast = S->GetToast();
 			ToastText->SetText(FText::FromString(LastToast));
 		}
-		ToastText->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		ToastText->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 		if (bShow) ToastText->SetRenderOpacity(FMath::Clamp(3.f - Age, 0.f, 1.f));
 		else LastToast.Reset();
 	}

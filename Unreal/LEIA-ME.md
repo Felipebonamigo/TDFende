@@ -200,9 +200,20 @@ Sem Niagara (montar sistema do Niagara sem abrir o editor não dá): tudo instan
   nenhuma (GPU sempre ~6 ms). Era algo fora do jogo (janela em segundo plano ou outra carga de vídeo). Se aparecer de novo, o log
   diz qual dos três segura o quadro.
 
+### R, F9 e fim de partida (U2, 15/10/2026)
+- **R:** partida nova com outra semente (como o Unity; a semente vai no replay, então continua reprodutível). A anterior fica em
+  `Saved\Tdf\partida.txt`; bichos, mortos, tiros e clarões somem; o HUD continua (o catálogo é o mesmo). Não vale reproduzindo replay.
+- **F9:** grava o replay da partida em andamento em `Saved\Tdf\replays\tdfende-AAAAMMDD-HHMMSS.txt` (o nome do Unity), com aviso no
+  HUD. Reproduz no FlowSim com o mesmo estado final (`dotnet run --project Tools/FlowSim -v quiet -- replay <arquivo>`).
+- **Fim:** a tela escurece com VITÓRIA ou DERROTA e "R para jogar de novo"; o log diz o tique do fim, e com `-TdfShot` sai um print
+  `<nome>_fim.png`. Dica "R partida nova · F9 salva o replay" embaixo do relógio.
+- Autoteste: F9 (cabeçalho, estado final e comandos no arquivo) e R (tique do começo, outra semente, sem torres, sem bicho nem tiro
+  da anterior, ouro do começo, partida anterior gravada) — vistos falhando antes.
+- **Torreta que mira: adiada.** As torres reais são uma malha só (o Unity mirava só nos modelos procedurais, que tinham torreta
+  separada). Girar o prédio inteiro fica estranho; precisa de arte com a parte de cima separada (ou um cano por cima) — decisão de arte.
+
 ### Próximo, sem depender de ninguém
-Torreta que mira (as torres já trazem para onde miram: `HasAim`, `Aim*`; hoje a malha é inteira, sem cano separado), efeito de
-empurrão, partículas de gelo/fogo (Niagara pelo editor, se o Felipe ligar o Unreal MCP), som (MetaSounds), replay F9, contorno do
+Efeito de empurrão, partículas de gelo/fogo (Niagara pelo editor, se o Felipe ligar o Unreal MCP), som (MetaSounds), replay F9, contorno do
 território em vez de quadradinhos, otimização (grama com LOD e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`),
 e empacotar (U4).
 

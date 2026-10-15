@@ -78,6 +78,9 @@ void ATdfPlayerController::PlayerTick(float DeltaTime)
 
 	MoveCamera(DeltaTime);
 
+	// R: partida nova; F9: salva o replay (como no Unity)
+	if (WasInputKeyJustPressed(EKeys::R)) S->RestartMatch();
+	if (WasInputKeyJustPressed(EKeys::F9)) { FString Path; S->SaveReplayNow(Path); }
 	if (WasInputKeyJustPressed(EKeys::Q)) S->CycleTower(-1);
 	if (WasInputKeyJustPressed(EKeys::E)) S->CycleTower(+1);
 	static const FKey Digits[9] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five, EKeys::Six, EKeys::Seven, EKeys::Eight, EKeys::Nine };
