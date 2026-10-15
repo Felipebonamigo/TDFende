@@ -12,3 +12,5 @@ Content/
 *.sdf
 # fontes baixadas (texturas 4K da Poly Haven etc.): arte pesada fica no PC, backup no D:
 Fontes/
+# jogo empacotado (Empacotar.ps1): fica no PC, backup no D:
+Pacote/

@@ -98,7 +98,7 @@ na ordem abaixo, e nada delas é apagado antes da paridade (U2).
 - [x] **U1** — Fatia de beleza no Unreal (relevo, Lumen, 3 torres, 3 bichos, câmera da partida; comparação com Total War: Warhammer III). PC. *Aprovada pelo Felipe em 14/10/2026:* céu físico, Lumen, chão 4K da Poly Haven (campo verde, terra pisada nas lanes), árvores e rochas do acervo, grama 3D, todas as torres e bichos reais, câmera jogável. O tema/bioma segue na U3 (`Unreal/LEIA-ME.md`).
 - [ ] **U2** — Paridade de jogo (construir/subir/vender/enviar, território, HUD UMG, Niagara, áudio, replay F9, captura automática). *Feito (14/10/2026):* construir/subir/vender/enviar pelo mouse e teclado, território, **HUD em UMG** (placar, loja de torres e envios com miniatura 3D de cada modelo), **efeitos de combate** (tiros por torre com rastro, clarões, poeira, véu de gelo/fogo, barras de vida, morte com queda), **R** (partida nova) e **F9** (salva o replay), painel de VITÓRIA/DERROTA, gravação que reproduz no FlowSim, autoteste. Falta: áudio, empurrão, partículas (Niagara) e a torreta que mira (precisa de arte com a parte de cima separada).
 - [ ] **U3** — Conteúdo completo (6 torres em 3 estágios, 9 bichos animados, tema, ambiente vivo).
-- [ ] **U4** — Empacotar para Windows/Steam, selo de build, orçamento de FPS.
+- [ ] **U4** — Empacotar para Windows/Steam, selo de build, orçamento de FPS. *Feito (15/10/2026):* `Unreal/TDFende/Empacotar.ps1` gera o jogo para Windows (1,26 GB) e roda o autoteste dentro dele (PASSOU), selo "build <hash>" no HUD e no log, `MedirFps.ps1` com orçamento de GPU (completo: ~5 ms a 1600×900; leve: 4,8 ms). Falta: Steamworks e subir (só o Felipe: app e login).
 
 ## Tarefas por fase
 

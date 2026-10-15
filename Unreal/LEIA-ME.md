@@ -212,10 +212,25 @@ Sem Niagara (montar sistema do Niagara sem abrir o editor não dá): tudo instan
 - **Torreta que mira: adiada.** As torres reais são uma malha só (o Unity mirava só nos modelos procedurais, que tinham torreta
   separada). Girar o prédio inteiro fica estranho; precisa de arte com a parte de cima separada (ou um cano por cima) — decisão de arte.
 
-### Próximo, sem depender de ninguém
-Efeito de empurrão, partículas de gelo/fogo (Niagara pelo editor, se o Felipe ligar o Unreal MCP), som (MetaSounds), replay F9, contorno do
-território em vez de quadradinhos, otimização (grama com LOD e distância de corte, qualidade das nuvens, orçamento em `MedirFps.ps1`),
-e empacotar (U4).
+### Empurrão e contorno do território (U2, 15/10/2026)
+- **Empurrão** (efeito 3 da Sim): onda de ar (disco claro rente ao chão) e poeira onde o bicho está.
+- **Território:** véu contínuo e mais leve (sem a grade de quadradinhos) e uma linha fina que brilha na cor do dono, só nos lados de
+  célula que dão para fora (`TerritoryEdges`, função pura testada). Print: `Saved\U0\terr_1500.png`.
+
+### U4: empacotar, selo e orçamento (15/10/2026)
+- **Empacotar:** `powershell -ExecutionPolicy Bypass -File Unreal\TDFende\Empacotar.ps1 [-Config Development|Shipping] [-SemTeste]`.
+  Cozinha o Content, compila o jogo sem editor, junta a DLL da Sim, grava o selo e (Development) roda o **autoteste no jogo
+  empacotado**. Sai em `Unreal\TDFende\Pacote\Windows\TDFende.exe` (fora do git). Subir para a Steam: skill `publicar-na-steam`
+  (login e Steam Guard só o Felipe; o app da Steam ainda não existe).
+- **Selo:** "build <hash>" (`git describe --always --dirty`) no canto inferior direito do HUD e `[TDFende] build <hash>` no log.
+  Empacotado, vem de `Pacote\Windows\TDFende\Selo.txt`; pelo editor, do git na hora. Sem selo, o autoteste reprova.
+- **Orçamento:** `MedirFps.ps1` mede FPS e GPU por caso (completo, qualidade média, leve e os A/B de grama, névoa, nuvens, Lumen,
+  sombra virtual) e sai 1 se a GPU média do caso completo passar de 8 ms (1600×900, este PC).
+
+### Próximo
+Sem depender do Felipe: menu de configurações (qualidade gráfica pelos grupos sg.*, resolução, upscaler). Dependem dele: sons
+(baixar pede autorização), partículas de gelo/fogo (Niagara: ligar o Unreal MCP), torreta que mira (arte com a parte de cima
+separada), Steam (app, login), tema/bioma (U3).
 
 ### Recursos do Unreal a usar (proposta de 14/10/2026, aguardando o Felipe)
 

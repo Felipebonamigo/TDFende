@@ -1,5 +1,6 @@
 #include "TdfHudWidget.h"
 #include "TdfSimActor.h"
+#include "TdfBuildStamp.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
@@ -114,6 +115,8 @@ bool UTdfHudWidget::ClickSendCard(int32 Index)
 	ATdfSimActor* S = Sim.Get();
 	return S && S->SendUnit(Index);
 }
+
+FString UTdfHudWidget::StampText() const { return Stamp ? Stamp->GetText().ToString() : FString(); }
 
 bool UTdfHudWidget::IsPointerOverUi() const
 {
@@ -307,6 +310,11 @@ void UTdfHudWidget::BuildTree()
 	Shop->SetPadding(FMargin(12.f, 10.f, 9.f, 10.f));
 	Shop->SetContent(Sections);
 	Place(Shop, FAnchors(0.5f, 1.f), FVector2D(0.5f, 1.f), FVector2D(0.f, -12.f));
+
+	// selo de build no canto inferior direito (MANUAL: executável sem selo reprova a captura)
+	Stamp = MakeText(TEXT("build ") + TdfBuildStamp(), 8, Muted, false, 20);
+	Stamp->SetVisibility(ESlateVisibility::HitTestInvisible);
+	Place(Stamp, FAnchors(1.f, 1.f), FVector2D(1.f, 1.f), FVector2D(-8.f, -2.f));
 
 	// fim de partida: a tela escurece e o resultado aparece no meio (não bloqueia o mouse: o R é que recomeça)
 	UVerticalBox* End = WidgetTree->ConstructWidget<UVerticalBox>();

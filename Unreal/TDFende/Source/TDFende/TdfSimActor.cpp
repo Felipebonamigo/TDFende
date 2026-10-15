@@ -21,6 +21,7 @@
 #include "TdfPlayerController.h"
 #include "TdfHudWidget.h"
 #include "TdfFxComponent.h"
+#include "TdfBuildStamp.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTdf, Log, All);
 
@@ -197,6 +198,7 @@ void ATdfSimActor::BeginPlay()
 	char Sig[128] = {};
 	Sim.signature(Sig, sizeof(Sig));
 	UE_LOG(LogTdf, Log, TEXT("Ponte ok. Assinatura: %s (semente %d, dificuldade %d)"), UTF8_TO_TCHAR(Sig), Seed, Difficulty);
+	UE_LOG(LogTdf, Display, TEXT("[TDFende] build %s"), *TdfBuildStamp()); // selo no log, como o Player.log do Unity
 	LoadCatalog();
 	if (FParse::Param(FCommandLine::Get(), TEXT("TdfPreview"))) BuildPreview();
 	else if (bUseArt)
@@ -1096,6 +1098,13 @@ void ATdfSimActor::RunSelfTest(float)
 				for (int32 i = 0; bThumbs && i < SendTypes.Num(); ++i) bThumbs = Hud->SendThumb(i) != nullptr;
 				SelfCheck(bThumbs, TEXT("miniaturas 3D de cada torre e de cada bicho nos cartões"));
 			}
+		}
+		// selo de build (U4): o hash do git no canto do HUD; executável sem selo reprova
+		{
+			const FString Stamp = TdfBuildStamp();
+			UTdfHudWidget* Hud = SelfHud();
+			SelfCheck(!Stamp.IsEmpty() && Stamp != TEXT("sem selo") && Hud && Hud->StampText() == TEXT("build ") + Stamp,
+				*FString::Printf(TEXT("selo de build no HUD (\"%s\")"), *Stamp));
 		}
 		// contorno do território: só os lados de célula que dão para fora (vizinho fora do território ou da grade)
 		{

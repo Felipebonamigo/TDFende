@@ -15,7 +15,9 @@ $itens = @(
     # Content do Unreal (fora do git, D4): reproduzível por Unreal\TDFende\ImportarArte.ps1, mas guardar é barato
     @{ de = "$raiz\Unreal\TDFende\Content"; para = 'unreal-content' },
     # texturas baixadas para o Unreal (Poly Haven 4K, Unreal\TDFende\BaixarTexturas.ps1)
-    @{ de = "$raiz\Unreal\TDFende\Fontes"; para = 'unreal-fontes' }
+    @{ de = "$raiz\Unreal\TDFende\Fontes"; para = 'unreal-fontes' },
+    # jogo do Unreal empacotado (Unreal\TDFende\Empacotar.ps1)
+    @{ de = "$raiz\Unreal\TDFende\Pacote"; para = 'unreal-pacote' }
 )
 New-Item -ItemType Directory -Force $Destino | Out-Null
 $falhou = $false

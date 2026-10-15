@@ -73,6 +73,8 @@ public:
 	void Refresh();
 	/** O mouse está sobre o HUD: o clique não vai para o mundo. */
 	bool IsPointerOverUi() const;
+	/** O texto do selo de build no canto ("build <hash>"). */
+	FString StampText() const;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -128,6 +130,7 @@ private:
 	/** Fim de partida: VITÓRIA / DERROTA por cima de tudo, com "R para jogar de novo". */
 	UPROPERTY() TObjectPtr<UBorder> EndPanel;
 	UPROPERTY() TObjectPtr<UTextBlock> EndTitle;
+	UPROPERTY() TObjectPtr<UTextBlock> Stamp;
 	int32 LastResult = 0;
 	int32 LastClock = -1;
 	FString LastToast;
