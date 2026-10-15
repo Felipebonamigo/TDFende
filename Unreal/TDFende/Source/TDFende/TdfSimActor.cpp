@@ -1281,6 +1281,8 @@ void ATdfSimActor::RunSelfTest(float)
 		}
 		UE_LOG(LogTdf, Display, TEXT("AUTOTESTE %s (%d falha(s))"), SelfFailures == 0 ? TEXT("PASSOU") : TEXT("REPROVOU"), SelfFailures);
 		bSelfTest = false;
+		// a saída forçada encerra o processo na hora: sem o Flush o resultado não chegava ao log do jogo empacotado
+		GLog->Flush();
 		FPlatformMisc::RequestExitWithStatus(true, SelfFailures == 0 ? 0 : 1);
 		return;
 	}
