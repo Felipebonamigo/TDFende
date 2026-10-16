@@ -244,6 +244,18 @@ A câmera é deslocada para a lane ficar sob a loja, e o teste só vale se achar
   `IsPointerOverUi` agora compara a posição do cursor com a geometria dos painéis.
 - O que continua só com mouse e teclado físicos: sensação (tamanho dos botões, cursor), foco da janela e tela cheia.
 
+### Vento na grama (16/10/2026)
+`M_TdfFolhagem` (a grama 3D e outras folhagens recortadas) ganhou deslocamento de vértice: a ponta das folhas balança (a base fica
+presa), em ondas que andam pelo mundo, com uma rajada lenta por cima; cada touceira numa fase pela posição. Parâmetros no material:
+`ForcaVento` (cm de balanço na ponta, hoje 7) e `AlturaLocal` (altura da touceira na malha, 15 cm). Sem custo de pixel.
+- **A grama deixou de ser Nanite** (folhagem recortada com deslocamento é o ponto fraco do Nanite; no teste, com Nanite a grama não
+  mexia). Custo medido: nenhum visível (6,8 ms de GPU com e sem grama).
+- **Teste:** `TestarVento.ps1` (dois prints com 2 s de jogo de distância, câmera rente à grama, conta pixels que mudaram na faixa
+  do capim). Sem vento: 22 pixels (visto antes); vento normal: ~2.800; força 400 (estresse): ~7.500. Reprova com menos de 500.
+- Árvores e arbustos do acervo (`M_TdfGltf`) seguem parados de propósito: dobrar um tronco rígido fica pior que parado.
+- **Medida de GPU de hoje:** 6,8 ms (era 5,0) com a placa 34% ocupada por programas do Windows (Claude, navegador, WhatsApp) sem o
+  jogo rodando; o mesmo valor sem a grama. Para medir limpo, feche o resto antes do `MedirFps.ps1`.
+
 ### Próximo
 Dependem do Felipe: sons
 (baixar pede autorização), partículas de gelo/fogo (Niagara: ligar o Unreal MCP), torreta que mira (arte com a parte de cima

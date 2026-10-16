@@ -135,6 +135,46 @@ def master_folhagem():
     mel.connect_material_property(cor, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(cor, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
     mel.connect_material_property(const(mat, 0.85, -600, 300), "", unreal.MaterialProperty.MP_ROUGHNESS)
+
+    # vento: a ponta das folhas balança (a base fica presa), em ondas que andam pelo mundo, mais rápidas e curtas por cima de
+    # rajadas lentas; cada touceira entra numa fase diferente pela posição. Deslocamento de vértice, sem custo de pixel.
+    wp = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -1200, 700)
+    tm = mel.create_material_expression(mat, unreal.MaterialExpressionTime, -1200, 850)
+    lp = mel.create_material_expression(mat, unreal.MaterialExpressionPreSkinnedPosition, -1200, 1000)
+    altura = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -1200, 1150)
+    altura.set_editor_property("parameter_name", "AlturaLocal")
+    altura.set_editor_property("default_value", 15.0)   # altura da touceira na malha (cm, antes da escala da instância)
+    forca = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -1200, 1250)
+    forca.set_editor_property("parameter_name", "ForcaVento")
+    forca.set_editor_property("default_value", 7.0)     # cm de balanço na ponta, no mundo
+    vento = mel.create_material_expression(mat, unreal.MaterialExpressionCustom, -800, 900)
+    vento.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    vento.set_editor_property("code",
+        "float h = saturate(LP.z / max(Alt, 1.0));\n"
+        "h = h * h;\n"
+        "float2 dir = float2(0.82, 0.57);\n"
+        "float fase = dot(WP.xy, dir) * 0.012 + T * 1.7;\n"
+        "float onda = sin(fase) + 0.45 * sin(fase * 2.9 + WP.y * 0.02) + 0.6 * sin(T * 0.45 + dot(WP.xy, dir) * 0.0025);\n"
+        "return float3(dir * onda * h * F, 0);")
+    nomes = ["WP", "T", "LP", "Alt", "F"]
+    entradas = []
+    for n in nomes:
+        ci = unreal.CustomInput()
+        ci.set_editor_property("input_name", n)
+        entradas.append(ci)
+    vento.set_editor_property("inputs", entradas)
+    mel.connect_material_expressions(wp, "", vento, "WP")
+    mel.connect_material_expressions(tm, "", vento, "T")
+    mel.connect_material_expressions(lp, "", vento, "LP")
+    mel.connect_material_expressions(altura, "", vento, "Alt")
+    mel.connect_material_expressions(forca, "", vento, "F")
+    mel.connect_material_property(vento, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    try:
+        mat.set_editor_property("max_world_position_offset_displacement", 30.0)  # limites do Nanite e do culling com o deslocamento
+    except Exception as e:
+        say("sem max_world_position_offset_displacement: %s" % e)
+    if not mel.get_material_property_input_node(mat, unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET):
+        say("FALHOU: vento sem ligação em WorldPositionOffset")
     return finish(mat)
 
 
@@ -523,7 +563,8 @@ def main():
             if isinstance(mesh, unreal.StaticMesh):
                 for i in range(len(mesh.static_materials)):
                     mesh.set_material(i, mi)
-                nanite(mesh)
+                # sem Nanite de propósito: a grama balança no vento (deslocamento de vértice no M_TdfFolhagem) e folhagem recortada
+                # com deslocamento é o ponto fraco do Nanite; são cartões baratos, a malha comum dá conta (e o corte por distância)
                 eal.save_loaded_asset(mesh)
                 b = mesh.get_bounds()
                 say("  touceira %s: %.0f x %.0f x %.0f cm" % (mesh.get_name(), b.box_extent.x * 2, b.box_extent.y * 2, b.box_extent.z * 2))
