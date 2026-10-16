@@ -74,6 +74,10 @@ public:
 	void Refresh();
 	/** O mouse está sobre o HUD: o clique não vai para o mundo. */
 	bool IsPointerOverUi() const;
+	/** Centro de um botão na tela (coordenadas absolutas do Slate): Kind 0 cartão de torre, 1 de envio, 2 botão de qualidade. */
+	FVector2D CardCenter(int32 Kind, int32 Index) const;
+	/** Canto da placa da loja na tela (absoluto): 0 = canto de cima à esquerda, 1 = de baixo à direita. */
+	FVector2D ShopEdgePoint(float Corner) const;
 	/** O texto do selo de build no canto ("build <hash>"). */
 	FString StampText() const;
 

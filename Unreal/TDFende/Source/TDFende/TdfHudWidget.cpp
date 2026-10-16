@@ -2,6 +2,7 @@
 #include "TdfSimActor.h"
 #include "TdfBuildStamp.h"
 #include "GameFramework/GameUserSettings.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Widgets/SWindow.h"
@@ -248,11 +249,32 @@ void UTdfHudWidget::BuildSettings(UCanvasPanel* Root)
 	}
 }
 
+FVector2D UTdfHudWidget::ShopEdgePoint(float Corner) const
+{
+	if (!Shop) return FVector2D::ZeroVector;
+	return FVector2D(Shop->GetCachedGeometry().GetAbsolutePositionAtCoordinates(FVector2D(Corner, Corner)));
+}
+
+FVector2D UTdfHudWidget::CardCenter(int32 Kind, int32 Index) const
+{
+	const UBorder* Frame = nullptr;
+	if (Kind == 0 && TowerCards.IsValidIndex(Index)) Frame = TowerCards[Index].Frame;
+	else if (Kind == 1 && SendCards.IsValidIndex(Index)) Frame = SendCards[Index].Frame;
+	else if (Kind == 2 && QualityFrames.IsValidIndex(Index)) Frame = QualityFrames[Index];
+	if (!Frame) return FVector2D::ZeroVector;
+	const FGeometry& G = Frame->GetCachedGeometry();
+	return FVector2D(G.GetAbsolutePositionAtCoordinates(FVector2D(0.5, 0.5)));
+}
+
 FString UTdfHudWidget::StampText() const { return Stamp ? Stamp->GetText().ToString() : FString(); }
 
 bool UTdfHudWidget::IsPointerOverUi() const
 {
-	return (TopLeft && TopLeft->IsHovered()) || (TopRight && TopRight->IsHovered()) || (Shop && Shop->IsHovered()) || IsSettingsOpen();
+	// pela posição do cursor contra a geometria dos painéis, e não por IsHovered: ao apertar o botão o viewport captura o mouse e
+	// o Slate deixa de achar que a loja está sob ele (o clique na borda da placa construía uma torre por baixo)
+	const FVector2D MousePos(FSlateApplication::Get().GetCursorPos());
+	auto Under = [&MousePos](const UWidget* W) { return W && W->GetVisibility() != ESlateVisibility::Hidden && W->GetCachedGeometry().IsUnderLocation(FVector2f(MousePos)); };
+	return Under(TopLeft) || Under(TopRight) || Under(Shop) || IsSettingsOpen();
 }
 
 // ------------------------------------------------------------------ montagem

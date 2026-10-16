@@ -233,6 +233,17 @@ Painel no HUD: qualidade gráfica Baixa/Média/Alta/Épica (os grupos sg.* do Un
 campo. `-TdfConfiguracoes` abre o painel ao começar (para o print). Medidas: Média ~7,9 ms de GPU, Leve (Baixa + 70%) ~4,8 ms.
 DLSS/FSR/XeSS como opção: precisam dos plugins dos fabricantes (baixar = autorização do Felipe).
 
+### Teste de controle com mouse e teclas de verdade (16/10/2026)
+O autoteste agora injeta mouse pelo Slate (o caminho do mouse físico: hover, botões do UMG, viewport) e teclas pelo controle:
+clicar num cartão seleciona a torre sem construir por baixo; clicar no campo constrói na célula do mouse; Esc abre e fecha as
+configurações; clicar em "Baixa" muda a qualidade de verdade; com o painel aberto o campo não recebe clique; R começa outra partida.
+A câmera é deslocada para a lane ficar sob a loja, e o teste só vale se achar uma célula livre embaixo do cartão ou da borda
+(senão reprova: não passa vazio). **Teste de mutação:** sem a proteção do clique sobre o HUD, dois casos reprovam.
+- **Defeito real achado e corrigido:** ao apertar o botão do mouse o viewport captura o mouse e o Slate deixa de achar a loja
+  "sob o mouse" (`IsHovered` vira falso), então clicar no vão da placa da loja (ou no placar) construía uma torre por baixo.
+  `IsPointerOverUi` agora compara a posição do cursor com a geometria dos painéis.
+- O que continua só com mouse e teclado físicos: sensação (tamanho dos botões, cursor), foco da janela e tela cheia.
+
 ### Próximo
 Dependem do Felipe: sons
 (baixar pede autorização), partículas de gelo/fogo (Niagara: ligar o Unreal MCP), torreta que mira (arte com a parte de cima

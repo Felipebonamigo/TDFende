@@ -23,6 +23,12 @@
 #include "TdfFxComponent.h"
 #include "TdfBuildStamp.h"
 #include "GameFramework/GameUserSettings.h"
+#include "Camera/CameraActor.h"
+#include "Engine/GameViewportClient.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SViewport.h"
+#include "Widgets/SWindow.h"
+#include "InputKeyEventArgs.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTdf, Log, All);
 
@@ -1066,6 +1072,171 @@ void ATdfSimActor::SelfCheck(bool bCondition, const TCHAR* What)
 	if (!bCondition) ++SelfFailures;
 }
 
+bool ATdfSimActor::RunInputTest()
+{
+	// Mouse e teclas de verdade: o mouse entra pelo Slate (o mesmo caminho do mouse físico: hover, botões do UMG, viewport) e as
+	// teclas pelo PlayerController (o foco do teclado de uma janela sem usuário não é confiável). Uma fase por vez, com espera de
+	// quadros entre elas (o hover e os tiques da Sim andam a cada quadro).
+	ATdfPlayerController* PC = Cast<ATdfPlayerController>(GetWorld()->GetFirstPlayerController());
+	UTdfHudWidget* Hud = SelfHud();
+	UGameViewportClient* VC = GEngine ? GEngine->GameViewport : nullptr;
+	if (!PC || !Hud || !VC || !VC->GetWindow().IsValid() || !VC->GetGameViewportWidget().IsValid())
+	{
+		SelfCheck(false, TEXT("controle: sem controle, HUD ou janela para testar"));
+		return true;
+	}
+	if (SelfInputWait > 0) { --SelfInputWait; return false; }
+
+	FSlateApplication& App = FSlateApplication::Get();
+	const TSharedRef<SWindow> Win = VC->GetWindow().ToSharedRef();
+	auto Move = [&](const FVector2D& P)
+	{
+		App.SetCursorPos(P);
+		const FPointerEvent E(0, FVector2f(P), FVector2f(SelfMouse), TSet<FKey>(), EKeys::Invalid, 0.f, FModifierKeysState());
+		App.ProcessMouseMoveEvent(E);
+		SelfMouse = P;
+	};
+	auto Button = [&](bool bDown)
+	{
+		TSet<FKey> Pressed;
+		if (bDown) Pressed.Add(EKeys::LeftMouseButton);
+		const FPointerEvent E(0, FVector2f(SelfMouse), FVector2f(SelfMouse), Pressed, EKeys::LeftMouseButton, 0.f, FModifierKeysState());
+		if (bDown) App.ProcessMouseButtonDownEvent(Win->GetNativeWindow(), E);
+		else App.ProcessMouseButtonUpEvent(E);
+	};
+	auto Key = [&](const FKey& K, bool bDown) { PC->InputKey(FInputKeyEventArgs::CreateSimulated(K, bDown ? IE_Pressed : IE_Released, bDown ? 1.f : 0.f, 1, FInputDeviceId::CreateFromInternalId(0))); };
+	auto Wait = [&](int32 Frames) { SelfInputWait = Frames; ++SelfInputPhase; };
+
+	switch (SelfInputPhase)
+	{
+	case 0: // mouse sobre um cartão de torre que cobre uma célula onde DÁ para construir (senão o teste não provaria nada)
+	{
+		SelfInputGoldBefore = Lanes[0].Gold;
+		const FGeometry& VG = VC->GetGameViewportWidget()->GetCachedGeometry();
+		if (!SelfInputShifted)
+		{
+			// no enquadramento normal a lane termina acima da loja: anda a câmera para a frente até a lane ficar sob os cartões
+			if (ACameraActor* Cam = Cast<ACameraActor>(PC->GetViewTarget())) Cam->AddActorWorldOffset(FVector(900.f, 0.f, 0.f));
+			SelfInputShifted = true;
+			SelfInputWait = 6;
+			return false;
+		}
+		SelfInputCard = -1;
+		for (int32 K = 0; K < TowerTypes.Num() && SelfInputCard < 0; ++K)
+		{
+			const FVector2D L = VG.AbsoluteToLocal(Hud->CardCenter(0, K));
+			FVector O, D;
+			if (!PC->DeprojectScreenPositionToWorld(L.X, L.Y, O, D) || FMath::Abs(D.Z) < KINDA_SMALL_NUMBER) continue;
+			const FIntPoint C = WorldToCell(O + D * (-O.Z / D.Z));
+			if (C.X >= 0 && CanBuildSelected(C.X, C.Y) == 0) SelfInputCard = K;
+		}
+		SelfCheck(SelfInputCard >= 0, TEXT("controle: há um cartão de torre cobrindo uma célula livre (o teste de clique por baixo vale)"));
+		if (SelfInputCard < 0) return true;
+		Move(Hud->CardCenter(0, SelfInputCard));
+		Wait(6);
+		return false;
+	}
+	case 1: Button(true); Wait(2); return false;
+	case 2: Button(false); Wait(20); return false;
+	case 3:
+	{
+		SelfCheck(GetSelectedTower() == SelfInputCard, TEXT("controle: clicar no cartão seleciona a torre"));
+		SelfCheck(Lanes[0].TowerCount == 0 && Lanes[0].Gold >= SelfInputGoldBefore && Recorded.Num() == 0, TEXT("controle: clicar no cartão não constrói no campo por baixo"));
+		// uma célula livre, bem no meio da tela, longe do HUD
+		const FVector2D Size = VC->GetGameViewportWidget()->GetCachedGeometry().GetLocalSize();
+		SelfInputCell = FIntPoint(-1, -1);
+		for (int32 Y = 0; Y < GridHeight && SelfInputCell.X < 0; ++Y)
+			for (int32 X = 0; X < GridWidth; ++X)
+			{
+				FVector2D S;
+				if (CanBuildSelected(X, Y) != 0 || !PC->ProjectWorldLocationToScreen(CellToWorld(X, Y), S)) continue;
+				// fora da faixa do placar (em cima) e da loja (embaixo, ~170 px) e longe do painel de configurações (no meio, até abrir)
+				if (S.X > Size.X * 0.15 && S.X < Size.X * 0.85 && S.Y > Size.Y * 0.15 && S.Y < Size.Y - 230.f) { SelfInputCell = FIntPoint(X, Y); break; }
+			}
+		FVector2D S;
+		const bool bOk = SelfInputCell.X >= 0 && PC->ProjectWorldLocationToScreen(CellToWorld(SelfInputCell.X, SelfInputCell.Y), S);
+		SelfCheck(bOk, TEXT("controle: achei uma célula livre no meio da tela"));
+		if (!bOk) return true;
+		Move(VC->GetGameViewportWidget()->GetCachedGeometry().LocalToAbsolute(S));
+		Wait(6);
+		return false;
+	}
+	case 4: Button(true); Wait(2); return false;
+	case 5: Button(false); Wait(24); return false;
+	case 6:
+		SelfCheck(Lanes[0].TowerCount == 1 && TowerLevelAt(SelfInputCell.X, SelfInputCell.Y) == 1, TEXT("controle: clicar no campo constrói a torre selecionada na célula do mouse"));
+		Key(EKeys::Escape, true); Wait(2); return false;
+	case 7: Key(EKeys::Escape, false); Wait(4); return false;
+	case 8:
+	{
+		SelfCheck(Hud->IsSettingsOpen(), TEXT("controle: Esc abre as configurações"));
+		SelfInputQualityBefore = UGameUserSettings::GetGameUserSettings()->GetOverallScalabilityLevel();
+		Move(Hud->CardCenter(2, 0)); // botão "Baixa"
+		Wait(6);
+		return false;
+	}
+	case 9: Button(true); Wait(2); return false;
+	case 10: Button(false); Wait(6); return false;
+	case 11:
+	{
+		SelfCheck(UGameUserSettings::GetGameUserSettings()->GetOverallScalabilityLevel() == 0 && Hud->SelectedQuality() == 0, TEXT("controle: clicar em Baixa muda a qualidade gráfica"));
+		Hud->SetQuality(SelfInputQualityBefore >= 0 ? SelfInputQualityBefore : 3); // devolve a qualidade de antes
+		// com o painel aberto, clicar no campo (célula livre) não constrói
+		FVector2D S;
+		for (int32 Y = GridHeight - 1; Y >= 0 && SelfInputCell2.X < 0; --Y)
+			for (int32 X = 0; X < GridWidth; ++X)
+				if (CanBuildSelected(X, Y) == 0 && PC->ProjectWorldLocationToScreen(CellToWorld(X, Y), S)) { SelfInputCell2 = FIntPoint(X, Y); break; }
+		if (SelfInputCell2.X >= 0 && PC->ProjectWorldLocationToScreen(CellToWorld(SelfInputCell2.X, SelfInputCell2.Y), S))
+			Move(VC->GetGameViewportWidget()->GetCachedGeometry().LocalToAbsolute(S));
+		Wait(6);
+		return false;
+	}
+	case 12: Button(true); Wait(2); return false;
+	case 13: Button(false); Wait(24); return false;
+	case 14:
+		SelfCheck(Lanes[0].TowerCount == 1, TEXT("controle: com o painel aberto, clicar no campo não constrói"));
+		Key(EKeys::Escape, true); Wait(2); return false;
+	case 15: Key(EKeys::Escape, false); Wait(4); return false;
+	case 16:
+		SelfCheck(!Hud->IsSettingsOpen(), TEXT("controle: Esc fecha as configurações"));
+		SelfSeedBefore = Seed;
+		Key(EKeys::R, true); Wait(2); return false;
+	case 17: Key(EKeys::R, false); Wait(8); return false;
+	case 18:
+		SelfCheck(Seed != SelfSeedBefore && Lanes[0].TowerCount == 0, TEXT("controle: a tecla R começa outra partida"));
+		++SelfInputPhase;
+		return false;
+	case 19: // clique na borda da placa da loja (fora dos botões): o Slate deixa passar, quem segura é o IsPointerOverUi
+	{
+		const FGeometry& VG = VC->GetGameViewportWidget()->GetCachedGeometry();
+		const FVector2D Size = VG.GetLocalSize();
+		FVector2D Picked = FVector2D::ZeroVector;
+		const FVector2D ShopTopLeft = VG.AbsoluteToLocal(Hud->ShopEdgePoint(0.f));
+		const FVector2D ShopBottomRight = VG.AbsoluteToLocal(Hud->ShopEdgePoint(1.f));
+		for (float X = ShopTopLeft.X + 4.f; X < ShopBottomRight.X - 4.f && Picked.IsZero(); X += 12.f)
+		{
+			FVector O, D;
+			const float Y = ShopTopLeft.Y + 3.f; // dentro do preenchimento da placa, acima dos cartões
+			if (!PC->DeprojectScreenPositionToWorld(X, Y, O, D) || FMath::Abs(D.Z) < KINDA_SMALL_NUMBER) continue;
+			const FIntPoint C = WorldToCell(O + D * (-O.Z / D.Z));
+			if (C.X >= 0 && CanBuildSelected(C.X, C.Y) == 0) Picked = FVector2D(X, Y);
+		}
+		SelfCheck(!Picked.IsZero() && Picked.Y < Size.Y, TEXT("controle: achei um ponto da borda da loja sobre uma célula livre (o teste vale)"));
+		if (Picked.IsZero()) return true;
+		Move(VG.LocalToAbsolute(Picked));
+		Wait(6);
+		return false;
+	}
+	case 20:
+		Button(true); Wait(2); return false;
+	case 21: Button(false); Wait(24); return false;
+	case 22:
+		SelfCheck(Lanes[0].TowerCount == 0, TEXT("controle: clicar na borda da loja não constrói no campo por baixo"));
+		return true;
+	}
+	return true;
+}
+
 UTdfHudWidget* ATdfSimActor::SelfHud() const
 {
 	const ATdfPlayerController* PC = Cast<ATdfPlayerController>(GetWorld()->GetFirstPlayerController());
@@ -1261,6 +1432,13 @@ void ATdfSimActor::RunSelfTest(float)
 		FString Text;
 		SelfCheck(FFileHelper::LoadFileToString(Text, *RecordingPath()) && Text.Contains(TEXT(" sell ")), TEXT("a partida anterior ficou gravada em partida.txt"));
 	}
+		SelfStep = 6; // controle de verdade (mouse e teclas pelo Slate), depois o GC e a saída
+		return;
+	case 6:
+		if (!RunInputTest()) return; // um passo por quadro; devolve true quando acabou
+		SelfStep = 7;
+		return;
+	case 7:
 		// coleta de lixo: o que a vista cria em tempo de execução (componente de bicho no pool, malha, animação, torre
 		// instanciada) tem que sobreviver ao GC. Sem isso o jogo caía a ~60 s de partida (o intervalo do GC).
 		if (bUseArt && TypeVisual(0).Mesh)
