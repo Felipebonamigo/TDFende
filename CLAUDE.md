@@ -51,3 +51,15 @@ armadilhas do executável, pipelines de arte, licenças) e pegue a próxima tare
 - Arquivos que o Unity regrava ao rodar em batch (`Assets/Settings/*.asset`,
   `ProjectSettings/*.asset`, `DefaultVolumeProfile.asset`) não entram em commit sem o Felipe
   confirmar. A versão de 09/10/2026 já foi commitada com o ok dele; mudança nova neles = perguntar.
+
+## Princípio do estúdio: divertido e bonito
+
+Decisão do Felipe (16/10/2026): **todo jogo nosso tem que ser divertido e bonito, sempre**. Vale para toda tarefa, não só para as de arte.
+
+- **Divertido primeiro.** Se não prende no protótipo feio, arte e polimento não salvam. Antes de chamar um sistema de pronto, pergunte
+  se jogar ele dá vontade de "mais uma".
+- **Bonito é requisito, aprovado por captura** (nunca só por teste verde), e a captura é olhada antes de se afirmar qualquer coisa visual.
+- **Desempenho protege os dois:** quadro travado não é divertido nem bonito.
+- Ao fechar um bloco, diga em uma linha o que ele mudou na diversão e no visual. Se não mudou nada, diga isso.
+- Na dúvida entre "correto" e "gostoso de jogar", o Felipe decide jogando: leve a versão jogável para ele ver, não só o relatório.
+
