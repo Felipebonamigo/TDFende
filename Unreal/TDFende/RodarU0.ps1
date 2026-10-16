@@ -29,8 +29,9 @@ if ($AutoTeste) {
         $p = Start-Process "$ue\Binaries\Win64\UnrealEditor.exe" -ArgumentList $jogo -PassThru
         if (-not $p.WaitForExit(120 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $log)"; exit 1 }
         Select-String -Path $log -Pattern 'AUTOTESTE' | ForEach-Object { $_.Line }
-        if ($p.ExitCode -eq 0 -or -not (Select-String -Path $log -Pattern 'GPU Crashed or D3D Device Removed' -Quiet)) { break }
-        Write-Host "queda do driver de vídeo (tentativa $t de 3); repetindo o autoteste"
+        # 4 = inconclusivo (o mouse real mexeu durante o teste de controle): também repete
+        if ($p.ExitCode -eq 0 -or -not ($p.ExitCode -eq 4 -or (Select-String -Path $log -Pattern 'GPU Crashed or D3D Device Removed' -Quiet))) { break }
+        Write-Host "autoteste sem resultado (queda do driver de vídeo ou mouse real mexendo); tentativa $t de 3, repetindo"
     }
     if ($p.ExitCode -ne 0) { exit $p.ExitCode }
     # a partida jogada no Unreal tem que reproduzir no FlowSim (C#) com o MESMO estado final

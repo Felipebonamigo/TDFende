@@ -28,6 +28,7 @@
 #include "Camera/CameraActor.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Framework/Application/IInputProcessor.h"
 #include "Widgets/SViewport.h"
 #include "Widgets/SWindow.h"
 #include "InputKeyEventArgs.h"
@@ -1074,6 +1075,29 @@ void ATdfSimActor::SelfCheck(bool bCondition, const TCHAR* What)
 	if (!bCondition) ++SelfFailures;
 }
 
+namespace
+{
+	/**
+	 * Durante o autoteste do controle só valem os eventos de mouse que o teste injeta: o mouse real (o usuário trabalhando em outra
+	 * janela, o cursor mexido) apagava cliques e o teste reprovava em ~15% das execuções. Retornar true = o evento foi consumido.
+	 */
+	class FTdfTestShield : public IInputProcessor
+	{
+	public:
+		bool bInjecting = false;
+		int32 RealEvents = 0; // eventos de mouse reais descartados (o usuário mexeu o mouse durante o teste)
+		bool Drop() { if (!bInjecting) ++RealEvents; return !bInjecting; }
+		virtual void Tick(const float, FSlateApplication&, TSharedRef<ICursor>) override {}
+		virtual bool HandleMouseMoveEvent(FSlateApplication&, const FPointerEvent&) override { return Drop(); }
+		virtual bool HandleMouseButtonDownEvent(FSlateApplication&, const FPointerEvent&) override { return Drop(); }
+		virtual bool HandleMouseButtonUpEvent(FSlateApplication&, const FPointerEvent&) override { return Drop(); }
+		virtual bool HandleMouseButtonDoubleClickEvent(FSlateApplication&, const FPointerEvent&) override { return Drop(); }
+		virtual bool HandleMouseWheelOrGestureEvent(FSlateApplication&, const FPointerEvent&, const FPointerEvent*) override { return Drop(); }
+		virtual const TCHAR* GetDebugName() const override { return TEXT("TdfTestShield"); }
+	};
+	TSharedPtr<FTdfTestShield> GShield;
+}
+
 bool ATdfSimActor::RunInputTest()
 {
 	// Mouse e teclas de verdade: o mouse entra pelo Slate (o mesmo caminho do mouse físico: hover, botões do UMG, viewport) e as
@@ -1091,20 +1115,29 @@ bool ATdfSimActor::RunInputTest()
 
 	FSlateApplication& App = FSlateApplication::Get();
 	const TSharedRef<SWindow> Win = VC->GetWindow().ToSharedRef();
+	if (!GShield.IsValid())
+	{
+		GShield = MakeShared<FTdfTestShield>();
+		App.RegisterInputPreProcessor(GShield, 0); // antes de tudo: o mouse real não chega nem ao viewport nem ao UMG
+	}
 	auto Move = [&](const FVector2D& P)
 	{
+		GShield->bInjecting = true;
 		App.SetCursorPos(P);
 		const FPointerEvent E(0, FVector2f(P), FVector2f(SelfMouse), TSet<FKey>(), EKeys::Invalid, 0.f, FModifierKeysState());
 		App.ProcessMouseMoveEvent(E);
 		SelfMouse = P;
+		GShield->bInjecting = false;
 	};
 	auto Button = [&](bool bDown)
 	{
+		GShield->bInjecting = true;
 		TSet<FKey> Pressed;
 		if (bDown) Pressed.Add(EKeys::LeftMouseButton);
 		const FPointerEvent E(0, FVector2f(SelfMouse), FVector2f(SelfMouse), Pressed, EKeys::LeftMouseButton, 0.f, FModifierKeysState());
 		if (bDown) App.ProcessMouseButtonDownEvent(Win->GetNativeWindow(), E);
 		else App.ProcessMouseButtonUpEvent(E);
+		GShield->bInjecting = false;
 	};
 	auto Key = [&](const FKey& K, bool bDown) { PC->InputKey(FInputKeyEventArgs::CreateSimulated(K, bDown ? IE_Pressed : IE_Released, bDown ? 1.f : 0.f, 1, FInputDeviceId::CreateFromInternalId(0))); };
 	auto Wait = [&](int32 Frames) { SelfInputWait = Frames; ++SelfInputPhase; };
@@ -1113,6 +1146,7 @@ bool ATdfSimActor::RunInputTest()
 	{
 	case 0: // mouse sobre um cartão de torre que cobre uma célula onde DÁ para construir (senão o teste não provaria nada)
 	{
+		if (SelfFailuresBeforeInput < 0) SelfFailuresBeforeInput = SelfFailures;
 		SelfInputGoldBefore = Lanes[0].Gold;
 		const FGeometry& VG = VC->GetGameViewportWidget()->GetCachedGeometry();
 		if (!SelfInputShifted)
@@ -1234,7 +1268,21 @@ bool ATdfSimActor::RunInputTest()
 	case 21: Button(false); Wait(24); return false;
 	case 22:
 		SelfCheck(Lanes[0].TowerCount == 0, TEXT("controle: clicar na borda da loja não constrói no campo por baixo"));
-		return true;
+		return FinishInputTest();
+	}
+	return FinishInputTest();
+}
+
+bool ATdfSimActor::FinishInputTest()
+{
+	// Se o mouse REAL mexeu durante o controle e alguma checagem dele reprovou, o resultado dessa parte não vale (o mouse de verdade
+	// mexe o cursor que o Slate também lê): sai como INCONCLUSIVO (código 4), e os scripts repetem. Sem mouse real mexendo, a falha vale.
+	const int32 InputFails = SelfFailures - FMath::Max(SelfFailuresBeforeInput, 0);
+	if (InputFails > 0 && GShield.IsValid() && GShield->RealEvents > 0)
+	{
+		UE_LOG(LogTdf, Display, TEXT("AUTOTESTE INCONCLUSIVO: o mouse real mexeu durante o controle (%d eventos descartados); %d checagem(ns) do controle não valem"), GShield->RealEvents, InputFails);
+		SelfFailures -= InputFails;
+		SelfInconclusive = true;
 	}
 	return true;
 }
@@ -1475,11 +1523,11 @@ void ATdfSimActor::RunSelfTest(float)
 			SelfCheck(!TypeVisual(0).Anim || WeakAnim.IsValid(), TEXT("GC: a animação do bicho sobrevive"));
 			SelfCheck(!Ism || WeakIsm.IsValid(), TEXT("GC: a torre instanciada sobrevive"));
 		}
-		UE_LOG(LogTdf, Display, TEXT("AUTOTESTE %s (%d falha(s))"), SelfFailures == 0 ? TEXT("PASSOU") : TEXT("REPROVOU"), SelfFailures);
+		UE_LOG(LogTdf, Display, TEXT("AUTOTESTE %s (%d falha(s))"), SelfFailures != 0 ? TEXT("REPROVOU") : SelfInconclusive ? TEXT("PASSOU, MAS O CONTROLE FICOU INCONCLUSIVO") : TEXT("PASSOU"), SelfFailures);
 		bSelfTest = false;
 		// a saída forçada encerra o processo na hora: sem o Flush o resultado não chegava ao log do jogo empacotado
 		GLog->Flush();
-		FPlatformMisc::RequestExitWithStatus(true, SelfFailures == 0 ? 0 : 1);
+		FPlatformMisc::RequestExitWithStatus(true, SelfFailures != 0 ? 1 : SelfInconclusive ? 4 : 0); // 4 = inconclusivo: o mouse real mexeu
 		return;
 	}
 	++SelfStep;

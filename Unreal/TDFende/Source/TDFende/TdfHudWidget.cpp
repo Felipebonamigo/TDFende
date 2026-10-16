@@ -272,7 +272,7 @@ bool UTdfHudWidget::IsPointerOverUi() const
 {
 	// pela posição do cursor contra a geometria dos painéis, e não por IsHovered: ao apertar o botão o viewport captura o mouse e
 	// o Slate deixa de achar que a loja está sob ele (o clique na borda da placa construía uma torre por baixo)
-	const FVector2D MousePos(FSlateApplication::Get().GetCursorPos());
+	const FVector2D MousePos(FSlateApplication::Get().GetLastCursorPos()); // a última posição que o Slate recebeu (a do mouse real, ou a injetada no teste)
 	auto Under = [&MousePos](const UWidget* W) { return W && W->GetVisibility() != ESlateVisibility::Hidden && W->GetCachedGeometry().IsUnderLocation(FVector2f(MousePos)); };
 	return Under(TopLeft) || Under(TopRight) || Under(Shop) || IsSettingsOpen();
 }

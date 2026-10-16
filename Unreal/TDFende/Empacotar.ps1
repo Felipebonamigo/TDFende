@@ -46,7 +46,8 @@ for ($i = 1; $i -le 3; $i++) {
     $p = Start-Process $exe -ArgumentList @('-windowed', '-ResX=1600', '-ResY=900', '-nosplash', '-unattended', '-NoSound', "-abslog=`"$tlog`"", '-TdfSelfTest') -PassThru
     if (-not $p.WaitForExit(180 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $tlog)"; exit 1 }
     Select-String -Path $tlog -Pattern 'AUTOTESTE (FALHOU|PASSOU|REPROVOU)|\[TDFende\] build' | ForEach-Object { $_.Line -replace '^\[[^\]]+\]\[[^\]]+\]', '' }
-    if ($p.ExitCode -eq 0 -or -not (Select-String -Path $tlog -Pattern 'GPU Crashed or D3D Device Removed' -Quiet)) { exit $p.ExitCode }
-    Write-Host "queda do driver de vídeo (tentativa $i de 3); repetindo o autoteste"
+    # 4 = inconclusivo (o mouse real mexeu durante o teste de controle): também repete
+    if ($p.ExitCode -eq 0 -or -not ($p.ExitCode -eq 4 -or (Select-String -Path $tlog -Pattern 'GPU Crashed or D3D Device Removed' -Quiet))) { exit $p.ExitCode }
+    Write-Host "autoteste sem resultado (queda do driver de vídeo ou mouse real mexendo); tentativa $i de 3, repetindo"
 }
 exit 1

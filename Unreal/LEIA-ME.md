@@ -268,8 +268,19 @@ posição muda com o tempo. Custo: ~0,4 ms de GPU (7,2 ms no completo, orçament
 (`RenderVirtualShadowMaps(Nanite)` → `NodeAndClusterCull`/`PatchSplit`); no editor, no pacote, antes e depois das mudanças desta semana,
 sempre com outras sessões do Unreal e programas do Windows usando a placa (34% ocupada sem o jogo). Não é falta de memória (4 de 11 GB).
 Mitigação: `RodarU0.ps1 -AutoTeste` e `Empacotar.ps1` repetem o autoteste (até 3 vezes) só nesse caso. **Se acontecer jogando:**
-guarde `Saved\Logs\*.nv-gpudmp` e o log; hipóteses a testar, uma por vez, medindo a taxa em ~20 execuções: `r.Nanite.Tessellation 0`,
-sombras virtuais desligadas na qualidade Baixa, atualizar o driver NVIDIA.
+guarde `Saved\Logs\*.nv-gpudmp` e o log.
+- **Experimento** (`CacarQueda.ps1`: 20 rodadas, as 3 configurações alternadas para a carga de fora pesar igual; 16/10/2026): padrão 1
+  queda em 20; **sem tesselação do Nanite 3 em 20** (não é a causa); **sem sombras virtuais 0 em 20**. Sugere as sombras virtuais, mas
+  a amostra é pequena (0 em 20 com taxa de ~10% acontece 1 vez em 8). Para concluir: `CacarQueda.ps1 -Rodadas 60`. Se confirmar, a
+  qualidade Baixa passa a desligar as sombras virtuais (usar sombras comuns). Falta também atualizar o driver NVIDIA (decisão do Felipe).
+
+### Teste de controle e mouse real (16/10/2026)
+Nas 60 execuções acima o teste de controle (mouse injetado) reprovou em 9 (15%): o mouse real mexendo (o usuário em outra janela) apagava
+cliques, porque o Slate também lê o cursor físico. Agora: um filtro descarta os eventos de mouse reais durante o autoteste, o jogo lê a
+última posição recebida pelo Slate (`GetLastCursorPos`) e, **se o mouse real mexeu e alguma checagem do controle reprovou, o resultado sai
+INCONCLUSIVO (código 4, não reprovado)**; `RodarU0.ps1` e `Empacotar.ps1` repetem (até 3 vezes) e, esgotadas, saem com 4 (nunca 0). Com o
+cursor mexendo de propósito: 5 inconclusivos, 1 queda de GPU, 0 reprovação falsa. Falha de verdade (sem mouse real) continua reprovando.
+Dica: durante o autoteste, deixe o mouse parado.
 
 ### Próximo
 Dependem do Felipe: sons

@@ -272,6 +272,9 @@ private:
 	class UTdfHudWidget* SelfHud() const;
 	/** Controle de verdade (mouse pelo Slate, teclas pelo controle), um passo por quadro; true quando acabou. */
 	bool RunInputTest();
+	bool FinishInputTest();
+	int32 SelfFailuresBeforeInput = -1;
+	bool SelfInconclusive = false;
 	int32 SelfInputPhase = 0, SelfInputWait = 0, SelfInputGoldBefore = 0, SelfInputQualityBefore = -1;
 	FIntPoint SelfInputCell = FIntPoint(-1, -1), SelfInputCell2 = FIntPoint(-1, -1);
 	FVector2D SelfMouse = FVector2D::ZeroVector;
