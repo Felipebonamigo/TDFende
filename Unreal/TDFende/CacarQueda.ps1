@@ -20,7 +20,7 @@ for ($r = 1; $r -le $Rodadas; $r++) {
     foreach ($k in $config.Keys) {
         $log = Join-Path $out (("{0:00}_{1}" -f $r, ($k -replace '[^a-z]', '_')) + '.log')
         $a = @("`"$uproj`"", '/Engine/Maps/Entry?game=/Script/TDFende.TdfDemoGameMode', '-game', '-windowed', '-ResX=1600', '-ResY=900',
-            '-nosplash', '-unattended', '-NoSound', "-abslog=`"$log`"", '-TdfSelfTest') + $config[$k]
+            '-nosplash', '-unattended', '-NoSound', "-abslog=`"$log`"", '-TdfSelfTest', '-TdfSemControle') + $config[$k]
         $p = Start-Process $ue -ArgumentList $a -PassThru
         if (-not $p.WaitForExit(150 * 1000)) { $p.Kill() }
         if (Select-String -Path $log -Pattern 'GPU Crashed or D3D Device Removed' -Quiet) { $queda[$k]++ }

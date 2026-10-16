@@ -1501,7 +1501,8 @@ void ATdfSimActor::RunSelfTest(float)
 		SelfStep = 6; // controle de verdade (mouse e teclas pelo Slate), depois o GC e a saída
 		return;
 	case 6:
-		if (!RunInputTest()) return; // um passo por quadro; devolve true quando acabou
+		// -TdfSemControle: pula o teste de mouse (não mexe o cursor do usuário; usado pelo CacarQueda.ps1, que só quer o desenho)
+		if (!FParse::Param(FCommandLine::Get(), TEXT("TdfSemControle")) && !RunInputTest()) return; // um passo por quadro; devolve true quando acabou
 		SelfStep = 7;
 		return;
 	case 7:
