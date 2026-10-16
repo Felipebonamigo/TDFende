@@ -40,7 +40,13 @@ if ($SemTeste -or $Config -eq 'Shipping') { exit 0 }
 
 # autoteste no jogo empacotado (o que o Felipe vai jogar): mesma lista de verificações do RodarU0.ps1 -AutoTeste
 $tlog = Join-Path $PSScriptRoot 'Saved\Empacotado-autoteste.log'
-$p = Start-Process $exe -ArgumentList @('-windowed', '-ResX=1600', '-ResY=900', '-nosplash', '-unattended', '-NoSound', "-abslog=`"$tlog`"", '-TdfSelfTest') -PassThru
-if (-not $p.WaitForExit(180 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $tlog)"; exit 1 }
-Select-String -Path $tlog -Pattern 'AUTOTESTE (FALHOU|PASSOU|REPROVOU)|\[TDFende\] build' | ForEach-Object { $_.Line -replace '^\[[^\]]+\]\[[^\]]+\]', '' }
-exit $p.ExitCode
+# A placa de vídeo é dividida com as outras sessões (Detonauto, Age of Earth): o driver já caiu duas vezes ("D3D Device Removed",
+# 15 e 16/10/2026) e a repetição passou. Só a QUEDA DE GPU repete (até 3 vezes); falha de verdade do teste nunca é repetida.
+for ($i = 1; $i -le 3; $i++) {
+    $p = Start-Process $exe -ArgumentList @('-windowed', '-ResX=1600', '-ResY=900', '-nosplash', '-unattended', '-NoSound', "-abslog=`"$tlog`"", '-TdfSelfTest') -PassThru
+    if (-not $p.WaitForExit(180 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $tlog)"; exit 1 }
+    Select-String -Path $tlog -Pattern 'AUTOTESTE (FALHOU|PASSOU|REPROVOU)|\[TDFende\] build' | ForEach-Object { $_.Line -replace '^\[[^\]]+\]\[[^\]]+\]', '' }
+    if ($p.ExitCode -eq 0 -or -not (Select-String -Path $tlog -Pattern 'GPU Crashed or D3D Device Removed' -Quiet)) { exit $p.ExitCode }
+    Write-Host "queda do driver de vídeo (tentativa $i de 3); repetindo o autoteste"
+}
+exit 1
