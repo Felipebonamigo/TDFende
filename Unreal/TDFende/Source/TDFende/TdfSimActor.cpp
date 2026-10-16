@@ -22,6 +22,8 @@
 #include "TdfHudWidget.h"
 #include "TdfFxComponent.h"
 #include "TdfBuildStamp.h"
+#include "TdfEnvironment.h"
+#include "EngineUtils.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Camera/CameraActor.h"
 #include "Engine/GameViewportClient.h"
@@ -1285,6 +1287,22 @@ void ATdfSimActor::RunSelfTest(float)
 			SelfCheck(bOpen && bLow && !Hud->IsSettingsOpen(), TEXT("configurações: Esc abre, qualidade muda de verdade, Esc fecha"));
 		}
 		else SelfCheck(false, TEXT("configurações (sem HUD)"));
+		// águias de ambiente: existem, voam alto e orbitam (a posição muda quando o tempo anda)
+		{
+			ATdfEnvironment* Env = nullptr;
+			for (TActorIterator<ATdfEnvironment> It(GetWorld()); It; ++It) { Env = *It; break; }
+			if (bUseArt && TypeVisual(4).Mesh)
+			{
+				SelfCheck(Env && Env->NumBirds() >= 3, TEXT("ambiente: águias circulando no céu (3 ou mais)"));
+				if (Env && Env->NumBirds() > 0)
+				{
+					const FVector A = Env->BirdPos(0);
+					Env->AdvanceBirds(2.f);
+					const FVector B = Env->BirdPos(0);
+					SelfCheck(A.Z > 500.f && A.Z < 4500.f && FVector::Dist2D(A, B) > 100.f, TEXT("ambiente: a águia voa alto e anda em volta (a posição muda com o tempo)"));
+				}
+			}
+		}
 		// selo de build (U4): o hash do git no canto do HUD; executável sem selo reprova
 		{
 			const FString Stamp = TdfBuildStamp();

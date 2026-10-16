@@ -20,12 +20,18 @@ if (-not $SemCompilar) {
 if (-not (Test-Path (Join-Path $PSScriptRoot 'Binaries\Win64\tdfende_sim.dll'))) { Write-Host 'falta a DLL: rode Tools\SimBridge\PublicarParaUnreal.ps1'; exit 1 }
 
 if ($AutoTeste) {
-    $log = Join-Path $out ("auto-{0:HHmmss}.log" -f (Get-Date))
-    $jogo = @("`"$uproj`"", '/Engine/Maps/Entry?game=/Script/TDFende.TdfDemoGameMode', '-game', '-windowed', '-ResX=1600', '-ResY=900',
-        '-nosplash', '-unattended', '-NoSound', "-abslog=`"$log`"", '-TdfSelfTest')
-    $p = Start-Process "$ue\Binaries\Win64\UnrealEditor.exe" -ArgumentList $jogo -PassThru
-    if (-not $p.WaitForExit(120 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $log)"; exit 1 }
-    Select-String -Path $log -Pattern 'AUTOTESTE' | ForEach-Object { $_.Line }
+    # Queda do driver de vídeo ("D3D Device Removed", sempre no desenho das sombras virtuais do Nanite) já derrubou o jogo 3 vezes em
+    # 15-16/10/2026 com a placa dividida com outras sessões: só ELA repete o autoteste (até 3 vezes); falha de verdade nunca repete.
+    for ($t = 1; $t -le 3; $t++) {
+        $log = Join-Path $out ("auto-{0:HHmmss}.log" -f (Get-Date))
+        $jogo = @("`"$uproj`"", '/Engine/Maps/Entry?game=/Script/TDFende.TdfDemoGameMode', '-game', '-windowed', '-ResX=1600', '-ResY=900',
+            '-nosplash', '-unattended', '-NoSound', "-abslog=`"$log`"", '-TdfSelfTest')
+        $p = Start-Process "$ue\Binaries\Win64\UnrealEditor.exe" -ArgumentList $jogo -PassThru
+        if (-not $p.WaitForExit(120 * 1000)) { $p.Kill(); Write-Host "TRAVOU (veja $log)"; exit 1 }
+        Select-String -Path $log -Pattern 'AUTOTESTE' | ForEach-Object { $_.Line }
+        if ($p.ExitCode -eq 0 -or -not (Select-String -Path $log -Pattern 'GPU Crashed or D3D Device Removed' -Quiet)) { break }
+        Write-Host "queda do driver de vídeo (tentativa $t de 3); repetindo o autoteste"
+    }
     if ($p.ExitCode -ne 0) { exit $p.ExitCode }
     # a partida jogada no Unreal tem que reproduzir no FlowSim (C#) com o MESMO estado final
     $gravada = Join-Path $PSScriptRoot 'Saved\Tdf\partida.txt'

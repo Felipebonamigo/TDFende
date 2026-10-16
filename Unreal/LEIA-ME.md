@@ -256,6 +256,21 @@ presa), em ondas que andam pelo mundo, com uma rajada lenta por cima; cada touce
 - **Medida de GPU de hoje:** 6,8 ms (era 5,0) com a placa 34% ocupada por programas do Windows (Claude, navegador, WhatsApp) sem o
   jogo rodando; o mesmo valor sem a grama. Para medir limpo, feche o resto antes do `MedirFps.ps1`.
 
+### Águias de ambiente (16/10/2026)
+4 águias (o modelo e o voo da águia do jogo, escala pela envergadura medida nos ossos, 5 m) orbitam em volta da área de jogo a
+7-16 m de altura, raio de 25-34 m (além do canto mais longe das lanes: nunca sobre o campo) e uma volta em ~70-125 s; do lado da
+câmera elas sobem para cima do quadro (voo planado), porque passavam coladas na lente. Sem sombra. **Ficam fora do enquadramento
+inicial de propósito:** aparecem ao mover a câmera (WASD) ou afastar (roda). `-TdfSemPassaros` desliga. Autoteste: existem (≥3) e a
+posição muda com o tempo. Custo: ~0,4 ms de GPU (7,2 ms no completo, orçamento 8).
+
+### Quedas do driver de vídeo (3 em 15-16/10/2026)
+`DXGI_ERROR_DEVICE_HUNG` / "D3D Device Removed", **sempre** com o breadcrumb no desenho das sombras virtuais do Nanite
+(`RenderVirtualShadowMaps(Nanite)` → `NodeAndClusterCull`/`PatchSplit`); no editor, no pacote, antes e depois das mudanças desta semana,
+sempre com outras sessões do Unreal e programas do Windows usando a placa (34% ocupada sem o jogo). Não é falta de memória (4 de 11 GB).
+Mitigação: `RodarU0.ps1 -AutoTeste` e `Empacotar.ps1` repetem o autoteste (até 3 vezes) só nesse caso. **Se acontecer jogando:**
+guarde `Saved\Logs\*.nv-gpudmp` e o log; hipóteses a testar, uma por vez, medindo a taxa em ~20 execuções: `r.Nanite.Tessellation 0`,
+sombras virtuais desligadas na qualidade Baixa, atualizar o driver NVIDIA.
+
 ### Próximo
 Dependem do Felipe: sons
 (baixar pede autorização), partículas de gelo/fogo (Niagara: ligar o Unreal MCP), torreta que mira (arte com a parte de cima

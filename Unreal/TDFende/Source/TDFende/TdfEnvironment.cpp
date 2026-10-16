@@ -6,6 +6,9 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Animation/AnimSequence.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -30,7 +33,7 @@ namespace
 
 ATdfEnvironment::ATdfEnvironment()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true; // as águias de ambiente
 	RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("Raiz"));
 	SetRootComponent(RootScene);
 
@@ -99,6 +102,92 @@ void ATdfEnvironment::BeginPlay()
 	LineBorders();
 	// -TdfSemGrama: mede quanto a grama custa (A/B de desempenho)
 	if (!FParse::Param(FCommandLine::Get(), TEXT("TdfSemGrama"))) ScatterGrass();
+	if (!FParse::Param(FCommandLine::Get(), TEXT("TdfSemArte")) && !FParse::Param(FCommandLine::Get(), TEXT("TdfSemPassaros"))) SpawnBirds();
+}
+
+void ATdfEnvironment::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	AdvanceBirds(DeltaSeconds);
+}
+
+FVector ATdfEnvironment::BirdPos(int32 Index) const
+{
+	if (!Birds.IsValidIndex(Index) || !Birds[Index].Comp) return FVector(FLT_MAX);
+	return Birds[Index].Comp->GetComponentLocation();
+}
+
+void ATdfEnvironment::AdvanceBirds(float DeltaSeconds)
+{
+	const FVector2D C = PlayArea.GetCenter();
+	for (FBird& B : Birds)
+	{
+		B.Angle += B.Speed * DeltaSeconds;
+		// círculo em volta do centro da área de jogo, com uma leve oscilação de raio e de altura (não é um trilho perfeito)
+		const float Wob = FMath::Sin(B.Angle * 1.7f + B.Height * 0.01f);
+		const float R = B.Radius * (1.f + 0.08f * Wob);
+		const float X = C.X + R * FMath::Cos(B.Angle);
+		// do lado da câmera (atrás da base, X menor) a águia sobe para cima do quadro (voo planado): sem isso passava colada na lente
+		const float Perto = FMath::Clamp((PlayArea.Min.X - 300.f - X) / 1500.f, 0.f, 1.f);
+		const float Subida = Perto * Perto * (3.f - 2.f * Perto) * 2400.f;
+		const FVector P(X, C.Y + R * FMath::Sin(B.Angle), B.Height + Subida + 90.f * FMath::Sin(B.Angle * 2.3f));
+		// o bico aponta para onde vai: tangente do círculo (sentido pelo sinal da velocidade), inclinando para dentro da curva
+		const float Dir = B.Speed >= 0.f ? 1.f : -1.f;
+		const float Yaw = FMath::RadiansToDegrees(B.Angle) + 90.f * Dir;
+		const FRotator Rot(0.f, Yaw + BirdYawOffset, -Dir * 14.f);
+		B.Comp->SetWorldTransform(FTransform(Rot, P, FVector(BirdScale)));
+	}
+}
+
+void ATdfEnvironment::SpawnBirds()
+{
+	// o modelo e o voo da águia do jogo (a que se envia): nada de arte nova
+	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/TDFende/Bichos/aguia.aguia"));
+	UAnimSequence* Anim = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/TDFende/Bichos/aguia_Anim.aguia_Anim"));
+	if (!Mesh) { UE_LOG(LogTdfAmb, Display, TEXT("Sem a águia (rode ImportarArte.ps1): céu sem pássaros")); return; }
+	KeepAlive.Add(Mesh);
+	if (Anim) KeepAlive.Add(Anim);
+
+	FRandomStream R(Seed + 91);
+	const int32 Count = 4;
+	for (int32 i = 0; i < Count; ++i)
+	{
+		USkeletalMeshComponent* C = NewObject<USkeletalMeshComponent>(this);
+		C->SetSkeletalMesh(Mesh);
+		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		C->SetCastShadow(false); // lá do alto a sombra nem cairia no jogo; e poupa as sombras virtuais
+		C->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+		C->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		if (Anim) { C->SetAnimation(Anim); C->Play(true); C->SetPosition(R.FRand() * Anim->GetPlayLength()); }
+		C->SetupAttachment(RootScene);
+		C->RegisterComponent();
+		KeepAlive.Add(C);
+		if (i == 0)
+		{
+			// escala pela envergadura medida nos ossos (a caixa guardada na malha mente): uma águia de ~5 m de ponta a ponta (grande: vista de 18 m de altura)
+			C->TickAnimation(0.05f, false);
+			C->RefreshBoneTransforms();
+			FVector Lo(FLT_MAX), Hi(-FLT_MAX);
+			for (int32 b = 0; b < C->GetNumBones(); ++b)
+			{
+				const FVector L = C->GetBoneLocation(C->GetBoneName(b), EBoneSpaces::ComponentSpace);
+				Lo = Lo.ComponentMin(L); Hi = Hi.ComponentMax(L);
+			}
+			const FVector Size = Hi - Lo;
+			const float Span = FMath::Max(Size.X, Size.Y);
+			BirdScale = Span > 0.01f ? 500.f / Span : 1.f;
+		}
+		FBird B;
+		B.Comp = C;
+		B.Radius = R.FRandRange(2500.f, 3400.f); // além do canto mais longe das lanes (21,6 m do centro): nunca sobre o campo de jogo
+		B.Height = R.FRandRange(700.f, 1600.f); // abaixo da câmera do jogo (~18 m): vistas de cima, sobre o campo, sem tapar as lanes
+		B.Angle = R.FRandRange(0.f, 2.f * PI);
+		const float Laps = R.FRandRange(0.05f, 0.09f); // rad/s: ~1,3 a 2,5 m/s... na verdade 1,5 a 3 m/s no raio de 30 m; uma volta em 70 a 125 s
+		B.Speed = (i % 2 == 0 ? 1.f : -1.f) * Laps;
+		Birds.Add(B);
+	}
+	AdvanceBirds(0.f);
+	UE_LOG(LogTdfAmb, Display, TEXT("Águias de ambiente: %d (envergadura 5 m, escala %.3f)"), Birds.Num(), BirdScale);
 }
 
 bool ATdfEnvironment::InsidePlay(const FVector2D& P, float Margin) const

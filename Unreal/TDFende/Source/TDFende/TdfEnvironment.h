@@ -13,6 +13,7 @@ class UPostProcessComponent;
 class UStaticMeshComponent;
 class UHierarchicalInstancedStaticMeshComponent;
 class UStaticMesh;
+class USkeletalMeshComponent;
 
 /**
  * U1 (fatia de beleza): o mundo em volta das lanes. Céu físico (atmosfera + nuvens volumétricas), névoa de altura, sol e luz do
@@ -34,6 +35,17 @@ public:
 	/** Área de jogo (as duas lanes e o corredor), em cm, e onde fica cada lane: chamado pelo modo de jogo antes do BeginPlay. */
 	void SetPlayArea(const FBox2D& Area, float InLaneOffsetX, float InLaneHalfX, float InLaneHalfY);
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	/**
+	 * Águias de ambiente: algumas, alto no céu, em volta da área de jogo, no modelo e na animação do próprio jogo (as mesmas da
+	 * águia que se envia). Orbitam devagar, cada uma num raio, altura e sentido; a asa bate na animação de voo.
+	 */
+	int32 NumBirds() const { return Birds.Num(); }
+	FVector BirdPos(int32 Index) const;
+	/** Anda as águias (o Tick chama; o autoteste chama direto para não esperar). */
+	void AdvanceBirds(float DeltaSeconds);
+
 	/** Sol: altura (graus acima do horizonte) e direção. */
 	UPROPERTY(EditAnywhere, Category = "TDFende") float SunElevation = 38.f;
 	UPROPERTY(EditAnywhere, Category = "TDFende") float SunAzimuth = 125.f;
@@ -50,6 +62,17 @@ private:
 	void ScatterGrass();
 	void ScatterNature();
 	void LineBorders();
+	void SpawnBirds();
+
+	struct FBird
+	{
+		USkeletalMeshComponent* Comp = nullptr;
+		float Radius = 0.f, Height = 0.f, Angle = 0.f, Speed = 0.f; // volta em rad/s, com sinal: sentido
+		float Bank = 0.f;                                            // inclinação nas curvas
+	};
+	TArray<FBird> Birds;
+	float BirdScale = 1.f;
+	float BirdYawOffset = -90.f; // a malha da águia olha para -Y no arquivo: giro que leva a frente ao +X (o mesmo do bicho do jogo)
 	bool InsidePlay(const FVector2D& P, float Margin) const;
 	UHierarchicalInstancedStaticMeshComponent* MakeHism(UStaticMesh* Mesh, float CullCm, bool bShadows);
 
