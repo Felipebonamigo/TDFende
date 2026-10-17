@@ -38,6 +38,14 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	/**
+	 * Clima (pré-visualização do tema, só luz, névoa e cor; a arte é a mesma): padrao, tarde, nevoa, outono, noite. Devolve false se o
+	 * nome não existe. `-TdfTema=<nome>` aplica ao começar; "padrao" volta ao que o ambiente tinha.
+	 */
+	bool ApplyTheme(const FString& Name);
+	/** Altura do sol em graus acima do horizonte, como está agora. */
+	float SunElevationNow() const;
+
+	/**
 	 * Águias de ambiente: algumas, alto no céu, em volta da área de jogo, no modelo e na animação do próprio jogo (as mesmas da
 	 * águia que se envia). Orbitam devagar, cada uma num raio, altura e sentido; a asa bate na animação de voo.
 	 */

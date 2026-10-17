@@ -292,6 +292,15 @@ falharia nas 3), e o cursor físico fora do lugar também conta como mouse real.
 "missing usage flag Nanite! Default Material will be used" 109 vezes por abertura e recompilava a cada abertura (o jogo mostrava o
 material certo mesmo assim). Agora são 0 avisos.
 
+### Climas para escolher o tema (17/10/2026)
+`-TdfTema=<nome>` aplica um clima (só luz do sol, névoa e correção de cor; a arte é a mesma): `padrao`, `tarde` (sol baixo dourado),
+`nevoa` (manhã cinza-azulada), `outono` (sol alto, verdes puxados para o amarelo) e `noite` (exposição travada em EV100 -2,5; `-TdfNoiteBrilho=`
+ajusta). `PreverTemas.ps1` roda os 5 e monta `Saved\U0\temas_folha.png`. **Escolher o tema continua sendo do Felipe**: o clima vira o
+padrão do ambiente e a arte do bioma (vegetação, rochas, paleta do chão) entra na U3. Autoteste: nome desconhecido é recusado, tarde e
+noite mudam o sol, padrão restaura.
+Aprendizado: no modo de luminância estendida do Unreal 5, `AutoExposureMin/MaxBrightness` são EV100 (negativo clareia); a exposição
+automática sozinha deixava a noite lavada.
+
 ### Próximo
 Dependem do Felipe: sons
 (baixar pede autorização), partículas de gelo/fogo (Niagara: ligar o Unreal MCP), torreta que mira (arte com a parte de cima

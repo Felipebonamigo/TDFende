@@ -1360,6 +1360,21 @@ void ATdfSimActor::RunSelfTest(float)
 				}
 			}
 		}
+		// climas (pré-visualização do tema): nome desconhecido é recusado, um conhecido muda o sol, "padrao" restaura
+		{
+			ATdfEnvironment* Env = nullptr;
+			for (TActorIterator<ATdfEnvironment> It(GetWorld()); It; ++It) { Env = *It; break; }
+			if (Env)
+			{
+				const float Base = Env->SunElevationNow();
+				const bool bNo = !Env->ApplyTheme(TEXT("nao-existe"));
+				const bool bTarde = Env->ApplyTheme(TEXT("tarde")) && FMath::Abs(Env->SunElevationNow() - Base) > 5.f;
+				const bool bNoite = Env->ApplyTheme(TEXT("noite")) && Env->SunElevationNow() != Base;
+				const bool bVolta = Env->ApplyTheme(TEXT("padrao")) && FMath::IsNearlyEqual(Env->SunElevationNow(), Base, 0.5f);
+				SelfCheck(bNo && bTarde && bNoite && bVolta, TEXT("ambiente: clima desconhecido é recusado, tarde e noite mudam o sol, padrão restaura"));
+			}
+			else SelfCheck(false, TEXT("ambiente: clima (sem ambiente)"));
+		}
 		// selo de build (U4): o hash do git no canto do HUD; executável sem selo reprova
 		{
 			const FString Stamp = TdfBuildStamp();

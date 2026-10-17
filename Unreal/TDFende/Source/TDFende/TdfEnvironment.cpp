@@ -96,6 +96,8 @@ void ATdfEnvironment::BeginPlay()
 {
 	Super::BeginPlay();
 	Sun->SetWorldRotation(FRotator(-SunElevation, SunAzimuth, 0.f));
+	FString Theme;
+	if (FParse::Value(FCommandLine::Get(), TEXT("TdfTema="), Theme) && !ApplyTheme(Theme)) UE_LOG(LogTdfAmb, Warning, TEXT("Clima desconhecido: %s (padrao, tarde, nevoa, outono, noite)"), *Theme);
 	BuildGround();
 	ScatterScenery();
 	ScatterNature();
@@ -103,6 +105,54 @@ void ATdfEnvironment::BeginPlay()
 	// -TdfSemGrama: mede quanto a grama custa (A/B de desempenho)
 	if (!FParse::Param(FCommandLine::Get(), TEXT("TdfSemGrama"))) ScatterGrass();
 	if (!FParse::Param(FCommandLine::Get(), TEXT("TdfSemArte")) && !FParse::Param(FCommandLine::Get(), TEXT("TdfSemPassaros"))) SpawnBirds();
+}
+
+float ATdfEnvironment::SunElevationNow() const { return Sun ? -Sun->GetComponentRotation().Pitch : -1000.f; }
+
+bool ATdfEnvironment::ApplyTheme(const FString& Name)
+{
+	// Clima = luz do sol, névoa e correção de cor; a arte (terreno, árvores, torres) é a mesma. Pré-visualização para o Felipe escolher
+	// o tema; quando escolher, o clima vira o padrão do ambiente (e a arte do bioma entra na U3).
+	struct FTheme
+	{
+		const TCHAR* Key;
+		float Elev, Az, Lux;
+		FLinearColor Sun;
+		float FogDensity;
+		FLinearColor FogColor;
+		float Saturation;
+		FVector4 Gain;   // ganho de cor por canal (RGB) e geral (W)
+		float Exposure;  // viés de exposição (EV)
+	};
+	static const FTheme Themes[] = {
+		{TEXT("padrao"), 38.f, 125.f, 9.f, FLinearColor(1.f, 0.96f, 0.90f), 0.012f, FLinearColor(0.447f, 0.638f, 1.f), 1.06f, FVector4(1.f, 1.f, 1.f, 1.f), -0.2f},
+		{TEXT("tarde"), 16.f, 125.f, 7.5f, FLinearColor(1.f, 0.80f, 0.60f), 0.014f, FLinearColor(0.80f, 0.68f, 0.58f), 1.05f, FVector4(1.02f, 0.98f, 0.93f, 1.f), -0.3f},
+		{TEXT("nevoa"), 22.f, 125.f, 5.5f, FLinearColor(0.82f, 0.9f, 1.f), 0.034f, FLinearColor(0.62f, 0.72f, 0.85f), 0.88f, FVector4(0.93f, 0.99f, 1.06f, 1.f), 0.1f},
+		{TEXT("outono"), 34.f, 125.f, 8.5f, FLinearColor(1.f, 0.95f, 0.88f), 0.012f, FLinearColor(0.5f, 0.62f, 0.85f), 1.18f, FVector4(1.16f, 0.97f, 0.72f, 1.f), -0.2f},
+		{TEXT("noite"), 24.f, 125.f, 0.5f, FLinearColor(0.55f, 0.66f, 1.f), 0.014f, FLinearColor(0.10f, 0.15f, 0.35f), 0.9f, FVector4(0.78f, 0.86f, 1.12f, 1.f), 0.f},
+	};
+	for (const FTheme& T : Themes)
+	{
+		if (!Name.Equals(T.Key, ESearchCase::IgnoreCase)) continue;
+		Sun->SetWorldRotation(FRotator(-T.Elev, T.Az, 0.f));
+		Sun->SetIntensity(T.Lux);
+		Sun->SetLightColor(T.Sun);
+		Fog->SetFogDensity(T.FogDensity);
+		Fog->SetFogInscatteringColor(T.FogColor);
+		FPostProcessSettings& S = Post->Settings;
+		S.bOverride_ColorSaturation = true; S.ColorSaturation = FVector4(1.f, 1.f, 1.f, T.Saturation);
+		S.bOverride_ColorGain = true;       S.ColorGain = T.Gain;
+		S.bOverride_AutoExposureBias = true; S.AutoExposureBias = T.Exposure;
+		// noite: exposição travada (sem isto a câmera reabre no escuro e a noite sai lavada); os outros climas usam a automática
+		const bool bFixa = Name.Equals(TEXT("noite"), ESearchCase::IgnoreCase);
+		S.bOverride_AutoExposureMinBrightness = bFixa; S.bOverride_AutoExposureMaxBrightness = bFixa;
+		float Fix = -2.5f; FParse::Value(FCommandLine::Get(), TEXT("TdfNoiteBrilho="), Fix); // EV100 travado da noite (medido: -1 preto, -2,5 noite legível, -4 quase dia); quanto MAIOR, mais escuro
+		S.AutoExposureMinBrightness = Fix; S.AutoExposureMaxBrightness = Fix;
+		Post->MarkRenderStateDirty();
+		SkyLight->RecaptureSky(); // a luz do céu acompanha o sol novo
+		return true;
+	}
+	return false;
 }
 
 void ATdfEnvironment::Tick(float DeltaSeconds)
