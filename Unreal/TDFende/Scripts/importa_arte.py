@@ -96,6 +96,7 @@ def make_master(name, masked):
     # sem esta flag o material cai no cinza padrão nas malhas esqueléticas (e o log enche de avisos)
     mat.set_editor_property("used_with_skeletal_mesh", True)
     mat.set_editor_property("used_with_instanced_static_meshes", True)  # as torres são instâncias (ISM)
+    mat.set_editor_property("used_with_nanite", True)                   # e malhas Nanite: sem a flag o editor avisa a cada abertura
     if masked:
         mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
         mat.set_editor_property("two_sided", True)

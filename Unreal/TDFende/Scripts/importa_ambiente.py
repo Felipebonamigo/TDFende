@@ -88,6 +88,8 @@ def new_material(name):
         eal.delete_asset(full)
     mat = tools.create_asset(name, path, unreal.Material, unreal.MaterialFactoryNew())
     mat.set_editor_property("used_with_instanced_static_meshes", True)
+    # as malhas de cenário e as árvores são Nanite: sem a flag o editor avisa (109 vezes por abertura) e recompila a cada abertura
+    mat.set_editor_property("used_with_nanite", True)
     return mat
 
 

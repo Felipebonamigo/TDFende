@@ -1111,9 +1111,11 @@ bool ATdfSimActor::RunInputTest()
 		SelfCheck(false, TEXT("controle: sem controle, HUD ou janela para testar"));
 		return true;
 	}
+	FSlateApplication& App = FSlateApplication::Get();
+	// segunda detecção de mouse real: o cursor físico saiu de onde o teste o pôs (o usuário mexeu o mouse fora do filtro de eventos)
+	if (GShield.IsValid() && SelfMouseSet && FVector2D::Distance(FVector2D(App.GetCursorPos()), SelfMouse) > 4.0) { ++GShield->RealEvents; SelfMouse = FVector2D(App.GetCursorPos()); }
 	if (SelfInputWait > 0) { --SelfInputWait; return false; }
 
-	FSlateApplication& App = FSlateApplication::Get();
 	const TSharedRef<SWindow> Win = VC->GetWindow().ToSharedRef();
 	if (!GShield.IsValid())
 	{
@@ -1127,6 +1129,7 @@ bool ATdfSimActor::RunInputTest()
 		const FPointerEvent E(0, FVector2f(P), FVector2f(SelfMouse), TSet<FKey>(), EKeys::Invalid, 0.f, FModifierKeysState());
 		App.ProcessMouseMoveEvent(E);
 		SelfMouse = P;
+		SelfMouseSet = true;
 		GShield->bInjecting = false;
 	};
 	auto Button = [&](bool bDown)
@@ -1176,6 +1179,10 @@ bool ATdfSimActor::RunInputTest()
 	case 2: Button(false); Wait(20); return false;
 	case 3:
 	{
+		// o injetor de eventos às vezes perde o clique num botão do UMG (~10%: o "mouse entrou" e o clique chegam fora de ordem):
+		// repete o clique até 2 vezes antes de dar falha; um botão realmente quebrado falha nas 3
+		if (GetSelectedTower() != SelfInputCard && SelfClickRetry < 2) { ++SelfClickRetry; SelfInputPhase = 1; return false; }
+		SelfClickRetry = 0;
 		SelfCheck(GetSelectedTower() == SelfInputCard, TEXT("controle: clicar no cartão seleciona a torre"));
 		SelfCheck(Lanes[0].TowerCount == 0 && Lanes[0].Gold >= SelfInputGoldBefore && Recorded.Num() == 0, TEXT("controle: clicar no cartão não constrói no campo por baixo"));
 		// uma célula livre, bem no meio da tela, longe do HUD
@@ -1215,6 +1222,8 @@ bool ATdfSimActor::RunInputTest()
 	case 10: Button(false); Wait(6); return false;
 	case 11:
 	{
+		if (!(UGameUserSettings::GetGameUserSettings()->GetOverallScalabilityLevel() == 0 && Hud->SelectedQuality() == 0) && SelfClickRetry < 2) { ++SelfClickRetry; SelfInputPhase = 9; return false; } // ver o caso 3
+		SelfClickRetry = 0;
 		SelfCheck(UGameUserSettings::GetGameUserSettings()->GetOverallScalabilityLevel() == 0 && Hud->SelectedQuality() == 0, TEXT("controle: clicar em Baixa muda a qualidade gráfica"));
 		Hud->SetQuality(SelfInputQualityBefore >= 0 ? SelfInputQualityBefore : 3); // devolve a qualidade de antes
 		// com o painel aberto, clicar no campo (célula livre) não constrói

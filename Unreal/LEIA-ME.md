@@ -283,6 +283,14 @@ cliques, porque o Slate também lê o cursor físico. Agora: um filtro descarta 
 INCONCLUSIVO (código 4, não reprovado)**; `RodarU0.ps1` e `Empacotar.ps1` repetem (até 3 vezes) e, esgotadas, saem com 4 (nunca 0). Com o
 cursor mexendo de propósito: 5 inconclusivos, 1 queda de GPU, 0 reprovação falsa. Falha de verdade (sem mouse real) continua reprovando.
 Dica: durante o autoteste, deixe o mouse parado.
+**Segunda causa de oscilação (17/10/2026):** o injetor às vezes perde o clique num botão do UMG (~10%: o "mouse entrou" e o clique chegam
+fora de ordem), mesmo sem mouse real. Cartão e "Baixa" agora repetem o clique até 2 vezes antes de dar falha (botão realmente quebrado
+falharia nas 3), e o cursor físico fora do lugar também conta como mouse real. Resultado: 20 de 20 execuções passaram (antes ~85%).
+
+### Flag de Nanite nos materiais (17/10/2026)
+`M_TdfPbr`, `M_TdfFolhagem`, `M_TdfGltf`, `M_TdfBase` e `M_TdfMascara` agora nascem com `used_with_nanite`: antes o editor avisava
+"missing usage flag Nanite! Default Material will be used" 109 vezes por abertura e recompilava a cada abertura (o jogo mostrava o
+material certo mesmo assim). Agora são 0 avisos.
 
 ### Próximo
 Dependem do Felipe: sons

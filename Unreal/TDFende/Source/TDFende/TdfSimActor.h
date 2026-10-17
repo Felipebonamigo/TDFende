@@ -275,6 +275,8 @@ private:
 	bool FinishInputTest();
 	int32 SelfFailuresBeforeInput = -1;
 	bool SelfInconclusive = false;
+	bool SelfMouseSet = false;
+	int32 SelfClickRetry = 0;
 	int32 SelfInputPhase = 0, SelfInputWait = 0, SelfInputGoldBefore = 0, SelfInputQualityBefore = -1;
 	FIntPoint SelfInputCell = FIntPoint(-1, -1), SelfInputCell2 = FIntPoint(-1, -1);
 	FVector2D SelfMouse = FVector2D::ZeroVector;
